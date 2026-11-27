@@ -345,7 +345,9 @@ fn checkerboard() -> Vec<u8> {
 /// Drain the window's messages once per iteration, then let the presenter draw.
 fn pump_until_presented(frames: u32) {
     let mut message = MSG::default();
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    // A software rasterizer under Wine takes seconds to produce the first frame; the
+    // bound is for a graphics stack that will never answer, not for a slow one.
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     let mut ticks = 0;
     while ticks < frames || opencomp::frames_presented() == 0 {
         unsafe {

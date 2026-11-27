@@ -51,6 +51,16 @@ pub fn frames_presented() -> u64 {
     FRAMES.load(Ordering::Relaxed)
 }
 
+/// Say which stage is about to run when `OPENCOMP_TRACE` is set.
+///
+/// A stage that hangs prints nothing after its own line, which is the only way to tell
+/// a slow software rasterizer from a call that will never return.
+fn trace(stage: &str) {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: {stage}");
+    }
+}
+
 /// The channel order D2D wants: ours is linear light, D2D speaks sRGB.
 fn color(rgba: [f32; 4]) -> D2D1_COLOR_F {
     D2D1_COLOR_F {
@@ -117,6 +127,7 @@ impl Presenter {
     }
 
     fn create(hwnd: u64, width: u32, height: u32) -> Result<Self, &'static str> {
+        trace("d3d11 device");
         let (width, height) = (width.max(1), height.max(1));
         let mut device = None;
         let mut context = None;
@@ -173,12 +184,14 @@ impl Presenter {
             AlphaMode: Default::default(),
             Flags: 0,
         };
+        trace("swapchain");
         // Safety: `hwnd` is the window the caller handed over and keeps alive.
         let swapchain = unsafe {
             factory.CreateSwapChainForHwnd(&device, HWND(hwnd as *mut _), &desc, None, None)
         }
         .map_err(|_| "CreateSwapChainForHwnd")?;
 
+        trace("d2d factory");
         let d2d_factory: ID2D1Factory1 =
             unsafe { D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, None) }
                 .map_err(|_| "D2D1CreateFactory")?;
@@ -189,6 +202,7 @@ impl Presenter {
             .map_err(|_| "CreateDeviceContext")?;
         let brush = unsafe { d2d.CreateSolidColorBrush(&color([1.0, 1.0, 1.0, 1.0]), None) }
             .map_err(|_| "CreateSolidColorBrush")?;
+        trace("target");
         let mut presenter = Self {
             swapchain,
             device,

@@ -212,10 +212,11 @@ fn a_window_presents_a_frame() {
     mark("waiting for a frame");
 
     // The presenter thread creates the device, the swapchain and the D2D target before
-    // its first frame; on a CI runner that is not 160 ms of work. Wait for the first
-    // frame instead of counting iterations, and give up after two seconds.
+    // its first frame. Under Wine that is a software rasterizer starting up, which is
+    // seconds of work and not a fault; wait for the frame and report how long it took.
+    let started = std::time::Instant::now();
     let mut message = MSG::default();
-    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    let deadline = started + Duration::from_secs(30);
     while opencomp::frames_presented() == 0 && std::time::Instant::now() < deadline {
         // Safety: the message lives on this stack frame.
         if unsafe { PeekMessageW(&mut message, None, 0, 0, PM_REMOVE) }.as_bool() {
@@ -227,9 +228,14 @@ fn a_window_presents_a_frame() {
         std::thread::sleep(Duration::from_millis(16));
     }
 
+    let waited = started.elapsed();
     mark("Hide");
     bridge.Hide().expect("hide");
     let presented = opencomp::frames_presented();
+    eprintln!(
+        "gate_a: {presented} frames after {:?} (waited {waited:?})",
+        presented
+    );
     mark("DestroyWindow");
     unsafe {
         let _ = DestroyWindow(hwnd);
