@@ -60,6 +60,8 @@ cargo run -p comptrace -- lookup     Microsoft.UI.winmd 5ac4e92e-017b-5d68-8198-
 cargo run -p comptrace -- diff       old/Microsoft.UI.winmd new/Microsoft.UI.winmd
 cargo run -p comptrace -- attributes Microsoft.UI.winmd Microsoft.UI.Composition.Compositor
 cargo run -p comptrace -- iids       Microsoft.ui.xaml.dll --metadata Microsoft.UI.winmd
+cargo run -p comptrace -- imports    Microsoft.ui.xaml.dll --dll frameworkudk
+cargo run -p comptrace -- exports    opencomp.dll
 ```
 
 `interfaces` prints the IID and method count of every interface, which is the
@@ -69,7 +71,9 @@ that the metadata does not know it — the signal for a private interface. `diff
 reports what moved between two SDK versions. `classes` prints what each runtime
 class implements, including its static interfaces. `iids` goes the other way:
 it scans a built binary for the identifiers it loads and names them against the
-metadata, which is how a version bump is audited from the client side.
+metadata, which is how a version bump is audited from the client side. `imports`
+and `exports` read the PE tables, so a dependency question ("which names does
+XAML take from this DLL?") is answered without a Windows host.
 
 ## Regenerating the bindings
 

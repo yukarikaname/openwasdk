@@ -4,6 +4,7 @@
 mod diff;
 mod iids;
 mod model;
+mod pe;
 mod report;
 
 use std::path::PathBuf;
@@ -29,6 +30,15 @@ enum Command {
         #[arg(long)]
         namespace: Option<String>,
     },
+    /// Print what a PE image imports, optionally only matching DLLs
+    Imports {
+        image: PathBuf,
+        /// Only DLLs whose name contains this, case insensitive
+        #[arg(long)]
+        dll: Option<String>,
+    },
+    /// Print what a PE image exports
+    Exports { image: PathBuf },
     /// Scan a PE image for the interface identifiers it loads
     Iids {
         image: PathBuf,
@@ -110,6 +120,14 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::Interfaces { winmd, namespace } => {
             let model = model::load(&winmd)?;
             print!("{}", report::interfaces(&model, namespace.as_deref()));
+        }
+        Command::Imports { image, dll } => {
+            let dependencies = pe::imports(&image)?;
+            print!("{}", pe::report_imports(&dependencies, dll.as_deref()));
+        }
+        Command::Exports { image } => {
+            let exports = pe::exports(&image)?;
+            print!("{}", pe::report_exports(&exports));
         }
         Command::Iids {
             image,
