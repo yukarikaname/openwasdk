@@ -80,8 +80,8 @@ fn surface_properties() -> D2D1_BITMAP_PROPERTIES1 {
 /// A window that draws a draw list: swapchain, D2D context and target bitmap.
 pub struct Presenter {
     swapchain: IDXGISwapChain1,
-    _device: ID3D11Device,
-    _context: ID3D11DeviceContext,
+    device: ID3D11Device,
+    context: ID3D11DeviceContext,
     d2d: ID2D1DeviceContext,
     brush: ID2D1SolidColorBrush,
     target: Option<ID2D1Bitmap1>,
@@ -153,8 +153,8 @@ impl Presenter {
             unsafe { d2d.CreateSolidColorBrush(&color([1.0, 1.0, 1.0, 1.0]), None) }.ok()?;
         let mut presenter = Self {
             swapchain,
-            _device: device,
-            _context: context,
+            device,
+            context,
             d2d,
             brush,
             target: None,
@@ -246,8 +246,57 @@ impl Presenter {
         }
     }
 
+    /// The colour of one pixel of the frame just drawn, in sRGB RGBA.
+    ///
+    /// A flip-model back buffer is not readable through GDI, so a test that wants to
+    /// check a pixel has to copy the buffer to a staging texture. Only tests do that.
+    #[cfg(test)]
+    pub fn read_pixel(&self, x: u32, y: u32) -> Option<[u8; 4]> {
+        use windows::Win32::Graphics::Direct3D11::{
+            D3D11_CPU_ACCESS_READ, D3D11_MAP_READ, D3D11_MAPPED_SUBRESOURCE, D3D11_USAGE_STAGING,
+            ID3D11Texture2D,
+        };
+
+        // Safety: buffer zero belongs to this swapchain and is still ours until Present.
+        let back: ID3D11Texture2D = unsafe { self.swapchain.GetBuffer(0) }.ok()?;
+        let mut desc = windows::Win32::Graphics::Direct3D11::D3D11_TEXTURE2D_DESC::default();
+        unsafe { back.GetDesc(&mut desc) };
+        desc.Usage = D3D11_USAGE_STAGING;
+        desc.BindFlags = 0;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ.0 as u32;
+        desc.MiscFlags = 0;
+        let mut staging = None;
+        unsafe { self.device.CreateTexture2D(&desc, None, Some(&mut staging)) }.ok()?;
+        let staging: ID3D11Texture2D = staging?;
+        unsafe { self.context.CopyResource(&staging, &back) };
+        let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
+        unsafe {
+            self.context
+                .Map(&staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped))
+        }
+        .ok()?;
+        if mapped.pData.is_null() {
+            return None;
+        }
+        let offset = y as usize * mapped.RowPitch as usize + x as usize * 4;
+        let mut pixel = [0u8; 4];
+        // Safety: the mapped region covers the whole texture; x and y are inside it.
+        unsafe {
+            let bytes = mapped.pData.cast::<u8>().add(offset);
+            pixel.copy_from_slice(core::slice::from_raw_parts(bytes, 4));
+            self.context.Unmap(&staging, 0);
+        }
+        // The surface is BGRA; callers want RGBA.
+        Some([pixel[2], pixel[1], pixel[0], pixel[3]])
+    }
+
     /// Draw the list and present it.
     pub fn present(&mut self, draws: &[Draw]) -> bool {
+        self.draw(draws) && self.present_frame()
+    }
+
+    /// Draw the list into the back buffer without handing it to the window.
+    pub fn draw(&mut self, draws: &[Draw]) -> bool {
         unsafe {
             self.d2d.BeginDraw();
             self.d2d.Clear(Some(&color([0.0, 0.0, 0.0, 1.0])));
@@ -322,11 +371,14 @@ impl Presenter {
                 }
                 self.d2d.PopAxisAlignedClip();
             }
-            if self.d2d.EndDraw(None, None).is_err() {
-                return false;
-            }
-            self.swapchain.Present(1, DXGI_PRESENT(0)).is_ok()
+            self.d2d.EndDraw(None, None).is_ok()
         }
+    }
+
+    /// Hand the drawn back buffer to the window.
+    pub fn present_frame(&mut self) -> bool {
+        // Safety: the frame was drawn; DXGI takes it from here.
+        unsafe { self.swapchain.Present(1, DXGI_PRESENT(0)).is_ok() }
     }
 }
 
@@ -386,6 +438,34 @@ mod tests {
         };
         assert!(presenter.present(&draws()));
         assert!(presenter.present(&draws()));
+        unsafe {
+            let _ = DestroyWindow(hwnd);
+        }
+    }
+
+    #[test]
+    fn a_drawn_frame_has_the_colours_it_was_given() {
+        let hwnd = window();
+        let Some(mut presenter) = Presenter::new(hwnd.0 as u64, 64, 64) else {
+            unsafe {
+                let _ = DestroyWindow(hwnd);
+            }
+            return;
+        };
+        // The list is one red rounded rectangle with an 8 unit radius over 64 units.
+        assert!(presenter.draw(&draws()));
+        let centre = presenter.read_pixel(32, 32).expect("pixel");
+        assert!(
+            centre[0] > 240 && centre[1] < 16 && centre[2] < 16,
+            "{centre:?}"
+        );
+        // A radius of 8 removes the corner, which keeps the clear colour.
+        let corner = presenter.read_pixel(1, 1).expect("pixel");
+        assert!(
+            corner[0] < 16 && corner[1] < 16 && corner[2] < 16,
+            "{corner:?}"
+        );
+        assert!(presenter.present_frame());
         unsafe {
             let _ = DestroyWindow(hwnd);
         }
