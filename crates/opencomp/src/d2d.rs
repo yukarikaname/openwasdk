@@ -23,7 +23,7 @@ use windows::Win32::Graphics::Direct2D::{
     ID2D1DeviceContext, ID2D1Factory1, ID2D1SolidColorBrush,
 };
 use windows::Win32::Graphics::Direct3D::{
-    D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1,
+    D3D_DRIVER_TYPE_HARDWARE, D3D_DRIVER_TYPE_WARP, D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1,
     D3D_FEATURE_LEVEL_11_0,
 };
 use windows::Win32::Graphics::Direct3D11::{
@@ -125,21 +125,33 @@ impl Presenter {
             D3D_FEATURE_LEVEL_10_1,
             D3D_FEATURE_LEVEL_10_0,
         ];
-        // Safety: the out parameters are ours and only read after the call succeeds.
-        unsafe {
-            D3D11CreateDevice(
-                None,
-                D3D_DRIVER_TYPE_HARDWARE,
-                windows::Win32::Foundation::HMODULE::default(),
-                D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-                Some(&levels),
-                D3D11_SDK_VERSION,
-                Some(&mut device),
-                None,
-                Some(&mut context),
-            )
+        // A CI runner and a remote session have no adapter of their own; WARP is the
+        // renderer Windows itself provides for that case, and wined3d answers it too.
+        // Hardware first, because a real GPU is still the better compositor.
+        let mut created = None;
+        for driver in [D3D_DRIVER_TYPE_HARDWARE, D3D_DRIVER_TYPE_WARP] {
+            // Safety: the out parameters are ours and only read after the call succeeds.
+            created = Some(unsafe {
+                D3D11CreateDevice(
+                    None,
+                    driver,
+                    windows::Win32::Foundation::HMODULE::default(),
+                    D3D11_CREATE_DEVICE_BGRA_SUPPORT,
+                    Some(&levels),
+                    D3D11_SDK_VERSION,
+                    Some(&mut device),
+                    None,
+                    Some(&mut context),
+                )
+            });
+            if created.as_ref().is_some_and(|result| result.is_ok()) {
+                break;
+            }
         }
-        .map_err(|_| "D3D11CreateDevice")?;
+        match created {
+            Some(result) => result.map_err(|_| "D3D11CreateDevice (hardware and warp)")?,
+            None => return Err("D3D11CreateDevice (no driver types)"),
+        }
         let device: ID3D11Device = device.ok_or("D3D11 device")?;
         let context: ID3D11DeviceContext = context.ok_or("D3D11 context")?;
 
