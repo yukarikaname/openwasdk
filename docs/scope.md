@@ -94,7 +94,7 @@ front of the official ones.
 
 | gate | program | what it proves | needs |
 | --- | --- | --- | --- |
-| A | our own composition-only client (`crates/opencomp-client`) | the DLLs load, the ABI answers, the tree reaches a window | `opencomp`, `openudk`, a swapchain |
+| A | our own composition-only client (`crates/opencomp/examples/host.rs`) | the DLLs load, the ABI answers, the tree reaches a window | `opencomp`, `openudk`, a swapchain |
 | B | a WinUI 3 app with no XAML markup: `Window`, `Grid`, one `TextBlock` built from code | XAML boots, D2D draws, Content hosts | A + surface interop, dispatcher |
 | C | `microsoft/microsoft-ui-reactor` hello world | the declarative C# path, no application XBF | B + .NET under Wine |
 | D | `microsoft/WinUI-Gallery` | an unmodified application with templates, styles and navigation | C + XBF for the built-in themes |

@@ -79,6 +79,15 @@ host's scale factor (the example uses the window's `scale_factor`) and is applie
 affine transform, both when vertices are built (`x * scale / width * 2 - 1`) and when the scissor
 is computed. Layout never sees it.
 
+## The host surface
+
+`opencomp_core::Host` is the swapchain owner: it takes a `wgpu::Surface`, finds an
+adapter that can drive it, configures an sRGB format, keeps the configuration in
+step with the window size and presents in one call. `Host::for_win32(hwnd, …)`
+builds the surface from a Win32 handle, which is how the DLL takes over a window
+it was handed rather than one it created. The examples use the plain constructor;
+`crates/opencomp/src/present.rs` uses the Win32 one on a timer.
+
 ## Formats, backends, surfaces
 
 - `Renderer::new` — an existing device and queue, `Rgba8UnormSrgb`.
