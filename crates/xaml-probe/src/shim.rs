@@ -104,7 +104,7 @@ unsafe fn library_matches(base: *const u8, name_rva: usize, wanted: &str) -> boo
     for byte in wanted.bytes() {
         let read = unsafe { name.add(index).read_unaligned() };
         // Import tables spell the library in the linker's case; compare case-insensitively.
-        if read.to_ascii_uppercase() != byte.to_ascii_uppercase() {
+        if !read.eq_ignore_ascii_case(&byte) {
             return false;
         }
         index += 1;
