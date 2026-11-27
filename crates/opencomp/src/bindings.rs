@@ -5586,6 +5586,20 @@ pub mod Microsoft {
                         .ok()
                     }
                 }
+                pub fn SetQuaternionParameter(
+                    &self,
+                    key: &str,
+                    value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetQuaternionParameter)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(key)),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn SetReferenceParameter<P1>(
                     &self,
                     key: &str,
@@ -5663,6 +5677,281 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for ICompositionAnimation {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionAnimation";
             }
+            pub trait ICompositionAnimation_Impl: windows_core::IUnknownImpl {
+                fn ClearAllParameters(&self) -> windows_core::Result<()>;
+                fn ClearParameter(&self, key: &windows_core::HSTRING) -> windows_core::Result<()>;
+                fn SetColorParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &super::super::super::Windows::UI::Color,
+                ) -> windows_core::Result<()>;
+                fn SetMatrix3x2Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix3x2,
+                ) -> windows_core::Result<()>;
+                fn SetMatrix4x4Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+                fn SetQuaternionParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn SetReferenceParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    compositionObject: windows_core::Ref<CompositionObject>,
+                ) -> windows_core::Result<()>;
+                fn SetScalarParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: f32,
+                ) -> windows_core::Result<()>;
+                fn SetVector2Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn SetVector3Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn SetVector4Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector4,
+                ) -> windows_core::Result<()>;
+            }
+            impl ICompositionAnimation_Vtbl {
+                pub const fn new<Identity: ICompositionAnimation_Impl, const OFFSET: isize>() -> Self
+                {
+                    unsafe extern "system" fn ClearAllParameters<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::ClearAllParameters(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn ClearParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::ClearParameter(
+                                this,
+                                core::mem::transmute(&key),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetColorParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: super::super::super::Windows::UI::Color,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetColorParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetMatrix3x2Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix3x2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetMatrix3x2Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetMatrix4x4Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetMatrix4x4Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetQuaternionParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetQuaternionParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetReferenceParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        compositionobject: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetReferenceParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute_copy(&compositionobject),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetScalarParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetScalarParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                value,
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetVector2Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetVector2Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetVector3Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetVector3Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetVector4Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetVector4Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionAnimation,
+                            OFFSET,
+                        >(),
+                        ClearAllParameters: ClearAllParameters::<Identity, OFFSET>,
+                        ClearParameter: ClearParameter::<Identity, OFFSET>,
+                        SetColorParameter: SetColorParameter::<Identity, OFFSET>,
+                        SetMatrix3x2Parameter: SetMatrix3x2Parameter::<Identity, OFFSET>,
+                        SetMatrix4x4Parameter: SetMatrix4x4Parameter::<Identity, OFFSET>,
+                        SetQuaternionParameter: SetQuaternionParameter::<Identity, OFFSET>,
+                        SetReferenceParameter: SetReferenceParameter::<Identity, OFFSET>,
+                        SetScalarParameter: SetScalarParameter::<Identity, OFFSET>,
+                        SetVector2Parameter: SetVector2Parameter::<Identity, OFFSET>,
+                        SetVector3Parameter: SetVector3Parameter::<Identity, OFFSET>,
+                        SetVector4Parameter: SetVector4Parameter::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionAnimation as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionAnimation_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -5691,7 +5980,12 @@ pub mod Microsoft {
                     windows_numerics::Matrix4x4,
                 )
                     -> windows_core::HRESULT,
-                SetQuaternionParameter: usize,
+                pub SetQuaternionParameter: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
                 pub SetReferenceParameter: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -14456,6 +14750,20 @@ pub mod Microsoft {
                         .ok()
                     }
                 }
+                pub fn InsertQuaternion(
+                    &self,
+                    propertyname: &str,
+                    value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).InsertQuaternion)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(propertyname)),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn InsertScalar(
                     &self,
                     propertyname: &str,
@@ -14560,6 +14868,22 @@ pub mod Microsoft {
                         .map(|| result__)
                     }
                 }
+                pub fn TryGetQuaternion(
+                    &self,
+                    propertyname: &str,
+                    value: &mut super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<CompositionGetValueStatus> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).TryGetQuaternion)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(propertyname)),
+                            value,
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
                 pub fn TryGetScalar(
                     &self,
                     propertyname: &str,
@@ -14628,6 +14952,471 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for ICompositionPropertySet {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionPropertySet";
             }
+            pub trait ICompositionPropertySet_Impl: windows_core::IUnknownImpl {
+                fn InsertColor(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &super::super::super::Windows::UI::Color,
+                ) -> windows_core::Result<()>;
+                fn InsertMatrix3x2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix3x2,
+                ) -> windows_core::Result<()>;
+                fn InsertMatrix4x4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+                fn InsertQuaternion(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn InsertScalar(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: f32,
+                ) -> windows_core::Result<()>;
+                fn InsertVector2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn InsertVector3(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn InsertVector4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector4,
+                ) -> windows_core::Result<()>;
+                fn TryGetColor(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut super::super::super::Windows::UI::Color,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetMatrix3x2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Matrix3x2,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetMatrix4x4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetQuaternion(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetScalar(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut f32,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetVector2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Vector2,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetVector3(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Vector3,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetVector4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Vector4,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+            }
+            impl ICompositionPropertySet_Vtbl {
+                pub const fn new<Identity: ICompositionPropertySet_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn InsertColor<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: super::super::super::Windows::UI::Color,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertColor(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertMatrix3x2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix3x2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertMatrix3x2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertMatrix4x4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertMatrix4x4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertQuaternion<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertQuaternion(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertScalar<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertScalar(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                value,
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertVector2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertVector2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertVector3<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertVector3(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertVector4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertVector4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn TryGetColor<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut super::super::super::Windows::UI::Color,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetColor(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetMatrix3x2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Matrix3x2,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetMatrix3x2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetMatrix4x4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Matrix4x4,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetMatrix4x4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetQuaternion<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut super::super::super::Windows::Foundation::Numerics::Quaternion,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetQuaternion(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetScalar<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut f32,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetScalar(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetVector2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Vector2,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetVector2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetVector3<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Vector3,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetVector3(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetVector4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Vector4,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetVector4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionPropertySet,
+                            OFFSET,
+                        >(),
+                        InsertColor: InsertColor::<Identity, OFFSET>,
+                        InsertMatrix3x2: InsertMatrix3x2::<Identity, OFFSET>,
+                        InsertMatrix4x4: InsertMatrix4x4::<Identity, OFFSET>,
+                        InsertQuaternion: InsertQuaternion::<Identity, OFFSET>,
+                        InsertScalar: InsertScalar::<Identity, OFFSET>,
+                        InsertVector2: InsertVector2::<Identity, OFFSET>,
+                        InsertVector3: InsertVector3::<Identity, OFFSET>,
+                        InsertVector4: InsertVector4::<Identity, OFFSET>,
+                        TryGetColor: TryGetColor::<Identity, OFFSET>,
+                        TryGetMatrix3x2: TryGetMatrix3x2::<Identity, OFFSET>,
+                        TryGetMatrix4x4: TryGetMatrix4x4::<Identity, OFFSET>,
+                        TryGetQuaternion: TryGetQuaternion::<Identity, OFFSET>,
+                        TryGetScalar: TryGetScalar::<Identity, OFFSET>,
+                        TryGetVector2: TryGetVector2::<Identity, OFFSET>,
+                        TryGetVector3: TryGetVector3::<Identity, OFFSET>,
+                        TryGetVector4: TryGetVector4::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionPropertySet as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionPropertySet_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -14649,7 +15438,12 @@ pub mod Microsoft {
                     windows_numerics::Matrix4x4,
                 )
                     -> windows_core::HRESULT,
-                InsertQuaternion: usize,
+                pub InsertQuaternion: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
                 pub InsertScalar: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -14695,7 +15489,13 @@ pub mod Microsoft {
                     *mut CompositionGetValueStatus,
                 )
                     -> windows_core::HRESULT,
-                TryGetQuaternion: usize,
+                pub TryGetQuaternion: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    *mut CompositionGetValueStatus,
+                )
+                    -> windows_core::HRESULT,
                 pub TryGetScalar: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -26744,12 +27544,135 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.IQuaternionKeyFrameAnimation",
                     );
             }
+            impl IQuaternionKeyFrameAnimation {
+                pub fn InsertKeyFrame(
+                    &self,
+                    normalizedprogresskey: f32,
+                    value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).InsertKeyFrame)(
+                            windows_core::Interface::as_raw(self),
+                            normalizedprogresskey,
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn InsertKeyFrameWithEasingFunction<P2>(
+                    &self,
+                    normalizedprogresskey: f32,
+                    value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    easingfunction: P2,
+                ) -> windows_core::Result<()>
+                where
+                    P2: windows_core::Param<CompositionEasingFunction>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).InsertKeyFrameWithEasingFunction)(
+                            windows_core::Interface::as_raw(self),
+                            normalizedprogresskey,
+                            value,
+                            easingfunction.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for IQuaternionKeyFrameAnimation {
                 const NAME: &'static str = "Microsoft.UI.Composition.IQuaternionKeyFrameAnimation";
+            }
+            pub trait IQuaternionKeyFrameAnimation_Impl: windows_core::IUnknownImpl {
+                fn InsertKeyFrame(
+                    &self,
+                    normalizedProgressKey: f32,
+                    value: &super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn InsertKeyFrameWithEasingFunction(
+                    &self,
+                    normalizedProgressKey: f32,
+                    value: &super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    easingFunction: windows_core::Ref<CompositionEasingFunction>,
+                ) -> windows_core::Result<()>;
+            }
+            impl IQuaternionKeyFrameAnimation_Vtbl {
+                pub const fn new<
+                    Identity: IQuaternionKeyFrameAnimation_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn InsertKeyFrame<
+                        Identity: IQuaternionKeyFrameAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        normalizedprogresskey: f32,
+                        value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IQuaternionKeyFrameAnimation_Impl::InsertKeyFrame(
+                                this,
+                                normalizedprogresskey,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertKeyFrameWithEasingFunction<
+                        Identity: IQuaternionKeyFrameAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        normalizedprogresskey: f32,
+                        value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                        easingfunction: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IQuaternionKeyFrameAnimation_Impl::InsertKeyFrameWithEasingFunction(
+                                this,
+                                normalizedprogresskey,
+                                core::mem::transmute(&value),
+                                core::mem::transmute_copy(&easingfunction),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IQuaternionKeyFrameAnimation,
+                            OFFSET,
+                        >(),
+                        InsertKeyFrame: InsertKeyFrame::<Identity, OFFSET>,
+                        InsertKeyFrameWithEasingFunction: InsertKeyFrameWithEasingFunction::<
+                            Identity,
+                            OFFSET,
+                        >,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IQuaternionKeyFrameAnimation as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct IQuaternionKeyFrameAnimation_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub InsertKeyFrame: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    f32,
+                    super::super::super::Windows::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
+                pub InsertKeyFrameWithEasingFunction:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        f32,
+                        super::super::super::Windows::Foundation::Numerics::Quaternion,
+                        *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 IRectangleClip,
@@ -31713,6 +32636,32 @@ pub mod Microsoft {
                         .ok()
                     }
                 }
+                pub fn Orientation(
+                    &self,
+                ) -> windows_core::Result<
+                    super::super::super::Windows::Foundation::Numerics::Quaternion,
+                > {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Orientation)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetOrientation(
+                    &self,
+                    value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetOrientation)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn Parent(&self) -> windows_core::Result<ContainerVisual> {
                     unsafe {
                         let mut result__ = core::mem::zeroed();
@@ -31853,6 +32802,638 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for IVisual {
                 const NAME: &'static str = "Microsoft.UI.Composition.IVisual";
             }
+            pub trait IVisual_Impl: windows_core::IUnknownImpl {
+                fn AnchorPoint(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn SetAnchorPoint(
+                    &self,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn BackfaceVisibility(&self)
+                -> windows_core::Result<CompositionBackfaceVisibility>;
+                fn SetBackfaceVisibility(
+                    &self,
+                    value: CompositionBackfaceVisibility,
+                ) -> windows_core::Result<()>;
+                fn BorderMode(&self) -> windows_core::Result<CompositionBorderMode>;
+                fn SetBorderMode(&self, value: CompositionBorderMode) -> windows_core::Result<()>;
+                fn CenterPoint(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetCenterPoint(
+                    &self,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn Clip(&self) -> windows_core::Result<CompositionClip>;
+                fn SetClip(
+                    &self,
+                    value: windows_core::Ref<CompositionClip>,
+                ) -> windows_core::Result<()>;
+                fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode>;
+                fn SetCompositeMode(
+                    &self,
+                    value: CompositionCompositeMode,
+                ) -> windows_core::Result<()>;
+                fn IsVisible(&self) -> windows_core::Result<bool>;
+                fn SetIsVisible(&self, value: bool) -> windows_core::Result<()>;
+                fn Offset(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetOffset(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()>;
+                fn Opacity(&self) -> windows_core::Result<f32>;
+                fn SetOpacity(&self, value: f32) -> windows_core::Result<()>;
+                fn Orientation(
+                    &self,
+                ) -> windows_core::Result<
+                    super::super::super::Windows::Foundation::Numerics::Quaternion,
+                >;
+                fn SetOrientation(
+                    &self,
+                    value: &super::super::super::Windows::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn Parent(&self) -> windows_core::Result<ContainerVisual>;
+                fn RotationAngle(&self) -> windows_core::Result<f32>;
+                fn SetRotationAngle(&self, value: f32) -> windows_core::Result<()>;
+                fn RotationAngleInDegrees(&self) -> windows_core::Result<f32>;
+                fn SetRotationAngleInDegrees(&self, value: f32) -> windows_core::Result<()>;
+                fn RotationAxis(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetRotationAxis(
+                    &self,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn Scale(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetScale(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()>;
+                fn Size(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn SetSize(&self, value: &windows_numerics::Vector2) -> windows_core::Result<()>;
+                fn TransformMatrix(&self) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn SetTransformMatrix(
+                    &self,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+            }
+            impl IVisual_Vtbl {
+                pub const fn new<Identity: IVisual_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn AnchorPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::AnchorPoint(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAnchorPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetAnchorPoint(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn BackfaceVisibility<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut CompositionBackfaceVisibility,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::BackfaceVisibility(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetBackfaceVisibility<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: CompositionBackfaceVisibility,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetBackfaceVisibility(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn BorderMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut CompositionBorderMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::BorderMode(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetBorderMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: CompositionBorderMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetBorderMode(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn CenterPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::CenterPoint(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetCenterPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetCenterPoint(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Clip<Identity: IVisual_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Clip(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetClip<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetClip(this, core::mem::transmute_copy(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn CompositeMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut CompositionCompositeMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::CompositeMode(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetCompositeMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: CompositionCompositeMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetCompositeMode(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn IsVisible<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::IsVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsVisible<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetIsVisible(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn Offset<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Offset(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOffset<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetOffset(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Opacity<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Opacity(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOpacity<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetOpacity(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn Orientation<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__ : * mut super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Orientation(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOrientation<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetOrientation(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Parent<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Parent(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RotationAngle<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::RotationAngle(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetRotationAngle<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetRotationAngle(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn RotationAngleInDegrees<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::RotationAngleInDegrees(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetRotationAngleInDegrees<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetRotationAngleInDegrees(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn RotationAxis<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::RotationAxis(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetRotationAxis<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetRotationAxis(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Scale<Identity: IVisual_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Scale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetScale<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetScale(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Size<Identity: IVisual_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Size(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetSize<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetSize(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn TransformMatrix<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::TransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetTransformMatrix<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetTransformMatrix(this, core::mem::transmute(&value))
+                                .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<Identity, IVisual, OFFSET>(),
+                        AnchorPoint: AnchorPoint::<Identity, OFFSET>,
+                        SetAnchorPoint: SetAnchorPoint::<Identity, OFFSET>,
+                        BackfaceVisibility: BackfaceVisibility::<Identity, OFFSET>,
+                        SetBackfaceVisibility: SetBackfaceVisibility::<Identity, OFFSET>,
+                        BorderMode: BorderMode::<Identity, OFFSET>,
+                        SetBorderMode: SetBorderMode::<Identity, OFFSET>,
+                        CenterPoint: CenterPoint::<Identity, OFFSET>,
+                        SetCenterPoint: SetCenterPoint::<Identity, OFFSET>,
+                        Clip: Clip::<Identity, OFFSET>,
+                        SetClip: SetClip::<Identity, OFFSET>,
+                        CompositeMode: CompositeMode::<Identity, OFFSET>,
+                        SetCompositeMode: SetCompositeMode::<Identity, OFFSET>,
+                        IsVisible: IsVisible::<Identity, OFFSET>,
+                        SetIsVisible: SetIsVisible::<Identity, OFFSET>,
+                        Offset: Offset::<Identity, OFFSET>,
+                        SetOffset: SetOffset::<Identity, OFFSET>,
+                        Opacity: Opacity::<Identity, OFFSET>,
+                        SetOpacity: SetOpacity::<Identity, OFFSET>,
+                        Orientation: Orientation::<Identity, OFFSET>,
+                        SetOrientation: SetOrientation::<Identity, OFFSET>,
+                        Parent: Parent::<Identity, OFFSET>,
+                        RotationAngle: RotationAngle::<Identity, OFFSET>,
+                        SetRotationAngle: SetRotationAngle::<Identity, OFFSET>,
+                        RotationAngleInDegrees: RotationAngleInDegrees::<Identity, OFFSET>,
+                        SetRotationAngleInDegrees: SetRotationAngleInDegrees::<Identity, OFFSET>,
+                        RotationAxis: RotationAxis::<Identity, OFFSET>,
+                        SetRotationAxis: SetRotationAxis::<Identity, OFFSET>,
+                        Scale: Scale::<Identity, OFFSET>,
+                        SetScale: SetScale::<Identity, OFFSET>,
+                        Size: Size::<Identity, OFFSET>,
+                        SetSize: SetSize::<Identity, OFFSET>,
+                        TransformMatrix: TransformMatrix::<Identity, OFFSET>,
+                        SetTransformMatrix: SetTransformMatrix::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IVisual as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct IVisual_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -31936,8 +33517,16 @@ pub mod Microsoft {
                 ) -> windows_core::HRESULT,
                 pub SetOpacity:
                     unsafe extern "system" fn(*mut core::ffi::c_void, f32) -> windows_core::HRESULT,
-                Orientation: usize,
-                SetOrientation: usize,
+                pub Orientation: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
+                pub SetOrientation: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
                 pub Parent: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut *mut core::ffi::c_void,
@@ -44629,6 +46218,32 @@ pub mod Microsoft {
                         );
                 }
                 impl ISceneModelTransform {
+                    pub fn Orientation(
+                        &self,
+                    ) -> windows_core::Result<
+                        super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    > {
+                        unsafe {
+                            let mut result__ = core::mem::zeroed();
+                            (windows_core::Interface::vtable(self).Orientation)(
+                                windows_core::Interface::as_raw(self),
+                                &mut result__,
+                            )
+                            .map(|| result__)
+                        }
+                    }
+                    pub fn SetOrientation(
+                        &self,
+                        value : super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::Result<()> {
+                        unsafe {
+                            (windows_core::Interface::vtable(self).SetOrientation)(
+                                windows_core::Interface::as_raw(self),
+                                value,
+                            )
+                            .ok()
+                        }
+                    }
                     pub fn RotationAngle(&self) -> windows_core::Result<f32> {
                         unsafe {
                             let mut result__ = core::mem::zeroed();
@@ -44741,11 +46356,285 @@ pub mod Microsoft {
                     const NAME: &'static str =
                         "Microsoft.UI.Composition.Scenes.ISceneModelTransform";
                 }
+                pub trait ISceneModelTransform_Impl: windows_core::IUnknownImpl {
+                    fn Orientation(
+                        &self,
+                    ) -> windows_core::Result<
+                        super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    >;
+                    fn SetOrientation(
+                        &self,
+                        value : & super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::Result<()>;
+                    fn RotationAngle(&self) -> windows_core::Result<f32>;
+                    fn SetRotationAngle(&self, value: f32) -> windows_core::Result<()>;
+                    fn RotationAngleInDegrees(&self) -> windows_core::Result<f32>;
+                    fn SetRotationAngleInDegrees(&self, value: f32) -> windows_core::Result<()>;
+                    fn RotationAxis(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                    fn SetRotationAxis(
+                        &self,
+                        value: &windows_numerics::Vector3,
+                    ) -> windows_core::Result<()>;
+                    fn Scale(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                    fn SetScale(
+                        &self,
+                        value: &windows_numerics::Vector3,
+                    ) -> windows_core::Result<()>;
+                    fn Translation(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                    fn SetTranslation(
+                        &self,
+                        value: &windows_numerics::Vector3,
+                    ) -> windows_core::Result<()>;
+                }
+                impl ISceneModelTransform_Vtbl {
+                    pub const fn new<Identity: ISceneModelTransform_Impl, const OFFSET: isize>()
+                    -> Self {
+                        unsafe extern "system" fn Orientation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__ : * mut super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::Orientation(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetOrientation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value : super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetOrientation(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        unsafe extern "system" fn RotationAngle<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::RotationAngle(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetRotationAngle<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetRotationAngle(this, value).into()
+                            }
+                        }
+                        unsafe extern "system" fn RotationAngleInDegrees<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::RotationAngleInDegrees(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetRotationAngleInDegrees<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetRotationAngleInDegrees(this, value)
+                                    .into()
+                            }
+                        }
+                        unsafe extern "system" fn RotationAxis<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::RotationAxis(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetRotationAxis<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetRotationAxis(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        unsafe extern "system" fn Scale<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::Scale(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetScale<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetScale(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        unsafe extern "system" fn Translation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::Translation(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetTranslation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetTranslation(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        Self {
+                            base__: windows_core::IInspectable_Vtbl::new::<
+                                Identity,
+                                ISceneModelTransform,
+                                OFFSET,
+                            >(),
+                            Orientation: Orientation::<Identity, OFFSET>,
+                            SetOrientation: SetOrientation::<Identity, OFFSET>,
+                            RotationAngle: RotationAngle::<Identity, OFFSET>,
+                            SetRotationAngle: SetRotationAngle::<Identity, OFFSET>,
+                            RotationAngleInDegrees: RotationAngleInDegrees::<Identity, OFFSET>,
+                            SetRotationAngleInDegrees: SetRotationAngleInDegrees::<Identity, OFFSET>,
+                            RotationAxis: RotationAxis::<Identity, OFFSET>,
+                            SetRotationAxis: SetRotationAxis::<Identity, OFFSET>,
+                            Scale: Scale::<Identity, OFFSET>,
+                            SetScale: SetScale::<Identity, OFFSET>,
+                            Translation: Translation::<Identity, OFFSET>,
+                            SetTranslation: SetTranslation::<Identity, OFFSET>,
+                        }
+                    }
+                    pub fn matches(iid: &windows_core::GUID) -> bool {
+                        iid == &<ISceneModelTransform as windows_core::Interface>::IID
+                    }
+                }
                 #[repr(C)]
                 pub struct ISceneModelTransform_Vtbl {
                     pub base__: windows_core::IInspectable_Vtbl,
-                    Orientation: usize,
-                    SetOrientation: usize,
+                    pub Orientation: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    )
+                        -> windows_core::HRESULT,
+                    pub SetOrientation: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        super::super::super::super::Windows::Foundation::Numerics::Quaternion,
+                    )
+                        -> windows_core::HRESULT,
                     pub RotationAngle: unsafe extern "system" fn(
                         *mut core::ffi::c_void,
                         *mut f32,
@@ -49348,6 +51237,52 @@ pub mod Windows {
                 windows_core::imp::ConstBuffer::from_slice(
                     b"struct(Windows.Foundation.Point;f4;f4)",
                 );
+        }
+        pub mod Numerics {
+            #[repr(C)]
+            #[derive(Clone, Copy, Debug, Default, PartialEq)]
+            pub struct Plane {
+                pub normal: windows_numerics::Vector3,
+                pub d: f32,
+            }
+            impl windows_core::imp::TypeKind for Plane {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for Plane {
+                const SIGNATURE : windows_core::imp::ConstBuffer = windows_core::imp::ConstBuffer::from_slice (b"struct(Windows.Foundation.Numerics.Plane;struct(Windows.Foundation.Numerics.Vector3;f4;f4;f4);f4)") ;
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy, Debug, Default, PartialEq)]
+            pub struct Quaternion {
+                pub x: f32,
+                pub y: f32,
+                pub z: f32,
+                pub w: f32,
+            }
+            impl windows_core::imp::TypeKind for Quaternion {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for Quaternion {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"struct(Windows.Foundation.Numerics.Quaternion;f4;f4;f4;f4)",
+                    );
+            }
+            #[repr(C)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct Rational {
+                pub numerator: u32,
+                pub denominator: u32,
+            }
+            impl windows_core::imp::TypeKind for Rational {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for Rational {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"struct(Windows.Foundation.Numerics.Rational;u4;u4)",
+                    );
+            }
         }
     }
     pub mod Graphics {
@@ -55155,6 +57090,20 @@ pub mod Windows {
                         .ok()
                     }
                 }
+                pub fn SetQuaternionParameter(
+                    &self,
+                    key: &str,
+                    value: super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetQuaternionParameter)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(key)),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn SetReferenceParameter<P1>(
                     &self,
                     key: &str,
@@ -55232,6 +57181,281 @@ pub mod Windows {
             impl windows_core::RuntimeName for ICompositionAnimation {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionAnimation";
             }
+            pub trait ICompositionAnimation_Impl: windows_core::IUnknownImpl {
+                fn ClearAllParameters(&self) -> windows_core::Result<()>;
+                fn ClearParameter(&self, key: &windows_core::HSTRING) -> windows_core::Result<()>;
+                fn SetColorParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &super::Color,
+                ) -> windows_core::Result<()>;
+                fn SetMatrix3x2Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix3x2,
+                ) -> windows_core::Result<()>;
+                fn SetMatrix4x4Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+                fn SetQuaternionParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn SetReferenceParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    compositionObject: windows_core::Ref<CompositionObject>,
+                ) -> windows_core::Result<()>;
+                fn SetScalarParameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: f32,
+                ) -> windows_core::Result<()>;
+                fn SetVector2Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn SetVector3Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn SetVector4Parameter(
+                    &self,
+                    key: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector4,
+                ) -> windows_core::Result<()>;
+            }
+            impl ICompositionAnimation_Vtbl {
+                pub const fn new<Identity: ICompositionAnimation_Impl, const OFFSET: isize>() -> Self
+                {
+                    unsafe extern "system" fn ClearAllParameters<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::ClearAllParameters(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn ClearParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::ClearParameter(
+                                this,
+                                core::mem::transmute(&key),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetColorParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: super::Color,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetColorParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetMatrix3x2Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix3x2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetMatrix3x2Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetMatrix4x4Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetMatrix4x4Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetQuaternionParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetQuaternionParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetReferenceParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        compositionobject: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetReferenceParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute_copy(&compositionobject),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetScalarParameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetScalarParameter(
+                                this,
+                                core::mem::transmute(&key),
+                                value,
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetVector2Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetVector2Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetVector3Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetVector3Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SetVector4Parameter<
+                        Identity: ICompositionAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        key: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionAnimation_Impl::SetVector4Parameter(
+                                this,
+                                core::mem::transmute(&key),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionAnimation,
+                            OFFSET,
+                        >(),
+                        ClearAllParameters: ClearAllParameters::<Identity, OFFSET>,
+                        ClearParameter: ClearParameter::<Identity, OFFSET>,
+                        SetColorParameter: SetColorParameter::<Identity, OFFSET>,
+                        SetMatrix3x2Parameter: SetMatrix3x2Parameter::<Identity, OFFSET>,
+                        SetMatrix4x4Parameter: SetMatrix4x4Parameter::<Identity, OFFSET>,
+                        SetQuaternionParameter: SetQuaternionParameter::<Identity, OFFSET>,
+                        SetReferenceParameter: SetReferenceParameter::<Identity, OFFSET>,
+                        SetScalarParameter: SetScalarParameter::<Identity, OFFSET>,
+                        SetVector2Parameter: SetVector2Parameter::<Identity, OFFSET>,
+                        SetVector3Parameter: SetVector3Parameter::<Identity, OFFSET>,
+                        SetVector4Parameter: SetVector4Parameter::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionAnimation as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionAnimation_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -55260,7 +57484,12 @@ pub mod Windows {
                     windows_numerics::Matrix4x4,
                 )
                     -> windows_core::HRESULT,
-                SetQuaternionParameter: usize,
+                pub SetQuaternionParameter: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::super::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
                 pub SetReferenceParameter: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -63762,6 +65991,20 @@ pub mod Windows {
                         .ok()
                     }
                 }
+                pub fn InsertQuaternion(
+                    &self,
+                    propertyname: &str,
+                    value: super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).InsertQuaternion)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(propertyname)),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn InsertScalar(
                     &self,
                     propertyname: &str,
@@ -63866,6 +66109,22 @@ pub mod Windows {
                         .map(|| result__)
                     }
                 }
+                pub fn TryGetQuaternion(
+                    &self,
+                    propertyname: &str,
+                    value: &mut super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<CompositionGetValueStatus> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).TryGetQuaternion)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(propertyname)),
+                            value,
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
                 pub fn TryGetScalar(
                     &self,
                     propertyname: &str,
@@ -63934,6 +66193,471 @@ pub mod Windows {
             impl windows_core::RuntimeName for ICompositionPropertySet {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionPropertySet";
             }
+            pub trait ICompositionPropertySet_Impl: windows_core::IUnknownImpl {
+                fn InsertColor(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &super::Color,
+                ) -> windows_core::Result<()>;
+                fn InsertMatrix3x2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix3x2,
+                ) -> windows_core::Result<()>;
+                fn InsertMatrix4x4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+                fn InsertQuaternion(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn InsertScalar(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: f32,
+                ) -> windows_core::Result<()>;
+                fn InsertVector2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn InsertVector3(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn InsertVector4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &windows_numerics::Vector4,
+                ) -> windows_core::Result<()>;
+                fn TryGetColor(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut super::Color,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetMatrix3x2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Matrix3x2,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetMatrix4x4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetQuaternion(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetScalar(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut f32,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetVector2(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Vector2,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetVector3(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Vector3,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+                fn TryGetVector4(
+                    &self,
+                    propertyName: &windows_core::HSTRING,
+                    value: &mut windows_numerics::Vector4,
+                ) -> windows_core::Result<CompositionGetValueStatus>;
+            }
+            impl ICompositionPropertySet_Vtbl {
+                pub const fn new<Identity: ICompositionPropertySet_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn InsertColor<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: super::Color,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertColor(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertMatrix3x2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix3x2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertMatrix3x2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertMatrix4x4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertMatrix4x4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertQuaternion<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertQuaternion(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertScalar<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertScalar(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                value,
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertVector2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertVector2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertVector3<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertVector3(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertVector4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionPropertySet_Impl::InsertVector4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn TryGetColor<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut super::Color,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetColor(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetMatrix3x2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Matrix3x2,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetMatrix3x2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetMatrix4x4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Matrix4x4,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetMatrix4x4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetQuaternion<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut super::super::Foundation::Numerics::Quaternion,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetQuaternion(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetScalar<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut f32,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetScalar(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetVector2<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Vector2,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetVector2(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetVector3<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Vector3,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetVector3(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryGetVector4<
+                        Identity: ICompositionPropertySet_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        propertyname: *mut core::ffi::c_void,
+                        value: *mut windows_numerics::Vector4,
+                        result__: *mut CompositionGetValueStatus,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionPropertySet_Impl::TryGetVector4(
+                                this,
+                                core::mem::transmute(&propertyname),
+                                core::mem::transmute_copy(&value),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionPropertySet,
+                            OFFSET,
+                        >(),
+                        InsertColor: InsertColor::<Identity, OFFSET>,
+                        InsertMatrix3x2: InsertMatrix3x2::<Identity, OFFSET>,
+                        InsertMatrix4x4: InsertMatrix4x4::<Identity, OFFSET>,
+                        InsertQuaternion: InsertQuaternion::<Identity, OFFSET>,
+                        InsertScalar: InsertScalar::<Identity, OFFSET>,
+                        InsertVector2: InsertVector2::<Identity, OFFSET>,
+                        InsertVector3: InsertVector3::<Identity, OFFSET>,
+                        InsertVector4: InsertVector4::<Identity, OFFSET>,
+                        TryGetColor: TryGetColor::<Identity, OFFSET>,
+                        TryGetMatrix3x2: TryGetMatrix3x2::<Identity, OFFSET>,
+                        TryGetMatrix4x4: TryGetMatrix4x4::<Identity, OFFSET>,
+                        TryGetQuaternion: TryGetQuaternion::<Identity, OFFSET>,
+                        TryGetScalar: TryGetScalar::<Identity, OFFSET>,
+                        TryGetVector2: TryGetVector2::<Identity, OFFSET>,
+                        TryGetVector3: TryGetVector3::<Identity, OFFSET>,
+                        TryGetVector4: TryGetVector4::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionPropertySet as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionPropertySet_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -63955,7 +66679,12 @@ pub mod Windows {
                     windows_numerics::Matrix4x4,
                 )
                     -> windows_core::HRESULT,
-                InsertQuaternion: usize,
+                pub InsertQuaternion: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::super::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
                 pub InsertScalar: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -64001,7 +66730,13 @@ pub mod Windows {
                     *mut CompositionGetValueStatus,
                 )
                     -> windows_core::HRESULT,
-                TryGetQuaternion: usize,
+                pub TryGetQuaternion: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut super::super::Foundation::Numerics::Quaternion,
+                    *mut CompositionGetValueStatus,
+                )
+                    -> windows_core::HRESULT,
                 pub TryGetScalar: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -76736,12 +79471,135 @@ pub mod Windows {
                         b"Windows.UI.Composition.IQuaternionKeyFrameAnimation",
                     );
             }
+            impl IQuaternionKeyFrameAnimation {
+                pub fn InsertKeyFrame(
+                    &self,
+                    normalizedprogresskey: f32,
+                    value: super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).InsertKeyFrame)(
+                            windows_core::Interface::as_raw(self),
+                            normalizedprogresskey,
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn InsertKeyFrameWithEasingFunction<P2>(
+                    &self,
+                    normalizedprogresskey: f32,
+                    value: super::super::Foundation::Numerics::Quaternion,
+                    easingfunction: P2,
+                ) -> windows_core::Result<()>
+                where
+                    P2: windows_core::Param<CompositionEasingFunction>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).InsertKeyFrameWithEasingFunction)(
+                            windows_core::Interface::as_raw(self),
+                            normalizedprogresskey,
+                            value,
+                            easingfunction.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for IQuaternionKeyFrameAnimation {
                 const NAME: &'static str = "Windows.UI.Composition.IQuaternionKeyFrameAnimation";
+            }
+            pub trait IQuaternionKeyFrameAnimation_Impl: windows_core::IUnknownImpl {
+                fn InsertKeyFrame(
+                    &self,
+                    normalizedProgressKey: f32,
+                    value: &super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn InsertKeyFrameWithEasingFunction(
+                    &self,
+                    normalizedProgressKey: f32,
+                    value: &super::super::Foundation::Numerics::Quaternion,
+                    easingFunction: windows_core::Ref<CompositionEasingFunction>,
+                ) -> windows_core::Result<()>;
+            }
+            impl IQuaternionKeyFrameAnimation_Vtbl {
+                pub const fn new<
+                    Identity: IQuaternionKeyFrameAnimation_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn InsertKeyFrame<
+                        Identity: IQuaternionKeyFrameAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        normalizedprogresskey: f32,
+                        value: super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IQuaternionKeyFrameAnimation_Impl::InsertKeyFrame(
+                                this,
+                                normalizedprogresskey,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn InsertKeyFrameWithEasingFunction<
+                        Identity: IQuaternionKeyFrameAnimation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        normalizedprogresskey: f32,
+                        value: super::super::Foundation::Numerics::Quaternion,
+                        easingfunction: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IQuaternionKeyFrameAnimation_Impl::InsertKeyFrameWithEasingFunction(
+                                this,
+                                normalizedprogresskey,
+                                core::mem::transmute(&value),
+                                core::mem::transmute_copy(&easingfunction),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IQuaternionKeyFrameAnimation,
+                            OFFSET,
+                        >(),
+                        InsertKeyFrame: InsertKeyFrame::<Identity, OFFSET>,
+                        InsertKeyFrameWithEasingFunction: InsertKeyFrameWithEasingFunction::<
+                            Identity,
+                            OFFSET,
+                        >,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IQuaternionKeyFrameAnimation as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct IQuaternionKeyFrameAnimation_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub InsertKeyFrame: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    f32,
+                    super::super::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
+                pub InsertKeyFrameWithEasingFunction:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        f32,
+                        super::super::Foundation::Numerics::Quaternion,
+                        *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 IRectangleClip,
@@ -81683,6 +84541,31 @@ pub mod Windows {
                         .ok()
                     }
                 }
+                pub fn Orientation(
+                    &self,
+                ) -> windows_core::Result<super::super::Foundation::Numerics::Quaternion>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Orientation)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetOrientation(
+                    &self,
+                    value: super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetOrientation)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn Parent(&self) -> windows_core::Result<ContainerVisual> {
                     unsafe {
                         let mut result__ = core::mem::zeroed();
@@ -81823,6 +84706,636 @@ pub mod Windows {
             impl windows_core::RuntimeName for IVisual {
                 const NAME: &'static str = "Windows.UI.Composition.IVisual";
             }
+            pub trait IVisual_Impl: windows_core::IUnknownImpl {
+                fn AnchorPoint(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn SetAnchorPoint(
+                    &self,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn BackfaceVisibility(&self)
+                -> windows_core::Result<CompositionBackfaceVisibility>;
+                fn SetBackfaceVisibility(
+                    &self,
+                    value: CompositionBackfaceVisibility,
+                ) -> windows_core::Result<()>;
+                fn BorderMode(&self) -> windows_core::Result<CompositionBorderMode>;
+                fn SetBorderMode(&self, value: CompositionBorderMode) -> windows_core::Result<()>;
+                fn CenterPoint(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetCenterPoint(
+                    &self,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn Clip(&self) -> windows_core::Result<CompositionClip>;
+                fn SetClip(
+                    &self,
+                    value: windows_core::Ref<CompositionClip>,
+                ) -> windows_core::Result<()>;
+                fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode>;
+                fn SetCompositeMode(
+                    &self,
+                    value: CompositionCompositeMode,
+                ) -> windows_core::Result<()>;
+                fn IsVisible(&self) -> windows_core::Result<bool>;
+                fn SetIsVisible(&self, value: bool) -> windows_core::Result<()>;
+                fn Offset(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetOffset(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()>;
+                fn Opacity(&self) -> windows_core::Result<f32>;
+                fn SetOpacity(&self, value: f32) -> windows_core::Result<()>;
+                fn Orientation(
+                    &self,
+                ) -> windows_core::Result<super::super::Foundation::Numerics::Quaternion>;
+                fn SetOrientation(
+                    &self,
+                    value: &super::super::Foundation::Numerics::Quaternion,
+                ) -> windows_core::Result<()>;
+                fn Parent(&self) -> windows_core::Result<ContainerVisual>;
+                fn RotationAngle(&self) -> windows_core::Result<f32>;
+                fn SetRotationAngle(&self, value: f32) -> windows_core::Result<()>;
+                fn RotationAngleInDegrees(&self) -> windows_core::Result<f32>;
+                fn SetRotationAngleInDegrees(&self, value: f32) -> windows_core::Result<()>;
+                fn RotationAxis(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetRotationAxis(
+                    &self,
+                    value: &windows_numerics::Vector3,
+                ) -> windows_core::Result<()>;
+                fn Scale(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                fn SetScale(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()>;
+                fn Size(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn SetSize(&self, value: &windows_numerics::Vector2) -> windows_core::Result<()>;
+                fn TransformMatrix(&self) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn SetTransformMatrix(
+                    &self,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+            }
+            impl IVisual_Vtbl {
+                pub const fn new<Identity: IVisual_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn AnchorPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::AnchorPoint(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAnchorPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetAnchorPoint(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn BackfaceVisibility<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut CompositionBackfaceVisibility,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::BackfaceVisibility(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetBackfaceVisibility<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: CompositionBackfaceVisibility,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetBackfaceVisibility(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn BorderMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut CompositionBorderMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::BorderMode(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetBorderMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: CompositionBorderMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetBorderMode(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn CenterPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::CenterPoint(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetCenterPoint<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetCenterPoint(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Clip<Identity: IVisual_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Clip(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetClip<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetClip(this, core::mem::transmute_copy(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn CompositeMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut CompositionCompositeMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::CompositeMode(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetCompositeMode<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: CompositionCompositeMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetCompositeMode(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn IsVisible<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::IsVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsVisible<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetIsVisible(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn Offset<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Offset(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOffset<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetOffset(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Opacity<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Opacity(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOpacity<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetOpacity(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn Orientation<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Orientation(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOrientation<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetOrientation(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Parent<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Parent(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RotationAngle<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::RotationAngle(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetRotationAngle<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetRotationAngle(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn RotationAngleInDegrees<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::RotationAngleInDegrees(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetRotationAngleInDegrees<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetRotationAngleInDegrees(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn RotationAxis<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::RotationAxis(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetRotationAxis<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetRotationAxis(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Scale<Identity: IVisual_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Scale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetScale<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector3,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetScale(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn Size<Identity: IVisual_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::Size(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetSize<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetSize(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn TransformMatrix<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IVisual_Impl::TransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetTransformMatrix<
+                        Identity: IVisual_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IVisual_Impl::SetTransformMatrix(this, core::mem::transmute(&value))
+                                .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<Identity, IVisual, OFFSET>(),
+                        AnchorPoint: AnchorPoint::<Identity, OFFSET>,
+                        SetAnchorPoint: SetAnchorPoint::<Identity, OFFSET>,
+                        BackfaceVisibility: BackfaceVisibility::<Identity, OFFSET>,
+                        SetBackfaceVisibility: SetBackfaceVisibility::<Identity, OFFSET>,
+                        BorderMode: BorderMode::<Identity, OFFSET>,
+                        SetBorderMode: SetBorderMode::<Identity, OFFSET>,
+                        CenterPoint: CenterPoint::<Identity, OFFSET>,
+                        SetCenterPoint: SetCenterPoint::<Identity, OFFSET>,
+                        Clip: Clip::<Identity, OFFSET>,
+                        SetClip: SetClip::<Identity, OFFSET>,
+                        CompositeMode: CompositeMode::<Identity, OFFSET>,
+                        SetCompositeMode: SetCompositeMode::<Identity, OFFSET>,
+                        IsVisible: IsVisible::<Identity, OFFSET>,
+                        SetIsVisible: SetIsVisible::<Identity, OFFSET>,
+                        Offset: Offset::<Identity, OFFSET>,
+                        SetOffset: SetOffset::<Identity, OFFSET>,
+                        Opacity: Opacity::<Identity, OFFSET>,
+                        SetOpacity: SetOpacity::<Identity, OFFSET>,
+                        Orientation: Orientation::<Identity, OFFSET>,
+                        SetOrientation: SetOrientation::<Identity, OFFSET>,
+                        Parent: Parent::<Identity, OFFSET>,
+                        RotationAngle: RotationAngle::<Identity, OFFSET>,
+                        SetRotationAngle: SetRotationAngle::<Identity, OFFSET>,
+                        RotationAngleInDegrees: RotationAngleInDegrees::<Identity, OFFSET>,
+                        SetRotationAngleInDegrees: SetRotationAngleInDegrees::<Identity, OFFSET>,
+                        RotationAxis: RotationAxis::<Identity, OFFSET>,
+                        SetRotationAxis: SetRotationAxis::<Identity, OFFSET>,
+                        Scale: Scale::<Identity, OFFSET>,
+                        SetScale: SetScale::<Identity, OFFSET>,
+                        Size: Size::<Identity, OFFSET>,
+                        SetSize: SetSize::<Identity, OFFSET>,
+                        TransformMatrix: TransformMatrix::<Identity, OFFSET>,
+                        SetTransformMatrix: SetTransformMatrix::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IVisual as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct IVisual_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -81906,8 +85419,16 @@ pub mod Windows {
                 ) -> windows_core::HRESULT,
                 pub SetOpacity:
                     unsafe extern "system" fn(*mut core::ffi::c_void, f32) -> windows_core::HRESULT,
-                Orientation: usize,
-                SetOrientation: usize,
+                pub Orientation: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
+                pub SetOrientation: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Foundation::Numerics::Quaternion,
+                )
+                    -> windows_core::HRESULT,
                 pub Parent: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut *mut core::ffi::c_void,
@@ -94758,6 +98279,31 @@ pub mod Windows {
                         );
                 }
                 impl ISceneModelTransform {
+                    pub fn Orientation(
+                        &self,
+                    ) -> windows_core::Result<super::super::super::Foundation::Numerics::Quaternion>
+                    {
+                        unsafe {
+                            let mut result__ = core::mem::zeroed();
+                            (windows_core::Interface::vtable(self).Orientation)(
+                                windows_core::Interface::as_raw(self),
+                                &mut result__,
+                            )
+                            .map(|| result__)
+                        }
+                    }
+                    pub fn SetOrientation(
+                        &self,
+                        value: super::super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::Result<()> {
+                        unsafe {
+                            (windows_core::Interface::vtable(self).SetOrientation)(
+                                windows_core::Interface::as_raw(self),
+                                value,
+                            )
+                            .ok()
+                        }
+                    }
                     pub fn RotationAngle(&self) -> windows_core::Result<f32> {
                         unsafe {
                             let mut result__ = core::mem::zeroed();
@@ -94869,11 +98415,283 @@ pub mod Windows {
                 impl windows_core::RuntimeName for ISceneModelTransform {
                     const NAME: &'static str = "Windows.UI.Composition.Scenes.ISceneModelTransform";
                 }
+                pub trait ISceneModelTransform_Impl: windows_core::IUnknownImpl {
+                    fn Orientation(
+                        &self,
+                    ) -> windows_core::Result<super::super::super::Foundation::Numerics::Quaternion>;
+                    fn SetOrientation(
+                        &self,
+                        value: &super::super::super::Foundation::Numerics::Quaternion,
+                    ) -> windows_core::Result<()>;
+                    fn RotationAngle(&self) -> windows_core::Result<f32>;
+                    fn SetRotationAngle(&self, value: f32) -> windows_core::Result<()>;
+                    fn RotationAngleInDegrees(&self) -> windows_core::Result<f32>;
+                    fn SetRotationAngleInDegrees(&self, value: f32) -> windows_core::Result<()>;
+                    fn RotationAxis(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                    fn SetRotationAxis(
+                        &self,
+                        value: &windows_numerics::Vector3,
+                    ) -> windows_core::Result<()>;
+                    fn Scale(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                    fn SetScale(
+                        &self,
+                        value: &windows_numerics::Vector3,
+                    ) -> windows_core::Result<()>;
+                    fn Translation(&self) -> windows_core::Result<windows_numerics::Vector3>;
+                    fn SetTranslation(
+                        &self,
+                        value: &windows_numerics::Vector3,
+                    ) -> windows_core::Result<()>;
+                }
+                impl ISceneModelTransform_Vtbl {
+                    pub const fn new<Identity: ISceneModelTransform_Impl, const OFFSET: isize>()
+                    -> Self {
+                        unsafe extern "system" fn Orientation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut super::super::super::Foundation::Numerics::Quaternion,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::Orientation(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetOrientation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: super::super::super::Foundation::Numerics::Quaternion,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetOrientation(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        unsafe extern "system" fn RotationAngle<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::RotationAngle(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetRotationAngle<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetRotationAngle(this, value).into()
+                            }
+                        }
+                        unsafe extern "system" fn RotationAngleInDegrees<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::RotationAngleInDegrees(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetRotationAngleInDegrees<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: f32,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetRotationAngleInDegrees(this, value)
+                                    .into()
+                            }
+                        }
+                        unsafe extern "system" fn RotationAxis<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::RotationAxis(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetRotationAxis<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetRotationAxis(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        unsafe extern "system" fn Scale<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::Scale(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetScale<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetScale(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        unsafe extern "system" fn Translation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ISceneModelTransform_Impl::Translation(this) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn SetTranslation<
+                            Identity: ISceneModelTransform_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            value: windows_numerics::Vector3,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ISceneModelTransform_Impl::SetTranslation(
+                                    this,
+                                    core::mem::transmute(&value),
+                                )
+                                .into()
+                            }
+                        }
+                        Self {
+                            base__: windows_core::IInspectable_Vtbl::new::<
+                                Identity,
+                                ISceneModelTransform,
+                                OFFSET,
+                            >(),
+                            Orientation: Orientation::<Identity, OFFSET>,
+                            SetOrientation: SetOrientation::<Identity, OFFSET>,
+                            RotationAngle: RotationAngle::<Identity, OFFSET>,
+                            SetRotationAngle: SetRotationAngle::<Identity, OFFSET>,
+                            RotationAngleInDegrees: RotationAngleInDegrees::<Identity, OFFSET>,
+                            SetRotationAngleInDegrees: SetRotationAngleInDegrees::<Identity, OFFSET>,
+                            RotationAxis: RotationAxis::<Identity, OFFSET>,
+                            SetRotationAxis: SetRotationAxis::<Identity, OFFSET>,
+                            Scale: Scale::<Identity, OFFSET>,
+                            SetScale: SetScale::<Identity, OFFSET>,
+                            Translation: Translation::<Identity, OFFSET>,
+                            SetTranslation: SetTranslation::<Identity, OFFSET>,
+                        }
+                    }
+                    pub fn matches(iid: &windows_core::GUID) -> bool {
+                        iid == &<ISceneModelTransform as windows_core::Interface>::IID
+                    }
+                }
                 #[repr(C)]
                 pub struct ISceneModelTransform_Vtbl {
                     pub base__: windows_core::IInspectable_Vtbl,
-                    Orientation: usize,
-                    SetOrientation: usize,
+                    pub Orientation: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut super::super::super::Foundation::Numerics::Quaternion,
+                    )
+                        -> windows_core::HRESULT,
+                    pub SetOrientation: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        super::super::super::Foundation::Numerics::Quaternion,
+                    )
+                        -> windows_core::HRESULT,
                     pub RotationAngle: unsafe extern "system" fn(
                         *mut core::ffi::c_void,
                         *mut f32,

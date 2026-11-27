@@ -38,7 +38,7 @@ impl ICompositor_Impl for Compositor_Impl {
         not_implemented()
     }
     fn CreateContainerVisual(&self) -> windows_core::Result<ContainerVisual> {
-        not_implemented()
+        crate::visual::create()
     }
     fn CreateCubicBezierEasingFunction(
         &self,

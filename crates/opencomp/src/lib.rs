@@ -18,6 +18,8 @@
 pub mod bindings;
 #[cfg(windows)]
 mod compositor;
+#[cfg(windows)]
+mod visual;
 
 mod factory;
 
