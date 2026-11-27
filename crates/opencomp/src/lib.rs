@@ -281,6 +281,46 @@ mod abi {
     }
 
     #[test]
+    fn the_tree_reaches_the_renderer() {
+        let compositor = compositor();
+        let root = compositor.CreateContainerVisual().unwrap();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+
+        let visual: IVisual = sprite.cast().unwrap();
+        visual.SetSize(Vector2 { x: 8.0, y: 8.0 }).unwrap();
+        let brush: CompositionBrush = compositor
+            .CreateColorBrushWithColor(Color {
+                a: 255,
+                r: 255,
+                g: 0,
+                b: 0,
+            })
+            .unwrap()
+            .cast()
+            .unwrap();
+        let sprite_visual: ISpriteVisual = sprite.cast().unwrap();
+        sprite_visual.SetBrush(&brush).unwrap();
+        let children: IContainerVisual = root.cast().unwrap();
+        children.Children().unwrap().InsertAtTop(&sprite).unwrap();
+
+        let node = crate::node::resolve(&root).unwrap();
+        let tree = crate::node::snapshot_in(&node, Vector2 { x: 16.0, y: 16.0 }).unwrap();
+        // A machine without a GPU adapter on the CI runner cannot say anything either way.
+        let Some(mut renderer) = opencomp_core::Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0])
+        else {
+            return;
+        };
+        renderer.set_root(tree);
+        let pixels = renderer.render_to_pixels();
+        let pixel = |x: usize, y: usize| {
+            let at = (y * 16 + x) * 4;
+            [pixels[at], pixels[at + 1], pixels[at + 2], pixels[at + 3]]
+        };
+        assert_eq!(pixel(4, 4), [255, 0, 0, 255]);
+        assert_eq!(pixel(12, 12), [0, 0, 255, 255]);
+    }
+
+    #[test]
     fn an_object_only_answers_for_what_it_is() {
         let compositor = compositor();
         let sprite = compositor.CreateSpriteVisual().unwrap();
