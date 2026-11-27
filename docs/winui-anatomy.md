@@ -83,6 +83,32 @@ frame needs `ICompositionObject`, `IVisual`, `IContainerVisual`,
 `ICompositionSurface` and the compositor itself; everything else can answer
 `E_NOTIMPL` until something fails on it.
 
+### What XAML activates by name
+
+`Microsoft.ui.xaml.dll` carries exactly twelve UTF-16 strings that name a class in
+`Microsoft.UI.Composition` or `Microsoft.UI.Content`, one occurrence each:
+
+```
+Microsoft.UI.Composition.Compositor
+Microsoft.UI.Composition.CompositionObject
+Microsoft.UI.Composition.CompositionEasingFunction
+Microsoft.UI.Composition.CompositionPath
+Microsoft.UI.Composition.CompositionCapabilities
+Microsoft.UI.Composition.CompositionEffectSourceParameter
+Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration
+Microsoft.UI.Content.ContentIsland
+Microsoft.UI.Content.DesktopChildSiteBridge
+Microsoft.UI.Content.DesktopPopupSiteBridge
+Microsoft.UI.Content.CoreWindowSiteBridge
+Microsoft.UI.Content.ContentExternalBackdropLink
+```
+
+No visual class is in the list — `ContainerVisual`, `SpriteVisual` and the
+brushes are only ever created through the compositor instance — so a server that
+answers `DllGetActivationFactory` for `Compositor` covers the composition half.
+The `Content` half is where the window comes from, which matches the hosting
+section of [`architecture.md`](architecture.md).
+
 ## The private boundary
 
 Of the 2,158 unresolved identifiers, 14 also appear in `dcompi.dll`. Those are
