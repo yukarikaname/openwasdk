@@ -82,6 +82,25 @@ The follow-on interfaces exist as stubs on purpose: a client asks for them with
 `QueryInterface` before it calls anything, and a failed QI throws, while a method
 that returns `E_NOTIMPL` can be handled.
 
+### Hosting
+
+A composition tree reaches a window through `Microsoft.UI.Content`, not through
+Composition itself. `DesktopChildSiteBridge.Create(Compositor, WindowId)` takes
+the HWND as a `WindowId`, the bridge `Connect`s a `ContentIsland` that owns the
+root `Visual`, and the island is observed through `ContentSite` and
+`ContentSiteView`. That namespace is 51 interfaces and 214 methods, so it is a
+subsystem of its own rather than a shim.
+
+The older route, `ICompositorDesktopInterop::CreateDesktopWindowTarget`, is a C++
+header interop: it is not in any `.winmd`, so `comptrace` cannot see it, and a
+client that uses it links the header's IID and calls into the DLL through a
+`QI` we would have to answer anyway.
+
+Both routes end at the same place: an HWND whose swapchain this project's
+renderer can own (wgpu accepts a raw Win32 window handle), and whatever the
+client drew into composition surfaces, which for XAML means D3D interop. The
+tree we already build is the part that does not need either.
+
 The renderer lives in `opencomp-core`, which contains no WinRT. That split is
 what makes macOS a first-class host for the compositor: the same visual tree
 renders through Metal on macOS, Vulkan on Linux and D3D12 elsewhere, and its
