@@ -5,12 +5,16 @@
 //! process when called, and we do not patch Wine: this rewrites the engine's own import
 //! slot after it is loaded, which changes nothing outside our process.
 //!
-//! The table is deliberately small and explicit. Every entry is a function Wine stubs and
-//! a Win32 host can answer truthfully; anything else belongs in an issue, not here.
+//! The table is deliberately small and explicit. An entry either answers a function Wine
+//! stubs, or forwards one unchanged while saying when the engine calls it: when a start
+//! fails with a bare `E_NOINTERFACE` the interface the engine asked for is the only fact
+//! worth having, and nothing on the outside reports it.
 
 use std::ffi::c_void;
 use std::ptr;
+use std::sync::atomic::{AtomicPtr, Ordering};
 
+use windows_core::GUID;
 use windows_sys::Win32::Foundation::HMODULE;
 
 const IMAGE_IMPORT_DESCRIPTOR_SIZE: usize = 20;
@@ -39,14 +43,116 @@ unsafe extern "system" fn windowing_model(_token: *mut c_void, model: *mut i32) 
 struct Entry {
     library: &'static str,
     name: &'static str,
-    replacement: unsafe extern "system" fn(*mut c_void, *mut i32) -> i32,
+    replacement: Replacement,
+    /// Where the engine's own pointer is kept, when the replacement forwards to it.
+    original: Option<&'static AtomicPtr<c_void>>,
 }
 
-const ENTRIES: &[Entry] = &[Entry {
-    library: "KERNEL32.dll",
-    name: "AppPolicyGetWindowingModel",
-    replacement: windowing_model,
-}];
+enum Replacement {
+    /// `AppPolicyGetWindowingModel`: answered without asking Wine.
+    WindowingModel,
+    /// `RoGetActivationFactory`: traced, then answered by `combase`.
+    ActivationFactory,
+    /// `GetProcAddress`: one delay-loaded name is answered here instead.
+    GetProcAddress,
+}
+
+impl Entry {
+    fn pointer(&self) -> *mut c_void {
+        match self.replacement {
+            Replacement::WindowingModel => {
+                windowing_model as unsafe extern "system" fn(*mut c_void, *mut i32) -> i32
+                    as *mut c_void
+            }
+            Replacement::ActivationFactory => {
+                activation_factory
+                    as unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32
+                    as *mut c_void
+            }
+            Replacement::GetProcAddress => {
+                get_proc_address as unsafe extern "system" fn(*mut c_void, *const u8) -> *mut c_void
+                    as *mut c_void
+            }
+        }
+    }
+}
+
+/// The engine's own `RoGetActivationFactory`, taken over below.
+static RO_GET_ACTIVATION_FACTORY: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// Report what the engine asks for, then let `combase` answer.
+///
+/// A missing interface comes back as `E_NOINTERFACE` with no class and no id attached, so
+/// the pair has to be printed here or nowhere.
+unsafe extern "system" fn activation_factory(
+    class: *mut c_void,
+    iid: *const GUID,
+    out: *mut *mut c_void,
+) -> i32 {
+    type Original = unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32;
+    let traced = std::env::var_os("OPENCOMP_TRACE").is_some();
+    if traced && !iid.is_null() {
+        let iid = unsafe { *iid };
+        let tail: String = iid.data4.iter().map(|byte| format!("{byte:02x}")).collect();
+        eprintln!(
+            "xaml-probe: asking for {{{:08x}-{:04x}-{:04x}-{tail}}}",
+            iid.data1, iid.data2, iid.data3
+        );
+    }
+    let original: Original =
+        unsafe { std::mem::transmute(RO_GET_ACTIVATION_FACTORY.load(Ordering::Relaxed)) };
+    let result = unsafe { original(class, iid, out) };
+    if traced {
+        eprintln!("xaml-probe:   answered hr=0x{:08x}", result as u32);
+    }
+    result
+}
+
+/// The engine's own `GetProcAddress`, taken over below.
+static REAL_GET_PROC_ADDRESS: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// `CoreUICreate` from our messaging DLL, for the delay-loaded name to land on.
+static CORE_UI_CREATE: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// Answer the delay-loaded `CoreUICreate` with `function` instead of Wine's stub.
+pub fn answer_core_ui(function: *mut c_void) {
+    CORE_UI_CREATE.store(function, Ordering::Release);
+}
+
+/// Answer the one delay-loaded name, then behave exactly as `kernel32` does.
+unsafe extern "system" fn get_proc_address(module: *mut c_void, name: *const u8) -> *mut c_void {
+    if !name.is_null() && unsafe { name_matches(name, "CoreUICreate") } {
+        let answer = CORE_UI_CREATE.load(Ordering::Acquire);
+        if !answer.is_null() {
+            return answer;
+        }
+    }
+    type GetProcAddress = unsafe extern "system" fn(*mut c_void, *const u8) -> *mut c_void;
+    let real: GetProcAddress =
+        unsafe { std::mem::transmute(REAL_GET_PROC_ADDRESS.load(Ordering::Relaxed)) };
+    unsafe { real(module, name) }
+}
+
+const ENTRIES: &[Entry] = &[
+    Entry {
+        library: "KERNEL32.dll",
+        name: "AppPolicyGetWindowingModel",
+        replacement: Replacement::WindowingModel,
+        original: None,
+    },
+    Entry {
+        library: "api-ms-win-core-winrt-l1-1-0.dll",
+        name: "RoGetActivationFactory",
+        replacement: Replacement::ActivationFactory,
+        original: Some(&RO_GET_ACTIVATION_FACTORY),
+    },
+    Entry {
+        library: "KERNEL32.dll",
+        name: "GetProcAddress",
+        replacement: Replacement::GetProcAddress,
+        original: Some(&REAL_GET_PROC_ADDRESS),
+    },
+];
 
 /// Rewrite the import slots `module` resolved from a stubbed library.
 ///
@@ -146,7 +252,11 @@ unsafe fn install_in_thunks(
                 if writable == 0 {
                     return false;
                 }
-                unsafe { ptr::write_unaligned(slot, entry.replacement as *mut c_void) };
+                let previous = unsafe { ptr::read_unaligned(slot) };
+                if let Some(original) = entry.original {
+                    original.store(previous, Ordering::Relaxed);
+                }
+                unsafe { ptr::write_unaligned(slot, entry.pointer()) };
                 let mut ignored = 0u32;
                 unsafe { VirtualProtect(slot.cast(), 8, old, &mut ignored) };
                 return true;

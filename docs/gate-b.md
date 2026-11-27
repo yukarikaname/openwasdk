@@ -203,6 +203,9 @@ application, and it reaches further than `Start` does:
 
 ## What the next step is
 
+> Superseded by the section at the end of this file (2026-11-28): the dispatcher
+> answers, and the start now stops in the CoreUI session.
+
 The dispatcher is still what stands between the call and the callback: on Windows
 `Application.Start` waits for a queue, and under Wine `CoreMessagingXP` cannot be
 loaded at all. `opendispatch.dll` is the replacement in progress.
@@ -221,3 +224,76 @@ the line prints what it answers. Nothing in this worktree has observed that line
 there is no Windows host here, and Wine still fails before the callback. The Windows CI
 step is the first place it will be seen. `layout-probe` is deleted; its hand-written
 slots were the source of the faults the generated bindings avoid.
+
+## The window start under Wine, step by step (2026-11-28)
+
+The container is gone: the probe now builds on the host for `x86_64-pc-windows-gnu` and
+runs under a native Wine 11.21, so one run is a few seconds and the loop is measured in
+minutes. With `OPENCOMP_TRACE=1` the probe prints every activation the engine makes and
+every step it reaches.
+
+What `Application.Start` does under Wine today, in the order it happens:
+
+1. `RoInitialize(STA)`, then `Microsoft.UI.Dispatching.DispatcherQueueController`
+   (our `opendispatch.dll`) on the calling thread.
+2. `XamlCheckProcessRequirements`, `AppPolicyGetWindowingModel` (answered by
+   `crates/xaml-probe`'s import shim, since Wine has it as a stub).
+3. `Windows.Foundation.Metadata.ApiInformation`, `Windows.ApplicationModel.DesignMode`,
+   `Windows.Foundation.PropertyValue`, `Windows.UI.ViewManagement.UISettings` -- all
+   answered by Wine.
+4. `Windows.ApplicationModel.Core.CoreApplication`, asked for
+   `{17b0e613-942a-422d-904c-f90dc71a7dae}`. Wine's `twinapi.appcore.dll` serves the
+   class and not that interface, and combase then returns `E_NOINTERFACE`, which the
+   engine reports as the failure of the whole start.
+5. `Microsoft.Internal.FrameworkUdk.dll` loads the system `coremessaging.dll` and calls
+   `CoreUICreate`, which Wine carries as a stub (`@ stub CoreUICreate` in
+   `dlls/coremessaging/coremessaging.spec`). A failure there is fatal: the engine passes
+   the HRESULT to `RoFailFastWithErrorContext` and Wine raises `c0000602`.
+
+Two shims answer those two walls.
+
+`crates/opencore` serves `Windows.ApplicationModel.Core.CoreApplication` from our side.
+The class is added to the activation manifest by `xwinui activation --add
+Windows.ApplicationModel.Core.CoreApplication=opencore.dll`; every interface the factory
+does not answer itself is forwarded to Wine's own `twinapi.appcore.dll`, so nothing about
+the class changes except the one interface. That interface is undocumented: it is not in
+the Windows SDK contract metadata, and `comptrace lookup` finds nothing. What the engine
+calls first is its slot 11, the add half of `FinalUnhandledErrorDetected`; the handler is
+kept and a token returned, and nothing ever fires it.
+
+`crates/coremessaging` serves `CoreUICreate`. Wine's file cannot be replaced by name (the
+builtin wins for a system DLL), so the probe takes over `GetProcAddress` in
+`Microsoft.Internal.FrameworkUdk.dll` and answers that one name from our DLL; everything
+else is forwarded. The object it returns answers the session interface
+`{4b2edab9-129b-4733-be15-356853d55ace}`, whose vtable starts at `IUnknown`: slot 3 hands
+back a registrar, slot 8 an item (`{fcd9d50d-0902-4a2d-ac94-b95c3316f6a0}`), slot 12 a
+handler registration, which is a struct whose first field is its vtable, not an object
+pointer. Every other slot refuses with `E_NOTIMPL` and names its number.
+
+The start now stops at the registrar: the engine asks it for
+`{37a94c05-1aa6-4cea-9049-083bba055cec}` and gets `E_NOINTERFACE`.
+
+### Why this is the hard part
+
+The chain above is the CoreUI conversation with the window system, and none of it is
+documented. Two independent projects have walked the same path and published what they
+saw: `zcomputerwiz/WineExplorer` (`docs/uwp/WINAPPSDK.md`) reports the same
+`CoreUICreate` stop, the same session interface, the same slots 3/8/12, and the same
+`{37a94c05}` question on the item; `Cencyte/Penguin-LGHUB` (`tools/wine/coreui_probe.c`)
+names the session interface `IMessageSession` and slot 3 `GetMessageRegistrar`, and notes
+that the real CoreMessaging gets past it only to need `NtAlpcConnectPortEx`, which no Wine
+implements. WineExplorer's conclusion after their own implementation is that the chain
+"costs one probe on Windows and one run" per layer, with no known depth.
+
+There is no Windows host in this worktree to probe against, so the next member can be
+answered only by guessing, one run at a time. Two ways out, in order of preference:
+
+- Find what makes `WindowsXamlManager` enter the `CoreWindowIntegration` route at all.
+  The route exists for a window-system-hosting conversation; a probe that creates its
+  window itself and drives its own dispatcher should not need it, and a version or
+  feature check answered the other way would skip the whole chain.
+- Continue the walk: answer `{37a94c05}`, log the slot the engine calls, answer the next
+  question. Each layer is a blind guess about semantics we cannot observe on Windows.
+
+The measurement is unchanged: it still has not run under Wine. Gate A's frame on Windows
+remains the only end-to-end evidence that the client draws through our compositor.
