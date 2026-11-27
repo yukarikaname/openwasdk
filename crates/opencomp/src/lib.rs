@@ -130,3 +130,89 @@ mod export_tests {
         assert!(factory.is_null());
     }
 }
+
+/// The ABI as a client sees it: activate the class, call the vtable, look at the tree.
+#[cfg(all(test, windows))]
+mod abi {
+    use crate::bindings::Microsoft::UI::Composition::{
+        CompositionBrush, ICompositor, IContainerVisual, ISpriteVisual, IVisual, InsetClip,
+    };
+    use crate::bindings::Windows::UI::Color;
+    use windows_core::Interface;
+    use windows_numerics::{Vector2, Vector3};
+
+    fn compositor() -> ICompositor {
+        crate::compositor::instance().unwrap().cast().unwrap()
+    }
+
+    #[test]
+    fn a_sprite_becomes_a_child_of_the_container() {
+        let compositor = compositor();
+        let container = compositor.CreateContainerVisual().unwrap();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let visual = sprite.cast::<IVisual>().unwrap();
+        visual
+            .SetOffset(Vector3 {
+                x: 4.0,
+                y: 8.0,
+                z: 0.0,
+            })
+            .unwrap();
+        visual.SetSize(Vector2 { x: 10.0, y: 20.0 }).unwrap();
+        let children: IContainerVisual = container.cast().unwrap();
+        children.Children().unwrap().InsertAtTop(&sprite).unwrap();
+
+        let node = crate::node::resolve(&container).unwrap();
+        let tree = crate::node::snapshot(&node).unwrap();
+        assert_eq!(tree.children.len(), 1);
+        assert_eq!(tree.children[0].offset, [4.0, 8.0]);
+        assert_eq!(tree.children[0].size, [10.0, 20.0]);
+    }
+
+    #[test]
+    fn a_colour_brush_paints_the_sprite() {
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let brush = compositor
+            .CreateColorBrushWithColor(Color {
+                a: 255,
+                r: 255,
+                g: 0,
+                b: 0,
+            })
+            .unwrap();
+        let brush: CompositionBrush = brush.cast().unwrap();
+        let sprite_visual: ISpriteVisual = sprite.cast().unwrap();
+        sprite_visual.SetBrush(&brush).unwrap();
+
+        let node = crate::node::resolve(&sprite).unwrap();
+        let tree = crate::node::snapshot(&node).unwrap();
+        assert_eq!(tree.color, [1.0, 0.0, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn an_inset_clip_reaches_the_visual() {
+        let compositor = compositor();
+        let container = compositor.CreateContainerVisual().unwrap();
+        let visual = container.cast::<IVisual>().unwrap();
+        visual.SetSize(Vector2 { x: 100.0, y: 50.0 }).unwrap();
+        let clip: InsetClip = compositor
+            .CreateInsetClipWithInsets(10.0, 5.0, 20.0, 5.0)
+            .unwrap();
+        let clip: crate::bindings::Microsoft::UI::Composition::CompositionClip =
+            clip.cast().unwrap();
+        visual.SetClip(&clip).unwrap();
+
+        let node = crate::node::resolve(&container).unwrap();
+        let tree = crate::node::snapshot(&node).unwrap();
+        assert_eq!(tree.clip, Some((10.0, 5.0, 70.0, 40.0)));
+    }
+
+    #[test]
+    fn an_object_only_answers_for_what_it_is() {
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        assert!(sprite.cast::<ISpriteVisual>().is_ok());
+        assert!(sprite.cast::<IContainerVisual>().is_err());
+    }
+}

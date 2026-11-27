@@ -40,6 +40,26 @@ jobs:
           done
           exit $bad
 
+  # The ABI objects only exist on Windows: activation, QueryInterface, refcounting and the node
+  # table all need a real target to be exercised. Everything else runs on three hosts.
+  windows:
+    name: Test (windows)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build the DLL
+        run: cargo build -p opencomp
+
   test:
     name: Test (${{ matrix.os }})
     strategy:

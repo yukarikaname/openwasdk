@@ -161,7 +161,7 @@ mod tests {
         let factory = Factory::create();
         let vtbl = vtbl_of(factory);
         let mut out: *mut c_void = std::ptr::null_mut();
-        let result = unsafe { (vtbl.activate_instance)(factory, &mut out) };
+        let _result = unsafe { (vtbl.activate_instance)(factory, &mut out) };
         #[cfg(not(windows))]
         {
             assert_eq!(result, E_NOTIMPL);

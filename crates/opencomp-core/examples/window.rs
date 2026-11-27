@@ -126,17 +126,15 @@ impl ApplicationHandler for App {
                 frame.renderer.render_to_surface(&texture);
                 frame.queue.present(texture);
                 self.presented += 1;
-                if let Some(limit) = self.limit {
-                    if self.presented >= limit {
-                        let (width, height) = frame.renderer.size();
-                        println!(
-                            "presented {} frame(s) at {width}x{height} {:?}",
-                            self.presented,
-                            frame.renderer.format()
-                        );
-                        event_loop.exit();
-                        return;
-                    }
+                if self.limit.is_some_and(|limit| self.presented >= limit) {
+                    let (width, height) = frame.renderer.size();
+                    println!(
+                        "presented {} frame(s) at {width}x{height} {:?}",
+                        self.presented,
+                        frame.renderer.format()
+                    );
+                    event_loop.exit();
+                    return;
                 }
             }
             _ => return,
