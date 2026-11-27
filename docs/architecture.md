@@ -115,6 +115,14 @@ renderer can own (wgpu accepts a raw Win32 window handle), and whatever the
 client drew into composition surfaces, which for XAML means D3D interop. The
 tree we already build is the part that does not need either.
 
+The first half of that is now in `opencomp`: `ContentIsland` and
+`DesktopChildSiteBridge` are served from the same DLL, `Create` takes the root
+visual and the window id, and the site carries size, visibility and z-order. The
+island hands its root node to a host through `content::root_node`, so a preview
+loop can snapshot it without any Content object knowing about wgpu. What is
+missing is the frame itself: no swapchain is created, no message pump runs, and
+`ContentSiteView`, events and `RequestSize` answer `E_NOTIMPL`.
+
 Colour is linear in the core and sRGB at the ABI. A surface in an `*Srgb` format
 stores encoded bytes and blends in linear light, so a brush's `Windows.UI.Color`
 bytes are decoded on the way in (`opencomp_core::srgb`) and encoded on the way
