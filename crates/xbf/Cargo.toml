@@ -1,0 +1,16 @@
+[package]
+name = "xbf"
+description = "Reader for the XAML Binary Format (XBF) used by WinUI"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "xbf"
+path = "src/lib.rs"
+
+[[bin]]
+name = "dump"
+path = "src/bin/dump.rs"
