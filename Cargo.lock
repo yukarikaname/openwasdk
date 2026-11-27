@@ -434,6 +434,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "coremessaging"
+version = "0.1.0"
+dependencies = [
+ "windows-core 0.100.0",
+]
+
+[[package]]
 name = "crc32fast"
 version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1382,6 +1389,13 @@ dependencies = [
  "pollster",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "opencore"
+version = "0.1.0"
+dependencies = [
+ "windows-core 0.100.0",
 ]
 
 [[package]]

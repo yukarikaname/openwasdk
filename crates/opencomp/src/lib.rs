@@ -34,7 +34,6 @@ mod batch;
 pub mod bindings;
 #[cfg(windows)]
 mod brush;
-#[cfg(windows)]
 mod classes;
 #[cfg(windows)]
 mod clip;

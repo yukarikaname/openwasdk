@@ -67,6 +67,9 @@ enum Command {
         /// Replace a class or class prefix with a DLL; repeat for more
         #[arg(long = "replace", value_name = "CLASS_OR_PREFIX=DLL")]
         replace: Vec<String>,
+        /// Add a class the SDK does not carry, served by a DLL; repeat for more
+        #[arg(long = "add", value_name = "CLASS=DLL")]
+        add: Vec<String>,
         /// Manifest file to write
         #[arg(long)]
         out: PathBuf,
@@ -196,10 +199,25 @@ fn run(cli: Cli) -> Result<(), Failure> {
         Command::Manifest { out, dll, class } => {
             manifest::write(&out, &dll, &class).map_err(Failure::from)
         }
-        Command::Activation { sdk, replace, out } => {
+        Command::Activation {
+            sdk,
+            replace,
+            add,
+            out,
+        } => {
             let replacements = parse_replacements(&replace)?;
             let xml = activation::read(&sdk)?;
-            let entries = activation::parse(&xml)?;
+            let mut entries = activation::parse(&xml)?;
+            // A class the SDK never names -- a Windows one Wine serves badly -- has no
+            // entry to rewrite, so it is added to the table instead.
+            for (class, dll) in parse_replacements(&add)? {
+                entries.retain(|entry| entry.class != class);
+                entries.push(activation::Entry {
+                    class,
+                    dll,
+                    category: activation::Category::InProcessServer,
+                });
+            }
             let rules: Vec<(&str, &str)> = replacements
                 .iter()
                 .map(|(pattern, dll)| (pattern.as_str(), dll.as_str()))

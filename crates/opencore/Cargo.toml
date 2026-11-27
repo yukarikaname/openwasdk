@@ -1,0 +1,15 @@
+[package]
+name = "opencore"
+description = "The CoreApplication interface Wine does not answer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "opencore"
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+windows-core = "0.100"
