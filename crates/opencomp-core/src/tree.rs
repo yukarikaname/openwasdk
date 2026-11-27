@@ -9,6 +9,7 @@
 //! applied. Translation and scale, which is what a zoom uses, keep exact clipping.
 
 use crate::TextureId;
+use crate::gradient::Gradient;
 
 /// A rectangle in canvas pixels: origin, then size.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -51,6 +52,9 @@ pub struct Visual {
     pub clip: Option<(f32, f32, f32, f32)>,
     /// A bitmap uploaded to the renderer; when set, the colour multiplies the sampled texel.
     pub image: Option<TextureId>,
+    /// A gradient paint in the node's own units; when set, the colour's rgb is ignored and its
+    /// alpha stays the opacity.
+    pub gradient: Option<Gradient>,
     /// The part of the bitmap the rectangle covers, as `u0, v0, u1, v1`.
     pub uv: [f32; 4],
     /// Corner radii clockwise from the top-left, in the node's own units. Zero is a square
@@ -71,6 +75,7 @@ impl Default for Visual {
             center: [0.0, 0.0],
             clip: None,
             image: None,
+            gradient: None,
             uv: [0.0, 0.0, 1.0, 1.0],
             radius: [0.0; 4],
             children: Vec::new(),
@@ -107,6 +112,12 @@ impl Visual {
     /// Draw a bitmap from the renderer's registry across this node's rectangle.
     pub fn with_image(mut self, image: TextureId) -> Self {
         self.image = Some(image);
+        self
+    }
+
+    /// Paint the node's rectangle with a gradient instead of its flat colour.
+    pub fn with_gradient(mut self, gradient: Gradient) -> Self {
+        self.gradient = Some(gradient);
         self
     }
 
@@ -232,7 +243,7 @@ fn overlap(rect: Rect, clip: Rect) -> Rect {
 }
 
 /// A rectangle ready to draw, with the tree's transforms, translations and opacities applied.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Draw {
     /// The four corners in canvas units, in the order [`corners`] produces.
     pub corners: [[f32; 2]; 4],
@@ -242,6 +253,9 @@ pub struct Draw {
     pub color: [f32; 4],
     /// The bitmap to sample; `None` binds the built-in white texture.
     pub image: Option<TextureId>,
+    /// A gradient in the node's own units; when set, the colour's rgb is ignored and its alpha is
+    /// still the opacity.
+    pub gradient: Option<Gradient>,
     /// The part of the bitmap the quad covers.
     pub uv: [f32; 4],
     /// The rectangle in the node's own units, which bounds the shader's rounded-box distance.
@@ -289,6 +303,7 @@ fn flatten(visual: &Visual, parent: Affine, opacity: f32, clip: Option<Rect>, ou
                 visual.color[3] * alpha,
             ],
             image: visual.image,
+            gradient: visual.gradient.clone(),
             uv: visual.uv,
             size: visual.size,
             radius: visual.radius.map(|radius| radius.clamp(0.0, limit)),
@@ -325,6 +340,36 @@ mod tests {
         let parent = Affine::translate(10.0, 0.0);
         let child = Affine::translate(1.0, 2.0);
         assert_eq!(round_trip(parent * child, [0.0, 0.0]), [11.0, 2.0]);
+    }
+
+    #[test]
+    fn a_gradient_reaches_the_draw_list_instead_of_the_colour() {
+        use crate::gradient::{Gradient, GradientShape, GradientStop};
+
+        let gradient = Gradient {
+            id: 9,
+            stops: vec![
+                GradientStop {
+                    offset: 0.0,
+                    color: [0.0, 0.0, 0.0, 1.0],
+                },
+                GradientStop {
+                    offset: 1.0,
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+            ],
+            shape: GradientShape::Linear {
+                start: [0.0, 0.0],
+                end: [8.0, 0.0],
+            },
+        };
+        let visual =
+            crate::Visual::rect(8.0, 8.0, [1.0, 0.0, 0.0, 1.0]).with_gradient(gradient.clone());
+        let draws = visual.draws();
+        assert_eq!(draws.len(), 1);
+        // The flat colour keeps only its alpha; the ramp is what the backend paints.
+        assert_eq!(draws[0].color, [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(draws[0].gradient.as_ref(), Some(&gradient));
     }
 
     #[test]

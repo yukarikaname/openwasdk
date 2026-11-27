@@ -7,6 +7,7 @@
 
 mod animation;
 mod color;
+mod gradient;
 mod texture_id;
 mod tree;
 
@@ -19,6 +20,7 @@ mod texture;
 
 pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
+pub use gradient::{Gradient, GradientShape, GradientStop, RAMP_ENTRIES};
 pub use texture_id::{TextureId, WHITE};
 pub use tree::{Draw, Rect, Visual};
 
@@ -279,6 +281,42 @@ mod tests {
         renderer.set_root(Visual::rect(8.0, 8.0, [0.0, 1.0, 0.0, 1.0]).with_image(1));
         let pixels = renderer.render_to_pixels();
         assert_eq!(pixel(&pixels, 8, 4, 4), [0, 255, 0, 255]);
+    }
+
+    #[test]
+    fn a_gradient_visual_draws_its_ramp_instead_of_its_colour() {
+        let Some(mut renderer) = Renderer::headless((64, 64), [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        let gradient = Gradient {
+            id: 1,
+            stops: vec![
+                GradientStop {
+                    offset: 0.0,
+                    color: [0.0, 0.0, 0.0, 1.0],
+                },
+                GradientStop {
+                    offset: 1.0,
+                    color: [1.0, 1.0, 1.0, 1.0],
+                },
+            ],
+            shape: GradientShape::Linear {
+                start: [0.0, 0.0],
+                end: [64.0, 0.0],
+            },
+        };
+        // The flat colour is red: a renderer that fell back to it would show red, not grey.
+        renderer.set_root(Visual::rect(64.0, 64.0, [1.0, 0.0, 0.0, 1.0]).with_gradient(gradient));
+        let pixels = renderer.render_to_pixels();
+        let dark = pixel(&pixels, 64, 4, 32);
+        let light = pixel(&pixels, 64, 60, 32);
+        assert!(dark[0] < 60, "start of the ramp was {dark:?}");
+        assert!(light[0] > 195, "end of the ramp was {light:?}");
+        // A red fill would leave the green and blue channels at zero.
+        assert!(
+            light[1] > 195 && light[2] > 195,
+            "end of the ramp was {light:?}"
+        );
     }
 
     #[test]

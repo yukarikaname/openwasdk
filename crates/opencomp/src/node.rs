@@ -42,6 +42,9 @@ pub struct Node {
     pub relative_offset: Option<Vector3>,
     /// The surface a surface brush attached, named by the id it allocates.
     pub surface: Option<u32>,
+    /// The gradient a gradient brush attached; resolved against the node's size per frame.
+    #[cfg(windows)]
+    pub gradient: Option<crate::gradient::Spec>,
     pub animations: Vec<Running>,
     pub children: Vec<NodeRef>,
 }
@@ -121,6 +124,8 @@ impl Node {
             relative_size: None,
             relative_offset: None,
             surface: None,
+            #[cfg(windows)]
+            gradient: None,
             animations: Vec::new(),
             children: Vec::new(),
         }
@@ -204,6 +209,10 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<
                 Property::Color => color = value,
             }
         }
+        // A relative gradient resolves against the size this visual has now, so resizing the
+        // sprite moves the ramp with it instead of freezing the fractions taken at SetBrush.
+        #[cfg(windows)]
+        let gradient = node.gradient.as_ref().and_then(|spec| spec.resolve(size));
         let visual = CoreVisual {
             offset,
             size: [size.x, size.y],
@@ -214,6 +223,10 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<
             center: [node.center.x, node.center.y],
             // A visual has no surface until a surface brush names one.
             image: node.surface,
+            #[cfg(windows)]
+            gradient,
+            #[cfg(not(windows))]
+            gradient: None,
             uv: [0.0, 0.0, 1.0, 1.0],
             radius: node.radius,
             clip: node.insets.map(|insets| clip_of(size, insets)),

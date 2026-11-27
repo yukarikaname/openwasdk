@@ -96,6 +96,24 @@ impl Textures {
         self.entries.remove(&id);
     }
 
+    /// A 1-D sRGB ramp for `gradient`, plus the bind group that samples it.
+    ///
+    /// The ramp is built on the CPU ([`crate::Gradient::ramp`]) because a gradient shader that
+    /// evaluated stops itself would need an array the pipeline cannot size. A 256-entry texture
+    /// is exact enough for a preview and keeps one pipeline for flat, bitmap and gradient draws.
+    pub(crate) fn ramp(
+        &self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        gradient: &crate::Gradient,
+    ) -> (wgpu::Texture, wgpu::BindGroup) {
+        let pixels = gradient.ramp();
+        let texture = Self::create(device, queue, crate::RAMP_ENTRIES as u32, 1, &pixels);
+        let view = texture.create_view(&Default::default());
+        let group = bind_group(device, &self.layout, &self.sampler, &view);
+        (texture, group)
+    }
+
     /// The bind group a draw naming `id` uses; an unknown id draws as a flat colour.
     pub(crate) fn bind_group(&self, id: TextureId) -> &wgpu::BindGroup {
         self.entries.get(&id).unwrap_or(&self.white)

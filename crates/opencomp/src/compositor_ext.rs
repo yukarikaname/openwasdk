@@ -62,19 +62,27 @@ impl comp::ICompositor2_Impl for crate::compositor::Compositor_Impl {
 
 impl comp::ICompositor4_Impl for crate::compositor::Compositor_Impl {
     fn CreateColorGradientStop(&self) -> windows_core::Result<comp::CompositionColorGradientStop> {
-        not_implemented()
+        crate::gradient::stop(
+            0.0,
+            crate::bindings::Windows::UI::Color {
+                a: 0,
+                r: 0,
+                g: 0,
+                b: 0,
+            },
+        )
     }
     fn CreateColorGradientStopWithOffsetAndColor(
         &self,
-        _offset: f32,
-        _color: &crate::bindings::Windows::UI::Color,
+        offset: f32,
+        color: &crate::bindings::Windows::UI::Color,
     ) -> windows_core::Result<comp::CompositionColorGradientStop> {
-        not_implemented()
+        crate::gradient::stop(offset, *color)
     }
     fn CreateLinearGradientBrush(
         &self,
     ) -> windows_core::Result<comp::CompositionLinearGradientBrush> {
-        not_implemented()
+        crate::gradient::linear()
     }
     fn CreateSpringScalarAnimation(
         &self,
@@ -233,7 +241,7 @@ impl comp::ICompositorWithRadialGradient_Impl for crate::compositor::Compositor_
     fn CreateRadialGradientBrush(
         &self,
     ) -> windows_core::Result<comp::CompositionRadialGradientBrush> {
-        not_implemented()
+        crate::gradient::radial()
     }
 }
 

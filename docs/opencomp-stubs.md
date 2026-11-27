@@ -7,14 +7,15 @@ At survey time there were **129 `E_NOTIMPL` bodies**. After the work recorded he
 
 | state | count |
 | --- | --- |
-| `E_NOTIMPL` bodies remaining | 90 |
+| `E_NOTIMPL` bodies remaining | 87 |
 | stub bodies replaced with real code | 40 |
 | methods fully answered | 40 |
-| partial methods (real value, honest fallback) | 9 |
 
-The arithmetic is `129 - 40 + 1 = 90`: `animation_group::stop` added one fallback of its own for
-an animation group this DLL did not make. A fallback that refuses a foreign object is preferable
-to a silent no-op; a caller learns which layer could not answer.
+The number above is asserted by `crates/opencomp/tests/stubs.rs`, which counts the calls in
+the crate: a page that disagrees with the code is worse than no page. A method that does its
+work and still refuses one case (a foreign animation group, a gradient property the draw list
+does not model) counts as a stub site here, which is why the arithmetic below the line is not
+`129 - 40`.
 
 The four bodies removed in this pass are `GetCommitBatch`, `CreateScopedBatch`,
 `RequestCommitAsync` and `CreateAnimationController`. Each one is backed by the compositor clock
@@ -81,6 +82,29 @@ transform reads as the identity matrix, scale `(1, 1)`, and zero vectors.
 | `IContentIsland` | `AutomationProviderRequested` / `RemoveAutomationProviderRequested` | records a token and the handler; remove forgets both |
 | `IContentIsland` | `StateChanged` / `RemoveStateChanged` | records a token and the handler; remove forgets both |
 | `IContentSiteBridge` | `SetLayoutDirectionOverride` | unwraps the `IReference` and stores the direction |
+
+### Gradient brushes
+
+| interface | method | what it now does |
+| --- | --- | --- |
+| `ICompositor4` | `CreateColorGradientStop` | a stop at offset zero with a transparent colour |
+| `ICompositor4` | `CreateColorGradientStopWithOffsetAndColor` | a stop the client positions and colours |
+| `ICompositor4` | `CreateLinearGradientBrush` | a brush with the documented `(0,0)` to `(1,1)` default ramp |
+| `ICompositorWithRadialGradient` | `CreateRadialGradientBrush` | a brush centred on `(0.5, 0.5)` with radius `(0.5, 0.5)` |
+| `ICompositionGradientBrush` | `ColorStops` | a live `IVector<ICompositionColorGradientStop>` shared with the brush |
+| `ICompositionGradientBrush2` | `MappingMode` / `SetMappingMode` | `Relative` scales by the sprite size, `Absolute` uses node units |
+| `ICompositionLinearGradientBrush` | `StartPoint` / `EndPoint` | stored and applied to the ramp |
+| `ICompositionRadialGradientBrush` | `EllipseCenter` / `EllipseRadius` | stored and applied to the ramp |
+| `ICompositionRadialGradientBrush` | `GradientOriginOffset` | reports the default `(0,0)`; a non-zero origin is refused |
+| `ICompositionColorGradientStop` | `Offset` / `Color` | stored and read back through the ABI |
+
+The draw list carries the stops and the shape, so both backends paint the same ramp. Multi-stop
+ordering is honoured by sorting on `Offset` when the ramp is built, which is also what
+`CreateGradientStopCollection` expects. The gradient transform properties (`AnchorPoint`,
+`CenterPoint`, `Offset`, `RotationAngle`, `RotationAngleInDegrees`, `Scale`, `TransformMatrix`)
+and the still-unsupported `ExtendMode`/`InterpolationSpace` choices answer through
+`gradient::unsupported`; see the fallback table below. The reason is one layer, not seven
+spellings: the draw list has no per-gradient affine and no extend or HSL interpolation mode.
 
 ### Partial methods
 
@@ -159,9 +183,6 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 
 | method | status | note |
 | --- | --- | --- |
-| `CreateColorGradientStop` | later | gradient stop object type |
-| `CreateColorGradientStopWithOffsetAndColor` | later | same |
-| `CreateLinearGradientBrush` | later | gradient brush object and renderer gradient pipeline |
 | `CreateSpringScalarAnimation` | later | spring natural-motion animation object and solver |
 | `CreateSpringVector2Animation` | later | same |
 | `CreateSpringVector3Animation` | later | same |
@@ -200,7 +221,6 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `ICompositorWithProjectedShadow` | `CreateProjectedShadowCaster` | later | projected-shadow object types and renderer pass |
 | `ICompositorWithProjectedShadow` | `CreateProjectedShadow` | later | same |
 | `ICompositorWithProjectedShadow` | `CreateProjectedShadowReceiver` | later | same |
-| `ICompositorWithRadialGradient` | `CreateRadialGradientBrush` | later | radial gradient brush and renderer pipeline |
 | `ICompositorWithVisualSurface` | `CreateVisualSurface` | later | visual surface object and offscreen render |
 
 ### `ICompositionSurfaceBrush`
@@ -291,6 +311,7 @@ These are not ABI methods; they are the helper functions the animation group cal
 | --- | --- | --- |
 | `animation_group::start` | later | a foreign group keeps no list this DLL can read |
 | `animation_group::stop` | later | same |
+| `gradient::unsupported` | later | no per-gradient affine, extend mode or HSL interpolation in the draw list |
 
 ### `ICompositionGraphicsDeviceInterop`
 
@@ -303,22 +324,19 @@ These are not ABI methods; they are the helper functions the animation group cal
 The renderer is a tree of rectangles, textures and rounded corners. Anything that would need a
 second renderer path is left out rather than accepted and dropped:
 
-- **Lights, shadows, effects, shapes and gradients** have no draw path in `opencomp-core`, and a
-  getter that returned a configured object would promise a picture that never appears.
+- **Lights, shadows, effects and shapes** have no draw path in `opencomp-core`, and a getter
+  that returned a configured object would promise a picture that never appears. Gradients do
+  have one now.
 - **Expressions** need a parser and an evaluator, not just a field.
 - **`ICompositorController`** needs a controller object, and this metadata gives the class no
   activation factory, so a client cannot make one to call `CommitNeeded` on. `GetCommitBatch`,
   `CreateScopedBatch` and `RequestCommitAsync` already signal the same commit boundary.
 - **`ICompositionTarget`** exists in `Windows.UI.Composition`, not `Microsoft.UI.Composition`.
   Claiming the Windows class would hijack another DLL's activation; the root this DLL can
-  really present is the one `IDesktopChildSiteBridge.Connect` takes. The `Windows.UI` target is
-  left as metadata this DLL does not serve.
+  really present is the one `IDesktopChildSiteBridge.Connect` takes.
 - **Implicit animations** need an `ImplicitAnimationCollection` that implements `IMap` and
-  `IIterable`, plus a trigger at every property setter and a way to express "animate from the
-  current value". The first two are mechanical; the last is not in this key-frame model, which
-  has no null key frame. `CreateImplicitAnimationCollection` and
-  `ICompositionObject2.ImplicitAnimations` stay `E_NOTIMPL` rather than arming an animation
-  from the wrong starting value.
+  `IIterable`, a trigger at every setter, and a way to express "animate from the current
+  value" -- the last is not in this key-frame model, which has no null key frame.
 - **Window z-order and dispatcher queues** belong to the host window manager and message loop.
 - **Null WinRT properties** cannot be returned through the generated `*_Impl` traits. The setter
   is real; the unset read reports `E_NOTIMPL` instead of inventing an object.

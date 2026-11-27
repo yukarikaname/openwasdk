@@ -31,15 +31,24 @@ struct Vertex {
     half_size: [f32; 2],
     /// The four corner radii, the same on every vertex of the quad.
     radius: [f32; 4],
+    /// -1 for a flat paint, 0 for a linear ramp, 1 for a radial one.
+    gradient_kind: f32,
+    /// The ramp's start or centre, in the node's own units.
+    gradient_a: [f32; 2],
+    /// The ramp's end or radius, in the node's own units.
+    gradient_b: [f32; 2],
 }
 
-const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![
+const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 9] = wgpu::vertex_attr_array![
     0 => Float32x2,
     1 => Float32x4,
     2 => Float32x2,
     3 => Float32x2,
     4 => Float32x2,
-    5 => Float32x4
+    5 => Float32x4,
+    6 => Float32,
+    7 => Float32x2,
+    8 => Float32x2
 ];
 
 const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
@@ -199,14 +208,32 @@ impl Renderer {
 
         let mut vertices = Vec::new();
         let mut scissors = Vec::new();
-        let mut images: Vec<TextureId> = Vec::new();
+        let mut groups = Vec::new();
+        // The bind group keeps the ramp alive, but the texture handle has to outlive the pass.
+        let mut ramps = Vec::new();
         for draw in &draws {
             let Some(scissor) = scissor_rect(draw.scissor, self.scale, self.size) else {
                 continue;
             };
+            // A gradient with no stops asks for a picture that is not there; leave the pixel
+            // alone rather than falling back to the flat colour the client replaced.
+            if draw.gradient.as_ref().is_some_and(|g| !g.is_drawable()) {
+                continue;
+            }
             vertices.extend(quad(draw, self.scale, self.size));
             scissors.push(scissor);
-            images.push(draw.image.unwrap_or(WHITE));
+            let group = match draw.gradient.as_ref() {
+                Some(gradient) => {
+                    let (texture, group) = self.textures.ramp(&self.device, &self.queue, gradient);
+                    ramps.push(texture);
+                    group
+                }
+                None => self
+                    .textures
+                    .bind_group(draw.image.unwrap_or(WHITE))
+                    .clone(),
+            };
+            groups.push(group);
         }
 
         let mut encoder = self
@@ -248,7 +275,7 @@ impl Renderer {
                 pass.set_pipeline(&self.pipeline);
                 pass.set_vertex_buffer(0, buffer.slice(..));
                 for (index, &(x, y, width, height)) in scissors.iter().enumerate() {
-                    pass.set_bind_group(0, self.textures.bind_group(images[index]), &[]);
+                    pass.set_bind_group(0, &groups[index], &[]);
                     pass.set_scissor_rect(x, y, width, height);
                     let first = (index * 6) as u32;
                     pass.draw(first..first + 6, 0..1);
@@ -346,13 +373,30 @@ fn quad(draw: &Draw, scale: f32, size: (u32, u32)) -> [Vertex; 6] {
     let [width, height] = draw.size;
     let locals = [[0.0, 0.0], [width, 0.0], [width, height], [0.0, height]];
     let half_size = [width * 0.5, height * 0.5];
+    // A gradient replaces the flat colour's rgb; its alpha stays the opacity that multiplies
+    // the ramp's own alpha, exactly as the D2D brush opacity does.
+    let color = if draw.gradient.is_some() {
+        [1.0, 1.0, 1.0, draw.color[3]]
+    } else {
+        draw.color
+    };
+    let (gradient_kind, gradient_a, gradient_b) = match draw.gradient.as_ref() {
+        Some(gradient) => match gradient.shape {
+            crate::GradientShape::Linear { start, end } => (0.0, start, end),
+            crate::GradientShape::Radial { center, radius } => (1.0, center, radius),
+        },
+        None => (-1.0, [0.0; 2], [0.0; 2]),
+    };
     let at = |index: usize| Vertex {
         position: to_clip(draw.corners[index]),
-        color: draw.color,
+        color,
         uv: uvs[index],
         local: locals[index],
         half_size,
         radius: draw.radius,
+        gradient_kind,
+        gradient_a,
+        gradient_b,
     };
     [at(0), at(1), at(2), at(0), at(2), at(3)]
 }

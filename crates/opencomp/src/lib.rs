@@ -50,9 +50,15 @@ pub mod content;
 #[cfg(windows)]
 mod d2d;
 #[cfg(windows)]
+mod d2d_gradient;
+#[cfg(windows)]
 mod easing;
 #[cfg(windows)]
 mod geometry;
+#[cfg(windows)]
+mod gradient;
+#[cfg(windows)]
+mod gradient_collection;
 mod identity;
 #[cfg(windows)]
 mod interop;

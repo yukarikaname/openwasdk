@@ -13,16 +13,18 @@ calls into the same tree.
 
 Each frame flattens the root `Visual` (`flatten_root`) into a `Vec<Draw>`: one record per visible
 rectangle, in draw order — parent first, children in collection order, later children on top. A
-`Draw` carries four canvas-space corners, a scissor and a straight RGBA colour; flattening
-composes the transform from the root down, multiplies opacity into the colour's alpha and
-intersects the clip into the scissor. A visual is skipped when its size, effective alpha or
-colour alpha is zero; a draw whose scissor misses the target is dropped.
+`Draw` carries four canvas-space corners, a scissor, a straight RGBA colour and optionally a
+bitmap uv rectangle or a gradient. Flattening composes the transform from the root down,
+multiplies opacity into the colour's alpha and intersects the clip into the scissor. A gradient
+draw uses the colour's alpha as its opacity and ignores its rgb. A visual is skipped when its
+size, effective alpha or colour alpha is zero; a draw whose scissor misses the target is dropped.
 
 `Renderer::render` builds one vertex buffer for the whole frame — six vertices, two triangles per
 `Draw`, clip-space position plus colour per vertex — then issues one `draw` per rectangle with the
-scissor set before it. No index buffer, no uniform, no bind group, no depth attachment: one
-pipeline, one render pass, buffer rebuilt every frame. The pass opens with `LoadOp::Clear` to the
-renderer's `background`.
+scissor set before it. No index buffer, no uniform, no depth attachment: one pipeline, one render
+pass, buffer rebuilt every frame. A flat or bitmap draw binds its texture; a gradient draw binds a
+256-entry sRGB ramp built on the CPU, and the fragment stage derives the ramp coordinate from the
+local position. The pass opens with `LoadOp::Clear` to the renderer's `background`.
 
 ## Colour
 
@@ -108,8 +110,8 @@ No MSAA (`MultisampleState::default()` is one sample), no depth buffer, no times
 
 ## What is missing
 
-The renderer has three primitives: a rectangle, a rounded rectangle and a textured
-rectangle, all of them transformed. So:
+The renderer has one primitive — a transformed rectangle — painted four ways: a flat colour,
+a rounded rectangle, a textured rectangle or a gradient. So:
 
 | feature | state |
 | --- | --- |
@@ -119,7 +121,8 @@ rectangle, all of them transformed. So:
 | rounded corners | present, per corner, shaped by a distance in the fragment stage |
 | ellipses, paths, arbitrary geometry | absent; the geometry factories answer `E_NOTIMPL` |
 | effects, shadows, lights, backdrop | absent |
-| layers, masks, gradients, nine-grid, 3D | absent |
+| gradient brushes | present: linear and radial, stops sorted by offset, interpolated in sRGB |
+| layers, masks, nine-grid, 3D | absent |
 | anti-aliasing | rounded corners only: one device pixel of `fwidth`; a straight edge is still the rasteriser's hard edge |
 
 A rotated or fractional rectangle therefore has jagged edges unless it is rounded, its corner

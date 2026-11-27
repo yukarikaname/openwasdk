@@ -11,6 +11,7 @@
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::d2d_gradient::GradientCache;
 use opencomp_core::{Draw, TextureId, srgb_from_linear};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct2D::Common::{
@@ -19,7 +20,7 @@ use windows::Win32::Graphics::Direct2D::Common::{
 use windows::Win32::Graphics::Direct2D::{
     D2D1_BITMAP_OPTIONS_CANNOT_DRAW, D2D1_BITMAP_OPTIONS_NONE, D2D1_BITMAP_OPTIONS_TARGET,
     D2D1_BITMAP_PROPERTIES1, D2D1_DEVICE_CONTEXT_OPTIONS_NONE, D2D1_FACTORY_TYPE_SINGLE_THREADED,
-    D2D1_INTERPOLATION_MODE_LINEAR, D2D1_ROUNDED_RECT, D2D1CreateFactory, ID2D1Bitmap1,
+    D2D1_INTERPOLATION_MODE_LINEAR, D2D1_ROUNDED_RECT, D2D1CreateFactory, ID2D1Bitmap1, ID2D1Brush,
     ID2D1DeviceContext, ID2D1Factory1, ID2D1SolidColorBrush,
 };
 use windows::Win32::Graphics::Direct3D::{
@@ -72,7 +73,7 @@ fn trace(stage: &str) {
 }
 
 /// The channel order D2D wants: ours is linear light, D2D speaks sRGB.
-fn color(rgba: [f32; 4]) -> D2D1_COLOR_F {
+pub(crate) fn color(rgba: [f32; 4]) -> D2D1_COLOR_F {
     D2D1_COLOR_F {
         r: srgb_from_linear(rgba[0]),
         g: srgb_from_linear(rgba[1]),
@@ -118,6 +119,7 @@ pub struct Presenter {
     brush: ID2D1SolidColorBrush,
     target: Option<ID2D1Bitmap1>,
     bitmaps: HashMap<TextureId, ID2D1Bitmap1>,
+    gradients: GradientCache,
     size: (u32, u32),
     scale: f32,
 }
@@ -213,6 +215,7 @@ impl Presenter {
         let brush = unsafe { d2d.CreateSolidColorBrush(&color([1.0, 1.0, 1.0, 1.0]), None) }
             .map_err(|_| "CreateSolidColorBrush")?;
         trace("target");
+        let gradients = GradientCache::new(d2d.clone());
         let mut presenter = Self {
             swapchain,
             device,
@@ -221,6 +224,7 @@ impl Presenter {
             brush,
             target: None,
             bitmaps: HashMap::new(),
+            gradients,
             size: (width, height),
             scale: 1.0,
         };
@@ -354,6 +358,33 @@ impl Presenter {
         Some([pixel[2], pixel[1], pixel[0], pixel[3]])
     }
 
+    /// Fill the draw's rectangle with `brush`, rounded when the radius asks for it.
+    fn fill(&self, draw: &Draw, brush: &ID2D1Brush, scale: f32) {
+        let (left, top) = (draw.corners[0][0] * scale, draw.corners[0][1] * scale);
+        let (right, bottom) = (draw.corners[2][0] * scale, draw.corners[2][1] * scale);
+        // D2D has one radius for all four corners; the largest wins.
+        let radius = draw.radius.iter().copied().fold(0.0, f32::max) * scale;
+        let rect = D2D_RECT_F {
+            left,
+            top,
+            right,
+            bottom,
+        };
+        // Safety: the context is alive and `brush` was made by it.
+        unsafe {
+            if radius > 0.0 {
+                let rounded = D2D1_ROUNDED_RECT {
+                    rect,
+                    radiusX: radius,
+                    radiusY: radius,
+                };
+                self.d2d.FillRoundedRectangle(&rounded, brush);
+            } else {
+                self.d2d.FillRectangle(&rect, brush);
+            }
+        }
+    }
+
     /// Draw the list and present it.
     pub fn present(&mut self, draws: &[Draw]) -> bool {
         self.draw(draws) && self.present_frame()
@@ -376,65 +407,48 @@ impl Presenter {
                     continue;
                 }
                 self.d2d.PushAxisAlignedClip(&bounds, Default::default());
-                match draw.image.and_then(|id| self.bitmaps.get(&id)) {
-                    Some(bitmap) => {
-                        let (left, top) = (draw.corners[0][0] * scale, draw.corners[0][1] * scale);
-                        let (right, bottom) =
-                            (draw.corners[2][0] * scale, draw.corners[2][1] * scale);
-                        let destination = D2D_RECT_F {
-                            left,
-                            top,
-                            right,
-                            bottom,
-                        };
-                        let pixel = bitmap.GetPixelSize();
-                        let source = D2D_RECT_F {
-                            left: draw.uv[0] * pixel.width as f32,
-                            top: draw.uv[1] * pixel.height as f32,
-                            right: draw.uv[2] * pixel.width as f32,
-                            bottom: draw.uv[3] * pixel.height as f32,
-                        };
-                        self.d2d.DrawBitmap(
-                            bitmap,
-                            Some(&destination),
-                            draw.color[3],
-                            D2D1_INTERPOLATION_MODE_LINEAR,
-                            Some(&source),
-                            None,
-                        );
+                if let Some(gradient) = draw.gradient.as_ref() {
+                    // A gradient with no stops asks for a picture that is not there. Painting
+                    // the flat colour instead would show a paint the client had replaced.
+                    if gradient.is_drawable()
+                        && let Some(brush) = self.gradients.brush(gradient)
+                    {
+                        self.gradients.paint(&brush, gradient, draw, scale);
+                        self.fill(draw, brush.base(), scale);
                     }
-                    None => {
-                        self.brush.SetColor(&color(draw.color));
-                        let (left, top) = (draw.corners[0][0] * scale, draw.corners[0][1] * scale);
-                        let (right, bottom) =
-                            (draw.corners[2][0] * scale, draw.corners[2][1] * scale);
-                        // D2D has one radius for all four corners; the largest wins.
-                        let radius = draw.radius.iter().copied().fold(0.0, f32::max) * scale;
-                        if radius > 0.0 {
-                            let rounded = D2D1_ROUNDED_RECT {
-                                rect: D2D_RECT_F {
-                                    left,
-                                    top,
-                                    right,
-                                    bottom,
-                                },
-                                radiusX: radius,
-                                radiusY: radius,
-                            };
-                            self.d2d.FillRoundedRectangle(&rounded, &self.brush);
-                        } else {
-                            let rect = D2D_RECT_F {
-                                left,
-                                top,
-                                right,
-                                bottom,
-                            };
-                            self.d2d.FillRectangle(&rect, &self.brush);
-                        }
-                    }
+                } else if let Some(bitmap) = draw.image.and_then(|id| self.bitmaps.get(&id)) {
+                    let (left, top) = (draw.corners[0][0] * scale, draw.corners[0][1] * scale);
+                    let (right, bottom) = (draw.corners[2][0] * scale, draw.corners[2][1] * scale);
+                    let destination = D2D_RECT_F {
+                        left,
+                        top,
+                        right,
+                        bottom,
+                    };
+                    let pixel = bitmap.GetPixelSize();
+                    let source = D2D_RECT_F {
+                        left: draw.uv[0] * pixel.width as f32,
+                        top: draw.uv[1] * pixel.height as f32,
+                        right: draw.uv[2] * pixel.width as f32,
+                        bottom: draw.uv[3] * pixel.height as f32,
+                    };
+                    self.d2d.DrawBitmap(
+                        bitmap,
+                        Some(&destination),
+                        draw.color[3],
+                        D2D1_INTERPOLATION_MODE_LINEAR,
+                        Some(&source),
+                        None,
+                    );
+                } else {
+                    self.brush.SetColor(&color(draw.color));
+                    self.fill(draw, &self.brush, scale);
                 }
                 self.d2d.PopAxisAlignedClip();
             }
+            // The cache lives as long as the brushes a frame still paints. A brush removed
+            // from the tree stops being named, so its device brush is released here.
+            self.gradients.retain(draws);
             self.d2d.EndDraw(None, None).is_ok()
         }
     }

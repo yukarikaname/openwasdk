@@ -21,6 +21,12 @@ struct Vertex {
     @location(4) half_size: vec2<f32>,
     // Top-left, top-right, bottom-right, bottom-left, in local units.
     @location(5) radius: vec4<f32>,
+    // -1 for a flat paint, 0 for a linear ramp, 1 for a radial one.
+    @location(6) gradient_kind: f32,
+    // The ramp's start or centre, in local units.
+    @location(7) gradient_a: vec2<f32>,
+    // The ramp's end or radius, in local units.
+    @location(8) gradient_b: vec2<f32>,
 };
 
 struct Varying {
@@ -31,6 +37,9 @@ struct Varying {
     // Constant across the quad, so interpolation would only add rounding noise.
     @location(3) @interpolate(flat) half_size: vec2<f32>,
     @location(4) @interpolate(flat) radius: vec4<f32>,
+    @location(5) @interpolate(flat) gradient_kind: f32,
+    @location(6) @interpolate(flat) gradient_a: vec2<f32>,
+    @location(7) @interpolate(flat) gradient_b: vec2<f32>,
 };
 
 @group(0) @binding(0) var source: texture_2d<f32>;
@@ -45,6 +54,9 @@ fn vs_main(vertex: Vertex) -> Varying {
     result.local = vertex.local;
     result.half_size = vertex.half_size;
     result.radius = vertex.radius;
+    result.gradient_kind = vertex.gradient_kind;
+    result.gradient_a = vertex.gradient_a;
+    result.gradient_b = vertex.gradient_b;
     return result;
 }
 
@@ -65,10 +77,32 @@ fn rounded_box(p: vec2<f32>, half_size: vec2<f32>, radius: vec4<f32>) -> f32 {
 
 @fragment
 fn fs_main(v: Varying) -> @location(0) vec4<f32> {
-    // The bitmap is Rgba8UnormSrgb, so the sample is already linear, as is the vertex colour
+    // A gradient draw binds the 256-entry ramp instead of a bitmap. The ramp maps t to texel
+    // centre `t * 255 + 0.5`, so the ends sit under the first and last entries. The condition
+    // is flat across the quad, and the single sample stays outside it so derivatives are
+    // uniform.
+    var uv = v.uv;
+    if (v.gradient_kind > 0.5) {
+        // Radial: the ellipse is an axis-aligned one in local units; t is its normalised
+        // distance. A zero radius divides by a small epsilon and clamps to the last stop.
+        let radius = max(v.gradient_b, vec2<f32>(0.0001, 0.0001));
+        let t = clamp(length((v.local - v.gradient_a) / radius), 0.0, 1.0);
+        uv = vec2<f32>(t * 255.0 / 256.0 + 0.5 / 256.0, 0.5);
+    } else if (v.gradient_kind > -0.5) {
+        // Linear: the projection of the local point onto the start-to-end span.
+        let span = v.gradient_b - v.gradient_a;
+        let squared = dot(span, span);
+        var t = 1.0;
+        if (squared > 0.0) {
+            t = clamp(dot(v.local - v.gradient_a, span) / squared, 0.0, 1.0);
+        }
+        uv = vec2<f32>(t * 255.0 / 256.0 + 0.5 / 256.0, 0.5);
+    }
+
+    // The ramp is Rgba8UnormSrgb, so the sample is already linear, as is the vertex colour
     // the CPU decoded. Sample before any discard: implicit derivatives need uniform control
     // flow, and a square corner still samples exactly as it did before rounding existed.
-    let texel = textureSample(source, source_sampler, v.uv);
+    let texel = textureSample(source, source_sampler, uv);
     let color = texel * v.color;
 
     // A square keeps the hard edge this pipeline always had; the distance would otherwise

@@ -1,7 +1,7 @@
 //! The presenter's tests: a real window, a real device, and the pixels it drew.
 
 use super::*;
-use opencomp_core::Rect;
+use opencomp_core::{Gradient, GradientShape, GradientStop, Rect};
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DestroyWindow, WS_OVERLAPPEDWINDOW,
 };
@@ -36,6 +36,7 @@ fn draws() -> Vec<Draw> {
         scissor: Rect::new(0.0, 0.0, 64.0, 64.0),
         color: [1.0, 0.0, 0.0, 1.0],
         image: None,
+        gradient: None,
         uv: [0.0, 0.0, 1.0, 1.0],
         size: [64.0, 64.0],
         radius: [8.0; 4],
@@ -82,6 +83,59 @@ fn a_drawn_frame_has_the_colours_it_was_given() {
         "{corner:?}"
     );
     assert!(presenter.present_frame());
+    unsafe {
+        let _ = DestroyWindow(hwnd);
+    }
+}
+
+#[test]
+fn a_linear_gradient_runs_from_dark_to_light() {
+    let hwnd = window();
+    let Some(mut presenter) = Presenter::new(hwnd.0 as u64, 64, 64) else {
+        unsafe {
+            let _ = DestroyWindow(hwnd);
+        }
+        return;
+    };
+    let gradient = Gradient {
+        id: 1,
+        stops: vec![
+            GradientStop {
+                offset: 0.0,
+                color: [0.0, 0.0, 0.0, 1.0],
+            },
+            GradientStop {
+                offset: 1.0,
+                color: [1.0, 1.0, 1.0, 1.0],
+            },
+        ],
+        shape: GradientShape::Linear {
+            start: [0.0, 32.0],
+            end: [64.0, 32.0],
+        },
+    };
+    let draws = vec![Draw {
+        corners: [[0.0, 0.0], [64.0, 0.0], [64.0, 64.0], [0.0, 64.0]],
+        scissor: Rect::new(0.0, 0.0, 64.0, 64.0),
+        // A green flat colour must not leak through: only the ramp should reach the pixels.
+        color: [0.0, 1.0, 0.0, 1.0],
+        image: None,
+        gradient: Some(gradient),
+        uv: [0.0, 0.0, 1.0, 1.0],
+        size: [64.0, 64.0],
+        radius: [0.0; 4],
+    }];
+    assert!(presenter.draw(&draws));
+    let dark = presenter.read_pixel(4, 32).expect("pixel");
+    let light = presenter.read_pixel(60, 32).expect("pixel");
+    assert!(
+        dark[0] < 60 && dark[1] < 60 && dark[2] < 60,
+        "start of the ramp was {dark:?}"
+    );
+    assert!(
+        light[0] > 195 && light[1] > 195 && light[2] > 195,
+        "end of the ramp was {light:?}"
+    );
     unsafe {
         let _ = DestroyWindow(hwnd);
     }

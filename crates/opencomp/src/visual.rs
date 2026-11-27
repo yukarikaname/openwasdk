@@ -93,12 +93,21 @@ impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
             .and_then(|brush| brush.cast::<ICompositionSurfaceBrush>().ok())
             .and_then(|brush| brush.Surface().ok())
             .and_then(|surface| crate::surface::describe(&surface));
+        let gradient = brush.and_then(crate::gradient::spec);
         {
             let mut node = self.node.lock().unwrap();
-            match surface {
-                Some((id, width, height)) => {
+            match (surface, gradient) {
+                (_, Some(gradient)) => {
+                    // The ramp is painted as it is; the colour keeps only its alpha, which
+                    // becomes the gradient's opacity.
+                    node.surface = None;
+                    node.gradient = Some(gradient);
+                    node.color = [1.0; 4];
+                }
+                (Some((id, width, height)), None) => {
                     // The bitmap is sampled as it is, so the tint has to leave it alone.
                     node.surface = Some(id);
+                    node.gradient = None;
                     node.color = [1.0; 4];
                     // A sprite with no size yet takes the surface's.
                     if node.size.x <= 0.0 || node.size.y <= 0.0 {
@@ -108,8 +117,9 @@ impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
                         };
                     }
                 }
-                None => {
+                (None, None) => {
                     node.surface = None;
+                    node.gradient = None;
                     node.color = color;
                 }
             }
