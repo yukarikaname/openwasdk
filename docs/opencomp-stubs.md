@@ -7,19 +7,24 @@ At survey time there were **129 `E_NOTIMPL` bodies**. After the work recorded he
 
 | state | count |
 | --- | --- |
-| `E_NOTIMPL` bodies remaining | 87 |
-| stub bodies replaced with real code | 40 |
-| methods fully answered | 40 |
+| `E_NOTIMPL` bodies remaining | 85 |
+| stub bodies replaced with real code | 44 |
+| methods fully answered | 42 |
 
 The number above is asserted by `crates/opencomp/tests/stubs.rs`, which counts the calls in
 the crate: a page that disagrees with the code is worse than no page. A method that does its
 work and still refuses one case (a foreign animation group, a gradient property the draw list
-does not model) counts as a stub site here, which is why the arithmetic below the line is not
-`129 - 40`.
+does not model) counts as a stub site here, because its fallback branch is still an
+`E_NOTIMPL` call. That is why `methods fully answered` is smaller than `stub bodies
+replaced`: the two single-object island lookups below keep one refusal branch each.
 
-The four bodies removed in this pass are `GetCommitBatch`, `CreateScopedBatch`,
-`RequestCommitAsync` and `CreateAnimationController`. Each one is backed by the compositor clock
-described below.
+The earlier clock pass removed `GetCommitBatch`, `CreateScopedBatch`, `RequestCommitAsync` and
+`CreateAnimationController`. Each one is backed by the compositor clock described below.
+
+The last pass removed the four `IContentIslandStatics` stubs, `FindAllForCompositor`,
+`FindAllForCurrentThread`, `GetByVisual` and `GetFromId`. The two list calls answer with an
+empty array when nothing matches. The two single-object calls keep one `E_NOTIMPL` branch
+each: a miss is null in the ABI, which the generated `*_Impl` trait cannot return.
 
 A method marked **later** stays `E_NOTIMPL` because the thing it needs does not exist here. The
 note says which thing. A method marked **partial** keeps a real value and only returns
@@ -81,7 +86,17 @@ transform reads as the identity matrix, scale `(1, 1)`, and zero vectors.
 | `IContentIsland` | `RasterizationScale` | returns the island's scale, `1.0` by default |
 | `IContentIsland` | `AutomationProviderRequested` / `RemoveAutomationProviderRequested` | records a token and the handler; remove forgets both |
 | `IContentIsland` | `StateChanged` / `RemoveStateChanged` | records a token and the handler; remove forgets both |
+| `IContentIslandStatics` | `FindAllForCompositor` | returns every live island whose root node samples the compositor's clock |
+| `IContentIslandStatics` | `FindAllForCurrentThread` | returns every live island created on the calling thread |
 | `IContentSiteBridge` | `SetLayoutDirectionOverride` | unwraps the `IReference` and stores the direction |
+
+The island registry holds a weak reference to each island, so it never keeps one alive.
+A lookup that cannot upgrade the weak handle prunes the entry and answers with an empty
+array, or with `E_NOTIMPL` where a single object is returned. The creator thread is
+recorded when the island is made. The compositor is the clock the root node samples, the
+same link `ICompositionObject.Compositor` follows, so a compositor from elsewhere owns no
+island here and is answered with the empty array. `GetByVisual` resolves the visual to its
+node through the identity table and answers the island whose tree contains that node.
 
 ### Gradient brushes
 
@@ -119,6 +134,8 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `ICompositionObject5` | `StartAnimationWithController` | starts on a visual with a controller this DLL made | a foreign controller keeps no playback here |
 | `IContentIsland` | `AppData` | returns stored data | null data cannot be expressed as a return value |
 | `IContentIsland` | `LayoutDirectionOverride` | returns the stored override | null override cannot be expressed |
+| `IContentIslandStatics` | `GetByVisual` | returns the island whose tree contains the visual | no island means null in the ABI |
+| `IContentIslandStatics` | `GetFromId` | returns the island with that id | no island means null in the ABI |
 | `IVisual2` | `ParentForTransform` | returns the stored visual | null visual cannot be expressed |
 | `ICompositionGeometricClip` | `Geometry` | returns the stored geometry | null geometry cannot be expressed |
 | `ICompositionSurfaceBrush` | `Surface` | returns the stored surface | null surface cannot be expressed |
@@ -291,10 +308,8 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 
 | method | status | note |
 | --- | --- | --- |
-| `FindAllForCompositor` | later | islands do not record their compositor |
-| `FindAllForCurrentThread` | later | no thread or apartment association |
-| `GetByVisual` | later | no reverse visual-to-island map that keeps the island COM object |
-| `GetFromId` | later | same |
+| `GetByVisual` | partial | returns the island whose tree contains the visual; no island is null in the ABI |
+| `GetFromId` | partial | returns the island with that id; no island is null in the ABI |
 
 ### Animation objects
 

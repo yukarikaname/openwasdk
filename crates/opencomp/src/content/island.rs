@@ -2,12 +2,14 @@
 
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::thread::ThreadId;
 
 use crate::bindings::Microsoft::UI::Composition::{Compositor, Visual};
 use crate::bindings::Microsoft::UI::Content::*;
 use crate::bindings::Microsoft::UI::Dispatching::DispatcherQueue;
 use crate::bindings::Windows::Foundation::Collections::IPropertySet;
 use crate::bindings::Windows::Foundation::TypedEventHandler;
+use crate::clock::Clock;
 use crate::node::NodeRef;
 use crate::object::not_implemented;
 use windows_core::{Error, HRESULT, IInspectable, Interface, Ref, Result};
@@ -19,6 +21,13 @@ const E_POINTER: HRESULT = HRESULT(0x8000_4003u32 as i32);
 /// State shared by the island object and whichever bridge is connected to it.
 pub(crate) struct IslandState {
     pub(crate) node: NodeRef,
+    /// The compositor the island belongs to, named by the clock its root node
+    /// samples. That is the same link `ICompositionObject.Compositor` follows,
+    /// and it identifies the compositor without keeping its COM object alive.
+    pub(crate) clock: Arc<Clock>,
+    /// The thread that created the island. `FindAllForCurrentThread` answers
+    /// from this recorded id, not from the thread that asks.
+    pub(crate) thread: ThreadId,
     pub(crate) size: Vector2,
     pub(crate) connected: bool,
     pub(crate) island_enabled: bool,
@@ -39,8 +48,11 @@ pub(crate) struct IslandState {
 
 impl IslandState {
     fn new(node: NodeRef) -> Self {
+        let clock = node.lock().unwrap().clock.clone();
         Self {
             node,
+            clock,
+            thread: std::thread::current().id(),
             size: Vector2::default(),
             connected: false,
             island_enabled: true,
@@ -250,35 +262,92 @@ impl IContentIslandStatics_Impl for IslandStatics_Impl {
     }
     fn FindAllForCompositor(
         &self,
-        _compositor: Ref<Compositor>,
+        compositor: Ref<Compositor>,
     ) -> Result<windows_core::Array<ContentIsland>> {
-        not_implemented()
+        find_all_for_compositor(compositor.as_ref())
     }
     fn FindAllForCurrentThread(&self) -> Result<windows_core::Array<ContentIsland>> {
-        not_implemented()
+        find_all_for_current_thread()
     }
-    fn GetByVisual(&self, _child: Ref<Visual>) -> Result<ContentIsland> {
-        not_implemented()
+    fn GetByVisual(&self, child: Ref<Visual>) -> Result<ContentIsland> {
+        get_by_visual(child.as_ref())
     }
-    fn GetFromId(&self, _id: u64) -> Result<ContentIsland> {
-        not_implemented()
+    fn GetFromId(&self, id: u64) -> Result<ContentIsland> {
+        get_by_id(id)
     }
 }
 
+/// Every live island that belongs to `compositor`.
+///
+/// An island is made from a visual, and only a visual this DLL made resolves to a
+/// node; such a node carries one of this DLL's clocks. A compositor this DLL did
+/// not make therefore owns no island here, and the empty array is its true answer.
+pub(crate) fn find_all_for_compositor(
+    compositor: Option<&Compositor>,
+) -> Result<windows_core::Array<ContentIsland>> {
+    let Some(compositor) = compositor else {
+        return Err(Error::from_hresult(E_INVALIDARG));
+    };
+    let islands = match crate::compositor::clock_of(compositor) {
+        Some(clock) => super::registry::for_clock(&clock),
+        None => Vec::new(),
+    };
+    Ok(island_array(islands))
+}
+
+/// Every live island created on the calling thread.
+pub(crate) fn find_all_for_current_thread() -> Result<windows_core::Array<ContentIsland>> {
+    Ok(island_array(super::registry::for_thread(
+        std::thread::current().id(),
+    )))
+}
+
+/// The island whose tree contains `visual`.
+pub(crate) fn get_by_visual(visual: Option<&Visual>) -> Result<ContentIsland> {
+    let Some(visual) = visual else {
+        return Err(Error::from_hresult(E_INVALIDARG));
+    };
+    match super::registry::by_visual(visual) {
+        Some(island) => Ok(island),
+        // Nullable in the ABI; the trait cannot say so.
+        None => not_implemented(),
+    }
+}
+
+/// The island with `id`, if it is still alive.
+pub(crate) fn get_by_id(id: u64) -> Result<ContentIsland> {
+    match super::registry::by_id(id) {
+        Some(island) => Ok(island),
+        // Nullable in the ABI; the trait cannot say so.
+        None => not_implemented(),
+    }
+}
+
+/// A WinRT array of islands. The array and each element own a reference.
+fn island_array(islands: Vec<ContentIsland>) -> windows_core::Array<ContentIsland> {
+    if islands.is_empty() {
+        return windows_core::Array::new();
+    }
+    let values: Vec<Option<ContentIsland>> = islands.into_iter().map(Some).collect();
+    windows_core::Array::from_slice(&values)
+}
+
 /// Create an island around a root node. The state is published by identity so that a bridge
-/// and the host can find it from the COM object.
+/// and the host can find it from the COM object; the registry holds only a weak handle.
 fn create_island(node: NodeRef) -> Result<ContentIsland> {
     static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+    let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
     let state: SharedIsland = Arc::new(Mutex::new(IslandState::new(node)));
     let island: IContentIsland = Island {
         state: state.clone(),
-        id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
+        id,
         app_data: Mutex::new(None),
         automation_handlers: Mutex::new(Vec::new()),
         state_handlers: Mutex::new(Vec::new()),
     }
     .into();
     crate::identity::publish(&island, &state);
+    super::registry::register(&island, id);
     island.cast()
 }
 

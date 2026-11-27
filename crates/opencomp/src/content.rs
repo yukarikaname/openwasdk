@@ -15,6 +15,10 @@
 
 mod bridge;
 mod island;
+mod registry;
+
+#[cfg(test)]
+mod island_statics_tests;
 
 pub(crate) use bridge::bridge_statics;
 pub(crate) use island::island_statics;

@@ -74,11 +74,6 @@ fi
 cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe -p opendispatch -p opencomp
 # The SDK's own `Microsoft.UI.Dispatching` server aborts on load under Wine
 # (`ntdll.NtAllocateReserveObject`), so the manifest points that namespace at ours.
-cp "$target/opendispatch.dll" "$run/" 2>/dev/null || true
-cp "$target/opencomp.dll" "$run/" 2>/dev/null || true
-# `Microsoft.Windows.ApplicationModel.Resources.dll` imports exactly one function from
-# `bcp47mrm.dll`, which Wine does not have; the shim is beside the engine like the rest.
-cp "$target/bcp47mrm.dll" "$run/" 2>/dev/null || true
 xvfb-run -a "$wine" wineboot -u >/dev/null 2>&1 || true
 # The probe and the DLLs sit together and the probe runs from that directory: a DLL
 # loaded by full path does not put its own directory on the dependency search path.
@@ -96,6 +91,13 @@ cp "$target/openudk.dll" "$run/Microsoft.Internal.FrameworkUdk.dll"
 # dispatcher in the manifest, `Application.Start` can actually reach its callback.
 OPENCOMP_XAML_PROBE_START=1 OPENCOMP_XAML_PROBE_ONLY=Application
 export OPENCOMP_XAML_PROBE_START OPENCOMP_XAML_PROBE_ONLY
+# Our DLLs go in only for the stand-in run: an old SDK file that finds `bcp47mrm.dll`
+# beside it takes a different path than one that does not, and the official run is the
+# baseline. `Microsoft.Windows.ApplicationModel.Resources.dll` imports one function from
+# `bcp47mrm.dll`, which Wine does not have.
+cp "$target/opendispatch.dll" "$run/" 2>/dev/null || true
+cp "$target/opencomp.dll" "$run/" 2>/dev/null || true
+cp "$target/bcp47mrm.dll" "$run/" 2>/dev/null || true
 standin=0
 probe standin || standin=$?
 
