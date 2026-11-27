@@ -76,13 +76,35 @@ class implements, including its static interfaces.
 cargo run -p comptrace -- generate \
     path/to/Microsoft.UI.winmd path/to/Microsoft.Graphics.winmd \
     path/to/Microsoft.Foundation.winmd path/to/Windows.winmd \
-    --namespace Microsoft.UI.Composition,Windows.UI.Composition,Windows.UI.Color \
+    --namespace Microsoft.UI.Composition,Windows.UI.Composition,Windows.UI.Color,Windows.Foundation.Numerics \
     --minimal \
     --out crates/opencomp/src/bindings.rs
 ```
 
 `--minimal` omits the client-side class wrappers; the runtime needs the
-interfaces and the `*_Impl` traits only.
+interfaces and the `*_Impl` traits only. `Windows.Foundation.Numerics` has to be
+in the filter: without it the generator maps vectors to `windows-numerics`, which
+has no `Quaternion`, so `IVisual.Orientation` is skipped and every `_Impl` trait
+that requires `IVisual` disappears with it.
+
+## Loading it on Windows
+
+The DLL is three entry points — `DllGetActivationFactory`, `DllGetClassObject`,
+`DllCanUnloadNow` — so it loads like any WinRT server. A client that knows the
+class name can call `RoGetActivationFactory` with a manifest entry:
+
+```xml
+<file name="opencomp.dll">
+  <activatableClass name="Microsoft.UI.Composition.Compositor"
+                    threadingModel="both" />
+</file>
+```
+
+inside the `<file>`/`<activatableClass>` group of an application manifest, with
+the DLL next to the executable. Without the manifest, call
+`DllGetActivationFactory` yourself and `QueryInterface` for
+`IActivationFactory`; `crates/opencomp/src/factory.rs` is the same code from the
+other side.
 
 ## Building
 
