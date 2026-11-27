@@ -4,6 +4,7 @@ members = [
     "crates/comptrace",
     "crates/layout-probe",
     "crates/opencomp",
+    "crates/opendispatch",
     "crates/opencomp-client",
     "crates/opencomp-core",
     "crates/openudk",

@@ -1389,6 +1389,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "opendispatch"
+version = "0.1.0"
+dependencies = [
+ "windows",
+ "windows-core 0.100.0",
+ "windows-future 0.100.0",
+ "windows-time",
+]
+
+[[package]]
 name = "openudk"
 version = "0.1.0"
 
