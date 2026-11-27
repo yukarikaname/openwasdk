@@ -62,6 +62,7 @@ cargo run -p comptrace -- attributes Microsoft.UI.winmd Microsoft.UI.Composition
 cargo run -p comptrace -- iids       Microsoft.ui.xaml.dll --metadata Microsoft.UI.winmd
 cargo run -p comptrace -- imports    Microsoft.ui.xaml.dll --dll frameworkudk
 cargo run -p comptrace -- exports    opencomp.dll
+cargo run -p comptrace -- strings    Microsoft.ui.xaml.dll --prefix Microsoft.UI.Content. --wide
 ```
 
 `interfaces` prints the IID and method count of every interface, which is the
@@ -73,7 +74,9 @@ class implements, including its static interfaces. `iids` goes the other way:
 it scans a built binary for the identifiers it loads and names them against the
 metadata, which is how a version bump is audited from the client side. `imports`
 and `exports` read the PE tables, so a dependency question ("which names does
-XAML take from this DLL?") is answered without a Windows host.
+XAML take from this DLL?") is answered without a Windows host. `strings` answers
+which DLL carries a class name, wide or narrow — the quickest way to find which
+module serves a WinRT class.
 
 ## Regenerating the bindings
 

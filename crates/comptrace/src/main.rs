@@ -6,6 +6,7 @@ mod iids;
 mod model;
 mod pe;
 mod report;
+mod strings;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -39,6 +40,16 @@ enum Command {
     },
     /// Print what a PE image exports
     Exports { image: PathBuf },
+    /// Print the strings in a PE image that start with a prefix
+    Strings {
+        image: PathBuf,
+        /// Only strings that start with this
+        #[arg(long)]
+        prefix: String,
+        /// Read UTF-16LE strings instead of narrow ones
+        #[arg(long)]
+        wide: bool,
+    },
     /// Scan a PE image for the interface identifiers it loads
     Iids {
         image: PathBuf,
@@ -128,6 +139,14 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::Exports { image } => {
             let exports = pe::exports(&image)?;
             print!("{}", pe::report_exports(&exports));
+        }
+        Command::Strings {
+            image,
+            prefix,
+            wide,
+        } => {
+            let found = strings::image(&image, &prefix, wide)?;
+            print!("{}", strings::report(&found));
         }
         Command::Iids {
             image,
