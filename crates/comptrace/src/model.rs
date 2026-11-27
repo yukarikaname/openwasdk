@@ -7,7 +7,7 @@
 use std::fmt;
 use std::path::Path;
 
-use windows_metadata::reader::{HasAttributes, Index, Item, TypeCategory};
+use windows_metadata::reader::{HasAttributes, Index, Item, TypeCategory, TypeDefOrRef};
 use windows_metadata::{Type, Value};
 
 /// An interface IID, in the byte order a COM `GUID` uses.
@@ -104,6 +104,9 @@ impl Interface {
 pub struct Class {
     pub namespace: String,
     pub name: String,
+    /// The class this one derives from, if any. A derived class implements the interfaces of
+    /// every class above it.
+    pub extends: Option<String>,
     /// Fully qualified names of the interfaces the class implements, in metadata order.
     pub interfaces: Vec<String>,
     /// Interfaces the static methods live on. They are not in `interfaces`: a static interface
@@ -118,10 +121,20 @@ impl Class {
     }
 }
 
+/// A named type and the namespace it lives in. The generator needs the names to spell a
+/// metadata type that a trait signature uses bare.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct TypeName {
+    pub namespace: String,
+    pub name: String,
+}
+
 #[derive(Default, Debug)]
 pub struct Model {
     pub interfaces: Vec<Interface>,
     pub classes: Vec<Class>,
+    /// Every type the metadata defines, including enums, structs and delegates.
+    pub types: Vec<TypeName>,
     pub enums: usize,
     pub structs: usize,
     pub delegates: usize,
@@ -133,6 +146,12 @@ impl Model {
         self.interfaces
             .iter()
             .find(|interface| interface.iid == Some(iid))
+    }
+
+    pub fn class(&self, full_name: &str) -> Option<&Class> {
+        self.classes
+            .iter()
+            .find(|class| class.full_name() == full_name)
     }
 
     pub fn namespaces(&self) -> Vec<&str> {
@@ -162,6 +181,10 @@ pub fn load(path: &Path) -> Result<Model, String> {
             let Item::Type(def) = item else {
                 continue;
             };
+            model.types.push(TypeName {
+                namespace: def.namespace().to_string(),
+                name: def.name().to_string(),
+            });
             match def.category() {
                 TypeCategory::Interface => {
                     // A generic interface's methods are written in terms of its parameters; give
@@ -190,6 +213,7 @@ pub fn load(path: &Path) -> Result<Model, String> {
                 TypeCategory::Class => model.classes.push(Class {
                     namespace: def.namespace().to_string(),
                     name: def.name().to_string(),
+                    extends: extends(&def),
                     interfaces: implemented(&def),
                     statics: static_interfaces(&def),
                     activatable: def.find_attribute("ActivatableAttribute").is_some(),
@@ -208,6 +232,41 @@ pub fn load(path: &Path) -> Result<Model, String> {
     model.classes.sort_by(|a, b| {
         (a.namespace.as_str(), a.name.as_str()).cmp(&(b.namespace.as_str(), b.name.as_str()))
     });
+    model.types.sort();
+    model.types.dedup();
+    Ok(model)
+}
+
+/// Read several metadata files as one model.
+///
+/// Duplicate definitions are dropped: the same `Windows.winmd` is often passed for more
+/// than one input, and a merged model must still resolve each name once.
+pub fn load_all(paths: &[std::path::PathBuf]) -> Result<Model, String> {
+    let mut model = Model::default();
+    for path in paths {
+        let next = load(path)?;
+        model.interfaces.extend(next.interfaces);
+        model.classes.extend(next.classes);
+        model.types.extend(next.types);
+        model.enums += next.enums;
+        model.structs += next.structs;
+        model.delegates += next.delegates;
+        model.attributes += next.attributes;
+    }
+    model.interfaces.sort_by(|a, b| {
+        (a.namespace.as_str(), a.name.as_str()).cmp(&(b.namespace.as_str(), b.name.as_str()))
+    });
+    model
+        .interfaces
+        .dedup_by(|a, b| a.namespace == b.namespace && a.name == b.name);
+    model.classes.sort_by(|a, b| {
+        (a.namespace.as_str(), a.name.as_str()).cmp(&(b.namespace.as_str(), b.name.as_str()))
+    });
+    model
+        .classes
+        .dedup_by(|a, b| a.namespace == b.namespace && a.name == b.name);
+    model.types.sort();
+    model.types.dedup();
     Ok(model)
 }
 
@@ -307,6 +366,17 @@ fn type_name(ty: &Type) -> String {
         Type::ArrayFixed(inner, count) => format!("{}[{count}]", type_name(inner)),
         Type::Generic(name, _) => name.clone(),
     }
+}
+
+/// The class this one derives from. `System.Object` is left out: it carries no WinRT
+/// interfaces and every class derives from it.
+fn extends(def: &windows_metadata::reader::TypeDef<'_>) -> Option<String> {
+    let extends = match def.extends()? {
+        TypeDefOrRef::TypeDef(row) => format!("{}.{}", row.namespace(), row.name()),
+        TypeDefOrRef::TypeRef(row) => format!("{}.{}", row.namespace(), row.name()),
+        TypeDefOrRef::TypeSpec(_) => return None,
+    };
+    (extends != "System.Object").then_some(extends)
 }
 
 /// The interfaces named by `StaticAttribute`, which carry the class's static methods.

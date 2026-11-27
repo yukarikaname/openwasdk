@@ -7,7 +7,10 @@ mod iids;
 mod model;
 mod pe;
 mod report;
+mod scaffold;
+mod signatures;
 mod strings;
+mod stubs;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -118,6 +121,30 @@ enum Command {
         /// Only this namespace
         #[arg(long)]
         namespace: Option<String>,
+    },
+    /// Emit the Rust skeleton that implements one runtime class
+    Scaffold {
+        /// One or more metadata files or directories
+        winmd: Vec<PathBuf>,
+        /// Runtime class, by fully qualified name
+        #[arg(long)]
+        class: String,
+        /// Output file; standard output when omitted
+        #[arg(short, long)]
+        out: Option<PathBuf>,
+    },
+    /// Emit E_NOTIMPL stubs for the exports of a PE image
+    Stubs {
+        image: PathBuf,
+        /// Exported names to leave out, comma separated or repeated
+        #[arg(long, value_delimiter = ',')]
+        skip: Vec<String>,
+        /// Output file
+        #[arg(short, long)]
+        out: Option<PathBuf>,
+        /// Compare with this file instead of writing, like `generate --check`
+        #[arg(long)]
+        check: Option<PathBuf>,
     },
 }
 
@@ -252,6 +279,54 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::Classes { winmd, namespace } => {
             let model = model::load(&winmd)?;
             print!("{}", report::classes(&model, namespace.as_deref()));
+        }
+        Command::Scaffold { winmd, class, out } => {
+            if winmd.is_empty() {
+                return Err("no metadata: pass one or more .winmd files".to_string());
+            }
+            let options = scaffold::Options {
+                inputs: &winmd,
+                class: &class,
+            };
+            let text = scaffold::render(&options)?;
+            match out {
+                Some(path) => {
+                    if let Some(parent) = path.parent() {
+                        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+                    }
+                    std::fs::write(&path, text)
+                        .map_err(|error| format!("{}: {error}", path.display()))?;
+                    println!("wrote {}", path.display());
+                }
+                None => print!("{text}"),
+            }
+        }
+        Command::Stubs {
+            image,
+            skip,
+            out,
+            check,
+        } => {
+            if out.is_some() == check.is_some() {
+                return Err("pass exactly one of --out or --check".to_string());
+            }
+            let text = stubs::render(&image, &skip)?;
+            if let Some(path) = check {
+                let scratch = generate::scratch();
+                std::fs::write(&scratch, &text)
+                    .map_err(|error| format!("{}: {error}", scratch.display()))?;
+                let result = generate::compare(&path, &scratch);
+                let _ = std::fs::remove_file(&scratch);
+                result?;
+                println!("{} is up to date", path.display());
+            } else if let Some(path) = out {
+                if let Some(parent) = path.parent() {
+                    std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+                }
+                std::fs::write(&path, &text)
+                    .map_err(|error| format!("{}: {error}", path.display()))?;
+                println!("wrote {}", path.display());
+            }
         }
     }
     Ok(())

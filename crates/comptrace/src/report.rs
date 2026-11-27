@@ -182,6 +182,7 @@ mod tests {
             classes: vec![Class {
                 namespace: "Microsoft.UI.Composition".to_string(),
                 name: "Compositor".to_string(),
+                extends: None,
                 interfaces: vec!["Microsoft.UI.Composition.ICompositor".to_string()],
                 statics: vec!["Microsoft.UI.Composition.ICompositorStatics".to_string()],
                 activatable: true,
