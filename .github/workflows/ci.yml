@@ -112,11 +112,17 @@ jobs:
       - name: Test under Wine
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y --no-install-recommends wine64
+          sudo apt-get install -y --no-install-recommends wine64 xvfb
+          # Ubuntu's wine64 package does not put a wrapper on PATH.
+          wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
+          echo "using $wine"
+          export WINEPREFIX="$PWD/target/wine"
+          export WINEDLLOVERRIDES="mscoree,mshtml="
+          xvfb-run -a "$wine" wineboot -u > /dev/null 2>&1 || true
           cargo test -p opencomp --target x86_64-pc-windows-gnu --no-run
           test_exe=$(find target/x86_64-pc-windows-gnu/debug/deps -maxdepth 1 -name 'opencomp-*' -perm -u+x -type f | head -1)
           echo "running $test_exe"
-          wine64 "$test_exe" --test-threads=1 || wine "$test_exe" --test-threads=1
+          xvfb-run -a "$wine" "$test_exe" --test-threads=1
 
       # The flat C layer XAML imports by name. A missing export is a load failure,
       # so check one conversion and one stub, not just that the crate compiled.
