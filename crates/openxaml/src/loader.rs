@@ -11,7 +11,8 @@ use crate::element::{
     CornerRadius, Element, GridLength, HorizontalAlignment, Length, Orientation, Thickness, Value,
     VerticalAlignment,
 };
-use crate::support::{self, TypeSupport, ValueType};
+use crate::property::ValueType;
+use crate::support::{self, TypeSupport};
 
 /// Why an XBF tree could not become an element tree.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -91,8 +92,13 @@ fn load_property(
                         element: type_name.to_string(),
                         name: name.to_string(),
                     })?;
-            let value = convert(type_name, property, accepted.value)?;
-            element.set(accepted.name, value);
+            let value = convert(type_name, property, accepted.value_type)?;
+            element
+                .set(accepted, value)
+                .map_err(|_| LoadError::UnsupportedValue {
+                    element: type_name.to_string(),
+                    property: name.to_string(),
+                })?;
             Ok(())
         }
     }
@@ -111,8 +117,10 @@ fn convert(
         ValueType::Thickness => thickness(&property.value).map(Value::Thickness),
         ValueType::CornerRadius => corner_radius(&property.value).map(Value::CornerRadius),
         ValueType::SolidColorBrush => solid_color_brush(&property.value).map(Value::Color),
-        ValueType::GridDefinitions => definitions(property).map(Value::GridDefinitions),
-        ValueType::Text => text(&property.value).map(Value::Text),
+        ValueType::GridDefinitions => {
+            definitions(property).map(|tracks| Value::GridDefinitions(tracks.into()))
+        }
+        ValueType::Text => text(&property.value).map(Value::text),
         ValueType::Bool => boolean(&property.value).map(Value::Bool),
         ValueType::TypeName => resolved_type(&property.value).map(Value::TypeName),
         ValueType::Enum(name) => enum_value(name, &property.value),

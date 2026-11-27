@@ -1,44 +1,33 @@
-//! The element model: a closed [`Kind`], a store of named properties and children.
+//! The element model: a closed [`Kind`], a store of dependency properties and
+//! children.
 //!
 //! A type is a variant, not a trait object. Layout is then one match per pass in
 //! [`crate::layout`] instead of a vtable call, and adding a type is a variant and
-//! one arm. The store is a `BTreeMap` keyed by the XAML property name, so a
-//! property that layout does not understand still survives a round trip from a
-//! future XBF or XAML reader.
+//! one arm. The store is keyed by the [`crate::property::Property`] descriptor,
+//! so a value can only enter with the type that property declares. A property
+//! the layout does not understand still survives a round trip from a future XBF
+//! or XAML reader.
 //!
-//! Defaults follow `CFrameworkElement::DefaultLayoutProperties` in
+//! Defaults are in the descriptor table, following
+//! `CFrameworkElement::DefaultLayoutProperties` in
 //! `dxaml/xcp/core/core/elements/FrameworkElement.cpp`: alignment is `Stretch`,
 //! margin is zero, and `Width`/`Height` are `Auto`. `FontSize` defaults to 14,
 //! the value of `Control.FontSize` in the theme.
+//!
+//! A read follows the effective-value chain documented in
+//! [`crate::property`]: local value, then inherited value, then default. The
+//! tree owns its children, so inheritance is materialised downward when a
+//! parent is set or gains a child; a local value stops the propagation at that
+//! element and restarts it with the local value for its descendants.
 
 use std::collections::BTreeMap;
+
+use crate::property::{self, Property, PropertyError, PropertyId};
 
 pub use crate::value::{
     CornerRadius, GridLength, HorizontalAlignment, Length, Orientation, Thickness, Value,
     VerticalAlignment,
 };
-
-/// A property name, exactly as XAML spells it. Attached properties keep their
-/// owner prefix, for example `Grid.Row`.
-pub type PropertyId = &'static str;
-
-const WIDTH: PropertyId = "Width";
-const HEIGHT: PropertyId = "Height";
-const MARGIN: PropertyId = "Margin";
-const PADDING: PropertyId = "Padding";
-const HORIZONTAL_ALIGNMENT: PropertyId = "HorizontalAlignment";
-const VERTICAL_ALIGNMENT: PropertyId = "VerticalAlignment";
-const BACKGROUND: PropertyId = "Background";
-const ORIENTATION: PropertyId = "Orientation";
-const SPACING: PropertyId = "Spacing";
-const TEXT: PropertyId = "Text";
-const FONT_SIZE: PropertyId = "FontSize";
-const GRID_ROW: PropertyId = "Grid.Row";
-const GRID_COLUMN: PropertyId = "Grid.Column";
-const GRID_ROWS: PropertyId = "Grid.RowDefinitions";
-const GRID_COLUMNS: PropertyId = "Grid.ColumnDefinitions";
-
-const DEFAULT_FONT_SIZE: f32 = 14.0;
 
 /// The element types this layer can lay out. The list is closed on purpose:
 /// the port will add variants one at a time, and every layout pass has to make
@@ -78,10 +67,16 @@ impl Kind {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Element {
     kind: Kind,
+    /// Values set on this element, by property name.
     properties: BTreeMap<PropertyId, Value>,
+    /// Values received from an ancestor for an inheriting property.
+    inherited: BTreeMap<PropertyId, Value>,
     children: Vec<Element>,
     name: Option<String>,
     key: Option<String>,
+    /// Set by any mutation that changes measure or arrange; cleared by
+    /// [`crate::layout::arrange`].
+    layout_dirty: bool,
 }
 
 impl Element {
@@ -89,9 +84,11 @@ impl Element {
         Self {
             kind,
             properties: BTreeMap::new(),
+            inherited: BTreeMap::new(),
             children: Vec::new(),
             name: None,
             key: None,
+            layout_dirty: true,
         }
     }
 
@@ -141,41 +138,102 @@ impl Element {
         self.kind.type_name()
     }
 
-    fn value(&self, id: PropertyId) -> Option<&Value> {
-        self.properties.get(id)
+    /// The value set on this element, ignoring inheritance and defaults. Used
+    /// by diagnostics and by tests that ask whether a source was stored.
+    pub fn local(&self, name: &str) -> Option<&Value> {
+        self.properties.get(name)
     }
 
-    /// Read a stored value by name, for diagnostics and for the XBF adapter.
-    pub fn get(&self, id: PropertyId) -> Option<&Value> {
-        self.value(id)
+    fn source(&self, property: &Property) -> Option<&Value> {
+        self.properties
+            .get(property.name)
+            .or_else(|| self.inherited.get(property.name))
     }
 
-    /// Store a value by name. Used by the future XBF/XAML readers when the
-    /// property is not one of the typed setters below.
-    pub fn set(&mut self, id: PropertyId, value: Value) {
-        self.properties.insert(id, value);
+    /// The effective value: local, then inherited, then the descriptor default.
+    pub fn get(&self, property: &'static Property) -> &Value {
+        self.source(property).unwrap_or(property.default)
+    }
+
+    /// Store a value after checking it against the descriptor. A wrong type is
+    /// an error and leaves the element unchanged.
+    pub fn set(&mut self, property: &'static Property, value: Value) -> Result<(), PropertyError> {
+        if !property.accepts(&value) {
+            return Err(PropertyError::new(property, &value));
+        }
+        self.store(property, value);
+        Ok(())
+    }
+
+    /// Store a value the typed setters built for this descriptor. The type is
+    /// an invariant of the setter, not user data, so there is no check here.
+    fn store(&mut self, property: &'static Property, value: Value) {
+        self.properties.insert(property.name, value.clone());
+        if property.inherits {
+            for child in &mut self.children {
+                child.inherit_value(property, &value);
+            }
+        }
+        self.mark_subtree_dirty();
+    }
+
+    /// Push an ancestor value down the tree. A local value wins and is the one
+    /// passed further, which makes the nearest explicit ancestor win.
+    fn inherit_value(&mut self, property: &'static Property, value: &Value) {
+        let effective = match self.properties.get(property.name) {
+            Some(local) => local.clone(),
+            None => {
+                self.inherited.insert(property.name, value.clone());
+                value.clone()
+            }
+        };
+        self.layout_dirty = true;
+        for child in &mut self.children {
+            child.inherit_value(property, &effective);
+        }
+    }
+
+    fn mark_subtree_dirty(&mut self) {
+        self.layout_dirty = true;
+        for child in &mut self.children {
+            child.mark_subtree_dirty();
+        }
+    }
+
+    /// Called by arrange once the subtree has been measured and placed.
+    pub(crate) fn mark_layout_clean(&mut self) {
+        self.layout_dirty = false;
+        for child in &mut self.children {
+            child.mark_layout_clean();
+        }
+    }
+
+    /// Whether this element or any descendant changed since the last arrange.
+    /// The upward walk is what makes an ancestor notice a leaf's set.
+    pub fn needs_layout(&self) -> bool {
+        self.layout_dirty || self.children.iter().any(Element::needs_layout)
     }
 
     pub fn width(&self) -> Length {
-        match self.value(WIDTH) {
-            Some(Value::Length(length)) => *length,
+        match self.get(&property::WIDTH) {
+            Value::Length(length) => *length,
             _ => Length::Auto,
         }
     }
 
     pub fn set_width(&mut self, width: impl Into<Length>) {
-        self.set(WIDTH, Value::Length(width.into()));
+        self.store(&property::WIDTH, Value::Length(width.into()));
     }
 
     pub fn height(&self) -> Length {
-        match self.value(HEIGHT) {
-            Some(Value::Length(length)) => *length,
+        match self.get(&property::HEIGHT) {
+            Value::Length(length) => *length,
             _ => Length::Auto,
         }
     }
 
     pub fn set_height(&mut self, height: impl Into<Length>) {
-        self.set(HEIGHT, Value::Length(height.into()));
+        self.store(&property::HEIGHT, Value::Length(height.into()));
     }
 
     pub fn with_height(self, height: impl Into<Length>) -> Self {
@@ -185,14 +243,14 @@ impl Element {
     }
 
     pub fn margin(&self) -> Thickness {
-        match self.value(MARGIN) {
-            Some(Value::Thickness(thickness)) => *thickness,
+        match self.get(&property::MARGIN) {
+            Value::Thickness(thickness) => *thickness,
             _ => Thickness::ZERO,
         }
     }
 
     pub fn set_margin(&mut self, margin: impl Into<Thickness>) {
-        self.set(MARGIN, Value::Thickness(margin.into()));
+        self.store(&property::MARGIN, Value::Thickness(margin.into()));
     }
 
     pub fn with_margin(self, margin: impl Into<Thickness>) -> Self {
@@ -203,14 +261,14 @@ impl Element {
 
     /// `Border.Padding`, and also `StackPanel.Padding` and `Grid.Padding`.
     pub fn padding(&self) -> Thickness {
-        match self.value(PADDING) {
-            Some(Value::Thickness(thickness)) => *thickness,
+        match self.get(&property::PADDING) {
+            Value::Thickness(thickness) => *thickness,
             _ => Thickness::ZERO,
         }
     }
 
     pub fn set_padding(&mut self, padding: impl Into<Thickness>) {
-        self.set(PADDING, Value::Thickness(padding.into()));
+        self.store(&property::PADDING, Value::Thickness(padding.into()));
     }
 
     pub fn with_padding(self, padding: impl Into<Thickness>) -> Self {
@@ -220,37 +278,43 @@ impl Element {
     }
 
     pub fn horizontal_alignment(&self) -> HorizontalAlignment {
-        match self.value(HORIZONTAL_ALIGNMENT) {
-            Some(Value::HorizontalAlignment(alignment)) => *alignment,
+        match self.get(&property::HORIZONTAL_ALIGNMENT) {
+            Value::HorizontalAlignment(alignment) => *alignment,
             _ => HorizontalAlignment::Stretch,
         }
     }
 
     pub fn set_horizontal_alignment(&mut self, alignment: HorizontalAlignment) {
-        self.set(HORIZONTAL_ALIGNMENT, Value::HorizontalAlignment(alignment));
+        self.store(
+            &property::HORIZONTAL_ALIGNMENT,
+            Value::HorizontalAlignment(alignment),
+        );
     }
 
     pub fn vertical_alignment(&self) -> VerticalAlignment {
-        match self.value(VERTICAL_ALIGNMENT) {
-            Some(Value::VerticalAlignment(alignment)) => *alignment,
+        match self.get(&property::VERTICAL_ALIGNMENT) {
+            Value::VerticalAlignment(alignment) => *alignment,
             _ => VerticalAlignment::Stretch,
         }
     }
 
     pub fn set_vertical_alignment(&mut self, alignment: VerticalAlignment) {
-        self.set(VERTICAL_ALIGNMENT, Value::VerticalAlignment(alignment));
+        self.store(
+            &property::VERTICAL_ALIGNMENT,
+            Value::VerticalAlignment(alignment),
+        );
     }
 
     /// Straight, unpremultiplied colour in linear light; `None` paints nothing.
     pub fn background(&self) -> Option<[f32; 4]> {
-        match self.value(BACKGROUND) {
-            Some(Value::Color(color)) => Some(*color),
+        match self.get(&property::BACKGROUND) {
+            Value::Color(color) => Some(*color),
             _ => None,
         }
     }
 
     pub fn set_background(&mut self, color: [f32; 4]) {
-        self.set(BACKGROUND, Value::Color(color));
+        self.store(&property::BACKGROUND, Value::Color(color));
     }
 
     pub fn with_background(self, color: [f32; 4]) -> Self {
@@ -260,47 +324,47 @@ impl Element {
     }
 
     pub fn orientation(&self) -> Orientation {
-        match self.value(ORIENTATION) {
-            Some(Value::Orientation(orientation)) => *orientation,
+        match self.get(&property::ORIENTATION) {
+            Value::Orientation(orientation) => *orientation,
             _ => Orientation::Vertical,
         }
     }
 
     pub fn set_orientation(&mut self, orientation: Orientation) {
-        self.set(ORIENTATION, Value::Orientation(orientation));
+        self.store(&property::ORIENTATION, Value::Orientation(orientation));
     }
 
     pub fn spacing(&self) -> f32 {
-        match self.value(SPACING) {
-            Some(Value::Number(spacing)) => spacing.max(0.0),
+        match self.get(&property::SPACING) {
+            Value::Number(spacing) => spacing.max(0.0),
             _ => 0.0,
         }
     }
 
     pub fn set_spacing(&mut self, spacing: f32) {
-        self.set(SPACING, Value::Number(spacing.max(0.0)));
+        self.store(&property::SPACING, Value::Number(spacing.max(0.0)));
     }
 
     pub fn text(&self) -> &str {
-        match self.value(TEXT) {
-            Some(Value::Text(text)) => text,
+        match self.get(&property::TEXT) {
+            Value::Text(text) => text,
             _ => "",
         }
     }
 
     pub fn set_text(&mut self, text: impl Into<String>) {
-        self.set(TEXT, Value::Text(text.into()));
+        self.store(&property::TEXT, Value::text(text));
     }
 
     pub fn font_size(&self) -> f32 {
-        match self.value(FONT_SIZE) {
-            Some(Value::Number(size)) => size.max(0.0),
-            _ => DEFAULT_FONT_SIZE,
+        match self.get(&property::FONT_SIZE) {
+            Value::Number(size) => size.max(0.0),
+            _ => property::DEFAULT_FONT_SIZE,
         }
     }
 
     pub fn set_font_size(&mut self, size: f32) {
-        self.set(FONT_SIZE, Value::Number(size.max(0.0)));
+        self.store(&property::FONT_SIZE, Value::Number(size.max(0.0)));
     }
 
     pub fn with_font_size(self, size: f32) -> Self {
@@ -310,19 +374,19 @@ impl Element {
     }
 
     pub fn grid_row(&self) -> usize {
-        index_value(self.value(GRID_ROW))
+        index_value(self.get(&property::GRID_ROW))
     }
 
     pub fn set_grid_row(&mut self, row: usize) {
-        self.set(GRID_ROW, Value::Number(row as f32));
+        self.store(&property::GRID_ROW, Value::Number(row as f32));
     }
 
     pub fn grid_column(&self) -> usize {
-        index_value(self.value(GRID_COLUMN))
+        index_value(self.get(&property::GRID_COLUMN))
     }
 
     pub fn set_grid_column(&mut self, column: usize) {
-        self.set(GRID_COLUMN, Value::Number(column as f32));
+        self.store(&property::GRID_COLUMN, Value::Number(column as f32));
     }
 
     pub fn with_grid_column(self, column: usize) -> Self {
@@ -332,24 +396,24 @@ impl Element {
     }
 
     pub fn rows(&self) -> &[GridLength] {
-        definitions(self.value(GRID_ROWS))
+        definitions(self.get(&property::GRID_ROWS))
     }
 
     pub fn set_rows(&mut self, rows: impl IntoIterator<Item = GridLength>) {
-        self.set(
-            GRID_ROWS,
-            Value::GridDefinitions(rows.into_iter().collect()),
+        self.store(
+            &property::GRID_ROWS,
+            Value::GridDefinitions(rows.into_iter().collect::<Vec<_>>().into()),
         );
     }
 
     pub fn columns(&self) -> &[GridLength] {
-        definitions(self.value(GRID_COLUMNS))
+        definitions(self.get(&property::GRID_COLUMNS))
     }
 
     pub fn set_columns(&mut self, columns: impl IntoIterator<Item = GridLength>) {
-        self.set(
-            GRID_COLUMNS,
-            Value::GridDefinitions(columns.into_iter().collect()),
+        self.store(
+            &property::GRID_COLUMNS,
+            Value::GridDefinitions(columns.into_iter().collect::<Vec<_>>().into()),
         );
     }
 
@@ -357,22 +421,32 @@ impl Element {
         &self.children
     }
 
-    pub fn push(&mut self, child: Element) -> &mut Self {
+    pub fn children_mut(&mut self) -> &mut [Element] {
+        &mut self.children
+    }
+
+    pub fn push(&mut self, mut child: Element) -> &mut Self {
+        for &property in property::INHERITED {
+            if let Some(value) = self.source(property) {
+                child.inherit_value(property, value);
+            }
+        }
         self.children.push(child);
+        self.mark_subtree_dirty();
         self
     }
 }
 
-fn index_value(value: Option<&Value>) -> usize {
+fn index_value(value: &Value) -> usize {
     match value {
-        Some(Value::Number(index)) if *index >= 0.0 => *index as usize,
+        Value::Number(index) if *index >= 0.0 => *index as usize,
         _ => 0,
     }
 }
 
-fn definitions(value: Option<&Value>) -> &[GridLength] {
+fn definitions(value: &Value) -> &[GridLength] {
     match value {
-        Some(Value::GridDefinitions(definitions)) => definitions,
+        Value::GridDefinitions(definitions) => definitions.as_ref(),
         _ => &[],
     }
 }

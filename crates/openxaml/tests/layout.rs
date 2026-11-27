@@ -79,7 +79,7 @@ fn margins_between_siblings_add_instead_of_collapsing() {
 
 #[test]
 fn text_block_measures_with_the_placeholder_formula() {
-    let text = Element::text_block("abcd").with_font_size(20.0);
+    let mut text = Element::text_block("abcd").with_font_size(20.0);
 
     // Four characters at 20 * 0.5 wide, one line at 20 * 1.2 high.
     assert_eq!(text.measure(Size::new(200.0, 200.0)), Size::new(40.0, 24.0));

@@ -5,6 +5,8 @@
 //! tracks. A corner radius and a type name are carried before any pass reads
 //! them, so a loader does not have to drop what it read.
 
+use std::borrow::Cow;
+
 /// A length is either automatic (the content decides) or a pixel count.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum Length {
@@ -152,9 +154,18 @@ pub enum Value {
     Orientation(Orientation),
     /// Straight, unpremultiplied colour in linear light.
     Color([f32; 4]),
-    Text(String),
-    GridDefinitions(Vec<GridLength>),
+    /// A text run. `Cow` keeps the empty default in a static descriptor.
+    Text(Cow<'static, str>),
+    /// Grid tracks. `Cow` keeps the empty default in a static descriptor.
+    GridDefinitions(Cow<'static, [GridLength]>),
     Bool(bool),
     /// A resolved type name carried for a property that asks for a type.
     TypeName(String),
+}
+
+impl Value {
+    /// Build a text value from anything the loader or a setter has.
+    pub fn text(text: impl Into<String>) -> Self {
+        Self::Text(Cow::Owned(text.into()))
+    }
 }

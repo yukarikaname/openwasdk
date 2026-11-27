@@ -58,10 +58,11 @@ impl Element {
         measure(self, available)
     }
 
-    /// Arrange this element in the slot its parent gave it. The returned
-    /// rectangles are relative to the parent, ready for composition.
-    pub fn arrange(&self, slot: Rect) -> Layout {
-        arrange(self, slot)
+    /// Arrange in `slot` and clear the dirty flag this pass consumed.
+    pub fn arrange(&mut self, slot: Rect) -> Layout {
+        let layout = arrange(self, slot);
+        self.mark_layout_clean();
+        layout
     }
 }
 

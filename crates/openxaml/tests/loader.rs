@@ -4,6 +4,7 @@
 //! resource dictionaries, so the honest result is an unsupported root type; the
 //! errors are the point of the table.
 
+use openxaml::property;
 use openxaml::{GridLength, Kind, LoadError, Orientation, Thickness, Value};
 use xbf::model::{Element as Source, Property, Value as SourceValue};
 
@@ -91,13 +92,13 @@ fn a_stack_panel_and_its_text_block_load() {
     assert_eq!(loaded.orientation(), Orientation::Horizontal);
     assert_eq!(loaded.spacing(), 4.0);
     assert_eq!(loaded.margin(), Thickness::new(1.0, 2.0, 3.0, 4.0));
-    assert_eq!(loaded.get("Spacing"), Some(&Value::Number(4.0)));
+    assert_eq!(loaded.get(&property::SPACING), &Value::Number(4.0));
 
     assert_eq!(loaded.children().len(), 1);
     let child = &loaded.children()[0];
     assert_eq!(child.kind(), Kind::TextBlock);
     assert_eq!(child.text(), "hello");
-    assert_eq!(child.get("Text"), Some(&Value::Text("hello".to_string())));
+    assert_eq!(child.get(&property::TEXT), &Value::Text("hello".into()));
 
     let background = loaded.background().expect("a solid brush is a colour");
     assert_eq!(background[3], 1.0);
@@ -117,8 +118,8 @@ fn directives_are_carried_as_names_not_properties() {
     let loaded = openxaml::load_root(&text).expect("TextBlock is in the table");
     assert_eq!(loaded.name(), Some("label"));
     assert_eq!(loaded.key(), Some("label-key"));
-    assert!(loaded.get("x:Name").is_none());
-    assert!(loaded.get("x:Key").is_none());
+    assert!(loaded.local("x:Name").is_none());
+    assert!(loaded.local("x:Key").is_none());
 }
 
 #[test]
