@@ -1,0 +1,35 @@
+# Dependabot, kept deliberately quiet.
+#
+# The Rust side is not a normal dependency graph: the ABI comes from generated
+# bindings against a pinned Windows App SDK metadata version, so a `windows-*`
+# bump has to be paired with regenerating them, not merged on its own. Major
+# bumps of the graphics stack change APIs we call by hand.
+#
+# Actions are cheap to keep current and have no such coupling.
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    # One PR for the family that must move together.
+    groups:
+      windows:
+        patterns: ["windows", "windows-*"]
+    ignore:
+      # These two decide the ABI and the preview backend; a major bump is a
+      # project decision, not an update.
+      - dependency-name: windows
+        update-types: ["version-update:semver-major"]
+      - dependency-name: wgpu
+        update-types: ["version-update:semver-major"]
