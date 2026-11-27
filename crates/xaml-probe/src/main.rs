@@ -21,3 +21,6 @@ mod xaml_bindings;
 
 #[cfg(windows)]
 mod windows;
+
+#[cfg(windows)]
+mod start;
