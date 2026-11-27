@@ -9,8 +9,8 @@
 #
 #   scripts/gate-b.sh [sdk-dir]
 #
-# `OPENCOMP_SDK_FETCH=1` downloads the packages when the directory is empty. `NUGET_BASE`
-# points the download at another flat-container host; the path below it is the same.
+# `OPENCOMP_SDK_FETCH=1` downloads the packages when the directory is empty.
+# `XWINUI_NUGET_BASE` points that download at another flat-container host.
 
 set -euo pipefail
 
@@ -20,7 +20,7 @@ wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
 target=target/x86_64-pc-windows-gnu/debug
 
 if [ ! -f "$sdk/Microsoft.ui.xaml.dll" ] || [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; then
-	scripts/fetch-sdk.sh "$sdk"
+	cargo run -q -p xwinui -- sdk --out "$sdk"
 fi
 echo "gate-b: $(find "$sdk" -maxdepth 1 -name '*.dll' | wc -l) SDK DLLs in $sdk"
 

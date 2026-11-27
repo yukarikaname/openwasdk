@@ -13,8 +13,12 @@ pub struct Package {
 impl Package {
     /// The flat-container URL that serves the `.nupkg` directly, with no client or feed API.
     pub fn url(&self) -> String {
+        // `XWINUI_NUGET_BASE` points this at another flat-container host; the path
+        // below the base is the same everywhere that proxies nuget.org.
+        let base = std::env::var("XWINUI_NUGET_BASE")
+            .unwrap_or_else(|_| "https://api.nuget.org/v3-flatcontainer".to_string());
         format!(
-            "https://api.nuget.org/v3-flatcontainer/{id}/{version}/{id}.{version}.nupkg",
+            "{base}/{id}/{version}/{id}.{version}.nupkg",
             id = self.id,
             version = self.version
         )
@@ -46,6 +50,28 @@ pub const PACKAGES: &[Package] = &[
     Package {
         id: "microsoft.windows.sdk.cpp",
         version: "10.0.26100.4948",
+    },
+];
+
+/// The packages that carry the runtime DLLs, which is a different set from the ones a
+/// compiler needs: `DWrite` ships the text engine XAML links against and there is no
+/// Windows SDK projection to download.
+pub const RUNTIME: &[Package] = &[
+    Package {
+        id: "microsoft.windowsappsdk.winui",
+        version: "2.7.0",
+    },
+    Package {
+        id: "microsoft.windowsappsdk.foundation",
+        version: "2.7.0",
+    },
+    Package {
+        id: "microsoft.windowsappsdk.interactiveexperiences",
+        version: "2.7.0",
+    },
+    Package {
+        id: "microsoft.windowsappsdk.dwrite",
+        version: "2.7.0",
     },
 ];
 

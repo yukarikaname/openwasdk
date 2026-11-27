@@ -83,7 +83,7 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: |
-          bash scripts/fetch-sdk.sh target/appsdk
+          cargo run -q -p xwinui -- sdk --out target/appsdk
           cargo build -p xaml-probe
           cp target/debug/xaml-probe.exe target/appsdk/
           cd target/appsdk

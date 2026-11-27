@@ -10,6 +10,7 @@ mod layout;
 mod manifest;
 mod packages;
 mod probe;
+mod sdk;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -33,6 +34,18 @@ enum Command {
         /// Where the .nupkg files are cached; defaults to ~/.cache/xwinui
         #[arg(long)]
         cache: Option<PathBuf>,
+    },
+    /// Place the App SDK runtime DLLs a client loads, next to its executable
+    Sdk {
+        /// Directory to write the DLLs into
+        #[arg(long)]
+        out: PathBuf,
+        /// Where the .nupkg files are cached; defaults to ~/.cache/xwinui
+        #[arg(long)]
+        cache: Option<PathBuf>,
+        /// Also unpack the .winmd files a generator reads
+        #[arg(long)]
+        metadata: bool,
     },
     /// Write an application manifest that activates classes in a DLL
     Manifest {
@@ -150,6 +163,23 @@ fn parse_replacements(raw: &[String]) -> Result<Vec<(String, String)>, Failure> 
 
 fn run(cli: Cli) -> Result<(), Failure> {
     match cli.command {
+        Command::Sdk {
+            out,
+            cache,
+            metadata,
+        } => {
+            let cache = match cache {
+                Some(cache) => cache,
+                None => packages::default_cache()?,
+            };
+            let summary = sdk::run(&out, &cache, metadata)?;
+            println!(
+                "{} DLL(s), {} metadata file(s)",
+                summary.dlls, summary.metadata
+            );
+            println!("runtime at {}", summary.out.display());
+            Ok(())
+        }
         Command::Layout { out, cache } => {
             let cache = match cache {
                 Some(cache) => cache,

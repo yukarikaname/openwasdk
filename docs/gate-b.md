@@ -75,6 +75,15 @@ Windows.Foundation,Windows.Foundation.Numerics,Windows.UI.Color,Microsoft.UI,Mic
 calls through the interfaces rather than through the generated class helpers, which is
 also what makes it work without combase registration.
 
+Both sets of files come from one command, so there is no unpacking step to get wrong:
+
+```sh
+cargo run -p xwinui -- sdk --out target/appsdk --metadata
+```
+
+`XWINUI_NUGET_BASE` moves the download to another flat-container host when nuget.org is
+not the closest one.
+
 ## What the check is not about
 
 Three hypotheses were tested and are dead, so nobody has to test them again.
