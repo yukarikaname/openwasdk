@@ -252,8 +252,12 @@ jobs:
           done
           ls -l sdk | head -20
 
+      # A gnu link needs mingw's `dlltool`, which the runner does not carry.
       - name: Build the probe
-        run: cargo build --target x86_64-pc-windows-gnu -p xaml-probe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
+          cargo build --target x86_64-pc-windows-gnu -p xaml-probe
 
       # Run from `sdk/`: a DLL found by full path does not put its own directory on the
       # dependency search path, and the current directory is searched.
