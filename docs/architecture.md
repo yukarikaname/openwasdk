@@ -263,6 +263,24 @@ DirectComposition IDL, for comparison, is 39 interfaces and 281 methods, so the
 public Composition surface is about three and a half times dcomp before any
 private interface is counted.
 
+## The run loop
+
+Everything Windows-shaped is verified on GitHub's runners, because this machine has
+no Windows and no Wine:
+
+| step | what it proves |
+| --- | --- |
+| `cargo test --workspace` on `windows-latest` | the ABI objects and the presenter work on a real Windows |
+| the same binary under Wine on `ubuntu-24.04` (Xvfb, software rendering) | they work on the runtime a Linux user has |
+| `tests/gate_a.rs` in both | a window, an island, a bridge, and at least one presented frame |
+| `opencomp-client` under Wine | the same path as a program rather than a test |
+| mingw link + `objdump -p` | the PE has the three exports it must |
+
+Two rules keep the loop honest. Anything that can hang is wrapped in `timeout`, so
+a wedged graphics call is a red step with a log rather than a dead runner; and
+`RUST_BACKTRACE=1` is set for the Wine run, because a panic without symbols there
+is a dead end.
+
 ## Milestones
 
 The binaries themselves are measured in [`winui-anatomy.md`](winui-anatomy.md):
