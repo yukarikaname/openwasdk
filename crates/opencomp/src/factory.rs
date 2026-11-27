@@ -86,7 +86,18 @@ fn query_statics(class: Class, iid: GUID, out: *mut *mut c_void) -> Option<i32> 
     // every interface its own vtable reference inside the outer object, so `IUnknown` and
     // `IContentIslandStatics` are eight bytes apart: answering a request for the second
     // with the first hands the caller a vtable that does not have `Create` in it.
+    use crate::bindings::Microsoft::UI::Composition::ICompositionEasingFunctionStatics;
+
+    // An undocumented entry point on `Compositor`; see `private_statics`.
+    if class == Class::Compositor && iid == crate::private_statics::IID {
+        unsafe { *out = crate::private_statics::create() };
+        return Some(S_OK);
+    }
+
     let statics: Result<*mut c_void, windows_core::Error> = match class {
+        Class::EasingFunction if iid == ICompositionEasingFunctionStatics::IID => {
+            crate::easing::statics().map(|statics| statics.into_raw())
+        }
         Class::ContentIsland if iid == IContentIslandStatics::IID => {
             crate::content::island_statics().map(|statics| statics.into_raw())
         }
@@ -214,7 +225,7 @@ unsafe extern "system" fn activate_instance(this: *mut c_void, out: *mut *mut c_
                 }
             },
             // A static class has no default constructor; its statics create the object.
-            Class::ContentIsland | Class::DesktopChildSiteBridge => {
+            Class::ContentIsland | Class::DesktopChildSiteBridge | Class::EasingFunction => {
                 unsafe { *out = std::ptr::null_mut() };
                 E_NOTIMPL
             }

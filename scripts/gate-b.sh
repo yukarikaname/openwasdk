@@ -69,12 +69,12 @@ if [ -z "$msix" ] && [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; then
 	msix=$(find "$sdk/.." -maxdepth 1 -name 'Microsoft.WindowsAppRuntime*.msix' 2>/dev/null | head -1)
 fi
 if [ -n "$msix" ] && [ -f "$msix" ]; then
-	# Replace only the classes this project actually serves, one by one. A prefix
-	# replace points every class in the namespace at our DLL, and combase fails fast the
-	# first time the engine asks for one we do not answer -- which is what
-	# `CompositionEasingFunction` did.
+	# Replace only the classes this project actually serves. The `Microsoft.UI.Composition`
+	# prefix is safe because `opencomp` answers every name the SDK's manifest lists under
+	# it, implemented or not: a class the DLL does not serve is fatal to Wine's combase,
+	# and the SDK's own `dcompi.dll` cannot load there at all.
 	cargo run -q -p xwinui -- activation --sdk "$msix" \
-		--replace Microsoft.UI.Composition.Compositor=opencomp.dll \
+		--replace Microsoft.UI.Composition.=opencomp.dll \
 		--replace Microsoft.UI.Dispatching.DispatcherQueueController=opendispatch.dll \
 		--replace Microsoft.UI.Dispatching.DispatcherQueue=opendispatch.dll \
 		--replace Microsoft.UI.Dispatching.DispatcherQueueTimer=opendispatch.dll \

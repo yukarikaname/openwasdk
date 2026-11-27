@@ -7,13 +7,16 @@
 use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    CubicBezierEasingFunction, ICompositionEasingFunction, ICompositionEasingFunction_Impl,
-    ICompositionObject, ICompositionObject2, ICompositionObject4, ICompositionObject5,
-    ICubicBezierEasingFunction, ICubicBezierEasingFunction_Impl, ILinearEasingFunction,
-    ILinearEasingFunction_Impl, LinearEasingFunction,
+    BackEasingFunction, BounceEasingFunction, CircleEasingFunction, CompositionEasingFunctionMode,
+    Compositor, CubicBezierEasingFunction, ElasticEasingFunction, ExponentialEasingFunction,
+    ICompositionEasingFunction, ICompositionEasingFunction_Impl, ICompositionEasingFunctionStatics,
+    ICompositionEasingFunctionStatics_Impl, ICompositionObject, ICompositionObject2,
+    ICompositionObject4, ICompositionObject5, ICubicBezierEasingFunction,
+    ICubicBezierEasingFunction_Impl, ILinearEasingFunction, ILinearEasingFunction_Impl,
+    LinearEasingFunction, PowerEasingFunction, SineEasingFunction, StepEasingFunction,
 };
 use crate::object::composition_object;
-use windows_core::{Interface, Result};
+use windows_core::{Interface, Ref, Result};
 use windows_numerics::Vector2;
 
 #[windows_core::implement(
@@ -72,4 +75,109 @@ pub fn cubic_bezier(
     }
     .into();
     easing.cast()
+}
+
+/// The static entry points, reached without a compositor object in hand.
+///
+/// `CompositionEasingFunction.Create…` is what the engine calls for its own transitions
+/// before any object of ours exists, so the interface has to answer through a factory
+/// rather than through an activated instance. The two curves this crate can build are
+/// built; the rest refuse rather than pretend.
+#[windows_core::implement(ICompositionEasingFunctionStatics)]
+pub struct EasingStatics;
+
+impl ICompositionEasingFunctionStatics_Impl for EasingStatics_Impl {
+    fn CreateCubicBezierEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        control_point1: &Vector2,
+        control_point2: &Vector2,
+    ) -> Result<CubicBezierEasingFunction> {
+        cubic_bezier(*control_point1, *control_point2)
+    }
+
+    fn CreateLinearEasingFunction(&self, _owner: Ref<Compositor>) -> Result<LinearEasingFunction> {
+        linear()
+    }
+
+    fn CreateStepEasingFunction(&self, _owner: Ref<Compositor>) -> Result<StepEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateStepEasingFunctionWithStepCount(
+        &self,
+        _owner: Ref<Compositor>,
+        _step_count: i32,
+    ) -> Result<StepEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateBackEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+        _amplitude: f32,
+    ) -> Result<BackEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateBounceEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+        _bounces: i32,
+        _bounciness: f32,
+    ) -> Result<BounceEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateCircleEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+    ) -> Result<CircleEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateElasticEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+        _oscillations: i32,
+        _springiness: f32,
+    ) -> Result<ElasticEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateExponentialEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+        _exponent: f32,
+    ) -> Result<ExponentialEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreatePowerEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+        _power: f32,
+    ) -> Result<PowerEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+
+    fn CreateSineEasingFunction(
+        &self,
+        _owner: Ref<Compositor>,
+        _mode: CompositionEasingFunctionMode,
+    ) -> Result<SineEasingFunction> {
+        crate::compositor::not_implemented()
+    }
+}
+
+/// The statics object the factory hands out for this class.
+pub(crate) fn statics() -> Result<ICompositionEasingFunctionStatics> {
+    let statics: ICompositionEasingFunctionStatics = EasingStatics.into();
+    statics.cast()
 }

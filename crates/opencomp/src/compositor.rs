@@ -13,7 +13,7 @@ use windows_core::{Error, HRESULT, Interface, Result};
 
 const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
 
-fn not_implemented<T>() -> Result<T> {
+pub(crate) fn not_implemented<T>() -> Result<T> {
     Err(Error::from_hresult(E_NOTIMPL))
 }
 

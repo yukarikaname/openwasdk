@@ -89,6 +89,8 @@ pub mod surface;
 mod visual;
 
 mod factory;
+#[cfg(windows)]
+mod private_statics;
 
 use std::ffi::c_void;
 
@@ -128,6 +130,8 @@ const CLASSES: &[&str] = &[
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Class {
     Compositor,
+    /// `CompositionEasingFunction`: a static class, reached through its own statics.
+    EasingFunction,
     ContentIsland,
     DesktopChildSiteBridge,
     /// A class this DLL answers for but does not implement: it refuses activation with
@@ -140,6 +144,7 @@ impl Class {
     pub(crate) fn name(self) -> &'static str {
         match self {
             Class::Compositor => "Microsoft.UI.Composition.Compositor",
+            Class::EasingFunction => "Microsoft.UI.Composition.CompositionEasingFunction",
             Class::ContentIsland => "Microsoft.UI.Content.ContentIsland",
             Class::DesktopChildSiteBridge => "Microsoft.UI.Content.DesktopChildSiteBridge",
             // A stub factory reports no runtime class name; it makes nothing.
@@ -204,6 +209,7 @@ fn class_of(name: &str) -> Option<Class> {
     }
     match name {
         "Microsoft.UI.Composition.Compositor" => Some(Class::Compositor),
+        "Microsoft.UI.Composition.CompositionEasingFunction" => Some(Class::EasingFunction),
         "Microsoft.UI.Content.ContentIsland" => Some(Class::ContentIsland),
         "Microsoft.UI.Content.DesktopChildSiteBridge" => Some(Class::DesktopChildSiteBridge),
         _ => Some(Class::Unmodelled),

@@ -279,44 +279,46 @@ unsafe extern "system" fn add_handler(
 
 unsafe extern "system" fn small_slot_3(
     _this: *mut c_void,
-    _a: *mut c_void,
-    _b: *mut c_void,
+    first: *mut c_void,
+    second: *mut c_void,
 ) -> i32 {
     if traced() {
-        eprintln!("coremessaging: small object slot 3 called");
+        eprintln!("coremessaging: small object slot 3 called with {first:?} {second:?}");
     }
     E_NOTIMPL
 }
 
 unsafe extern "system" fn small_slot_4(
     _this: *mut c_void,
-    _a: *mut c_void,
-    _b: *mut c_void,
+    first: *mut c_void,
+    second: *mut c_void,
 ) -> i32 {
     if traced() {
-        eprintln!("coremessaging: small object slot 4 called");
+        eprintln!("coremessaging: small object slot 4 called with {first:?} {second:?}");
     }
     E_NOTIMPL
 }
 
 unsafe extern "system" fn small_slot_5(
     _this: *mut c_void,
-    _a: *mut c_void,
-    _b: *mut c_void,
+    first: *mut c_void,
+    second: *mut c_void,
 ) -> i32 {
     if traced() {
-        eprintln!("coremessaging: small object slot 5 called");
+        eprintln!("coremessaging: small object slot 5 called with {first:?} {second:?}");
     }
-    E_NOTIMPL
+    // Try S_OK: the caller asked for something and a refusal ends the start, so the next
+    // failure mode says more than the refusal does.
+    S_OK
 }
 
 unsafe extern "system" fn small_slot_6(
     _this: *mut c_void,
-    _a: *mut c_void,
-    _b: *mut c_void,
+    first: *mut c_void,
+    second: *mut c_void,
 ) -> i32 {
     if traced() {
-        eprintln!("coremessaging: small object slot 6 called");
+        eprintln!("coremessaging: small object slot 6 called with {first:?} {second:?}");
     }
     E_NOTIMPL
 }
