@@ -98,4 +98,75 @@ mod tests {
         let pixels = renderer.render_to_pixels();
         assert_eq!(pixel(&pixels, 8, 0, 0), [0, 0, 0, 255]);
     }
+
+    #[test]
+    fn a_visual_scaled_by_two_covers_the_doubled_rectangle() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        let mut visual = Visual::rect(4.0, 4.0, [1.0, 0.0, 0.0, 1.0]).at(2.0, 2.0);
+        visual.scale = [2.0, 2.0];
+        renderer.set_root(visual);
+        let pixels = renderer.render_to_pixels();
+        // A 4x4 rectangle at (2, 2) grows to 8x8: its far corner is now red, the place just
+        // outside the old one still shows the background.
+        assert_eq!(pixel(&pixels, 16, 9, 9), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 10, 10), [0, 0, 255, 255]);
+        assert_eq!(pixel(&pixels, 16, 1, 1), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn a_visual_rotated_by_45_degrees_leaves_its_old_corners_empty() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        let mut visual = Visual::rect(8.0, 8.0, [1.0, 0.0, 0.0, 1.0]).at(4.0, 4.0);
+        visual.rotation = std::f32::consts::FRAC_PI_4;
+        visual.center = [4.0, 4.0];
+        renderer.set_root(visual);
+        let pixels = renderer.render_to_pixels();
+        // The square turns into a diamond around (8, 8): the centre stays covered, while each
+        // corner of the old square falls outside the rotated quad.
+        assert_eq!(pixel(&pixels, 16, 8, 8), [255, 0, 0, 255]);
+        for (x, y) in [(4, 4), (12, 4), (12, 12), (4, 12)] {
+            assert_eq!(
+                pixel(&pixels, 16, x, y),
+                [0, 0, 255, 255],
+                "corner {x},{y} should be background"
+            );
+        }
+    }
+
+    #[test]
+    fn a_child_of_a_scaled_parent_is_placed_in_the_scaled_space() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        let mut parent = Visual::rect(8.0, 8.0, [0.0, 0.0, 0.0, 0.0]).at(2.0, 2.0);
+        parent.scale = [2.0, 2.0];
+        parent.push(Visual::rect(2.0, 2.0, [0.0, 1.0, 0.0, 1.0]).at(1.0, 1.0));
+        renderer.set_root(parent);
+        let pixels = renderer.render_to_pixels();
+        // The child's (1, 1) is two parent units from the canvas origin, so it lands at (4, 4)
+        // and its 2x2 rectangle covers four screen pixels in each direction.
+        assert_eq!(pixel(&pixels, 16, 4, 4), [0, 255, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 7, 7), [0, 255, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 8, 8), [0, 0, 255, 255]);
+        assert_eq!(pixel(&pixels, 16, 3, 3), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn the_device_scale_applies_after_the_visual_scale() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.set_scale(2.0);
+        let mut visual = Visual::rect(2.0, 2.0, [1.0, 0.0, 0.0, 1.0]);
+        visual.scale = [2.0, 2.0];
+        renderer.set_root(visual);
+        let pixels = renderer.render_to_pixels();
+        // Two composition units scaled by two are four units, eight device pixels at 2x.
+        assert_eq!(pixel(&pixels, 16, 7, 7), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 8, 8), [0, 0, 255, 255]);
+    }
 }

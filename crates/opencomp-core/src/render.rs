@@ -1,20 +1,36 @@
 //! The wgpu renderer: draws a [`Visual`] tree into a texture or a swapchain image.
+//!
+//! Each draw is one quadrilateral, six vertices in a vertex buffer built for the frame. The colour
+//! rides along with the vertices, so there is no uniform and no bind group to allocate per draw.
+//! The CPU applies the tree's affine transform and then the device scale, so the shader only
+//! forwards clip-space corners. A scissor stays the only clip mechanism; see [`crate::tree`] for
+//! what that means when a rotation is involved.
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::tree::{Visual, flatten};
+use crate::tree::{Draw, Rect, Visual, flatten_root};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
-struct Uniforms {
+struct Vertex {
+    /// Clip-space position; the affine transform and the device scale are already applied.
+    position: [f32; 2],
     color: [f32; 4],
 }
+
+const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 2] =
+    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4];
+
+const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
+    array_stride: core::mem::size_of::<Vertex>() as wgpu::BufferAddress,
+    step_mode: wgpu::VertexStepMode::Vertex,
+    attributes: &VERTEX_ATTRIBUTES,
+};
 
 pub struct Renderer {
     device: wgpu::Device,
     queue: wgpu::Queue,
     pipeline: wgpu::RenderPipeline,
-    layout: wgpu::BindGroupLayout,
     format: wgpu::TextureFormat,
     size: (u32, u32),
     /// Device pixels per composition unit: the display scale factor.
@@ -62,22 +78,9 @@ impl Renderer {
             label: Some("opencomp solid"),
             source: wgpu::ShaderSource::Wgsl(include_str!("solid.wgsl").into()),
         });
-        let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("opencomp solid"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None,
-                },
-                count: None,
-            }],
-        });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("opencomp solid"),
-            bind_group_layouts: &[Some(&layout)],
+            bind_group_layouts: &[],
             immediate_size: 0,
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -87,7 +90,7 @@ impl Renderer {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
-                buffers: &[],
+                buffers: &[Some(VERTEX_LAYOUT)],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -109,7 +112,6 @@ impl Renderer {
             device,
             queue,
             pipeline,
-            layout,
             format,
             size,
             scale: 1.0,
@@ -153,7 +155,17 @@ impl Renderer {
     /// Render the tree into `target`, which must be `size()` and `format()`.
     pub fn render(&self, target: &wgpu::TextureView) {
         let mut draws = Vec::new();
-        flatten(&self.root, (0.0, 0.0), 1.0, None, &mut draws);
+        flatten_root(&self.root, &mut draws);
+
+        let mut vertices = Vec::new();
+        let mut scissors = Vec::new();
+        for draw in &draws {
+            let Some(scissor) = scissor_rect(draw.scissor, self.scale, self.size) else {
+                continue;
+            };
+            vertices.extend(quad(draw, self.scale, self.size));
+            scissors.push(scissor);
+        }
 
         let mut encoder = self
             .device
@@ -183,35 +195,21 @@ impl Renderer {
                 occlusion_query_set: None,
                 multiview_mask: None,
             });
-            pass.set_pipeline(&self.pipeline);
-            for draw in &draws {
-                let (x, y, width, height) = draw.rect.as_pixels(self.scale);
-                if width == 0 || height == 0 || x >= self.size.0 || y >= self.size.1 {
-                    continue;
-                }
-                let uniforms = self
+            if !vertices.is_empty() {
+                let buffer = self
                     .device
                     .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                         label: Some("opencomp solid"),
-                        contents: bytemuck::bytes_of(&Uniforms { color: draw.color }),
-                        usage: wgpu::BufferUsages::UNIFORM,
+                        contents: bytemuck::cast_slice(&vertices),
+                        usage: wgpu::BufferUsages::VERTEX,
                     });
-                let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    label: Some("opencomp solid"),
-                    layout: &self.layout,
-                    entries: &[wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: uniforms.as_entire_binding(),
-                    }],
-                });
-                pass.set_bind_group(0, &bind_group, &[]);
-                pass.set_scissor_rect(
-                    x,
-                    y,
-                    width.min(self.size.0 - x),
-                    height.min(self.size.1 - y),
-                );
-                pass.draw(0..3, 0..1);
+                pass.set_pipeline(&self.pipeline);
+                pass.set_vertex_buffer(0, buffer.slice(..));
+                for (index, &(x, y, width, height)) in scissors.iter().enumerate() {
+                    pass.set_scissor_rect(x, y, width, height);
+                    let first = (index * 6) as u32;
+                    pass.draw(first..first + 6, 0..1);
+                }
             }
         }
         self.queue.submit(Some(encoder.finish()));
@@ -284,6 +282,43 @@ impl Renderer {
         }
         pixels
     }
+}
+
+/// The six vertices of one draw: two triangles that cover the transformed rectangle.
+fn quad(draw: &Draw, scale: f32, size: (u32, u32)) -> [Vertex; 6] {
+    let width = size.0 as f32;
+    let height = size.1 as f32;
+    // The device scale is applied here, after the affine transform that produced the corners.
+    let to_clip = |[x, y]: [f32; 2]| {
+        [
+            x * scale / width * 2.0 - 1.0,
+            1.0 - y * scale / height * 2.0,
+        ]
+    };
+    let at = |index: usize| Vertex {
+        position: to_clip(draw.corners[index]),
+        color: draw.color,
+    };
+    [at(0), at(1), at(2), at(0), at(2), at(3)]
+}
+
+/// The device-pixel scissor for `bounds`, or `None` when the rectangle misses the target.
+fn scissor_rect(bounds: Rect, scale: f32, size: (u32, u32)) -> Option<(u32, u32, u32, u32)> {
+    let width = size.0 as f32;
+    let height = size.1 as f32;
+    // Round outwards: a scissor may pass extra pixels but must never cut into the quad.
+    let left = (bounds.x * scale).floor().clamp(0.0, width);
+    let top = (bounds.y * scale).floor().clamp(0.0, height);
+    let right = ((bounds.x + bounds.width) * scale).ceil().clamp(0.0, width);
+    let bottom = ((bounds.y + bounds.height) * scale)
+        .ceil()
+        .clamp(0.0, height);
+    (right > left && bottom > top).then_some((
+        left as u32,
+        top as u32,
+        (right - left) as u32,
+        (bottom - top) as u32,
+    ))
 }
 
 use wgpu::util::DeviceExt as _;

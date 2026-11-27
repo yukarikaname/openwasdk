@@ -253,9 +253,10 @@ macro_rules! visual_trait {
                 Ok(())
             }
             fn CenterPoint(&self) -> windows_core::Result<Vector3> {
-                Ok(Vector3::default())
+                Ok(self.node.lock().unwrap().center)
             }
-            fn SetCenterPoint(&self, _value: &Vector3) -> windows_core::Result<()> {
+            fn SetCenterPoint(&self, value: &Vector3) -> windows_core::Result<()> {
+                self.node.lock().unwrap().center = *value;
                 Ok(())
             }
             fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode> {
@@ -279,15 +280,17 @@ macro_rules! visual_trait {
                 Ok(())
             }
             fn RotationAngle(&self) -> windows_core::Result<f32> {
-                Ok(0.0)
+                Ok(self.node.lock().unwrap().rotation)
             }
-            fn SetRotationAngle(&self, _value: f32) -> windows_core::Result<()> {
+            fn SetRotationAngle(&self, value: f32) -> windows_core::Result<()> {
+                self.node.lock().unwrap().rotation = value;
                 Ok(())
             }
             fn RotationAngleInDegrees(&self) -> windows_core::Result<f32> {
-                Ok(0.0)
+                Ok(self.node.lock().unwrap().rotation.to_degrees())
             }
-            fn SetRotationAngleInDegrees(&self, _value: f32) -> windows_core::Result<()> {
+            fn SetRotationAngleInDegrees(&self, value: f32) -> windows_core::Result<()> {
+                self.node.lock().unwrap().rotation = value.to_radians();
                 Ok(())
             }
             fn RotationAxis(&self) -> windows_core::Result<Vector3> {
@@ -301,13 +304,10 @@ macro_rules! visual_trait {
                 Ok(())
             }
             fn Scale(&self) -> windows_core::Result<Vector3> {
-                Ok(Vector3 {
-                    x: 1.0,
-                    y: 1.0,
-                    z: 1.0,
-                })
+                Ok(self.node.lock().unwrap().scale)
             }
-            fn SetScale(&self, _value: &Vector3) -> windows_core::Result<()> {
+            fn SetScale(&self, value: &Vector3) -> windows_core::Result<()> {
+                self.node.lock().unwrap().scale = *value;
                 Ok(())
             }
             fn TransformMatrix(&self) -> windows_core::Result<Matrix4x4> {

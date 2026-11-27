@@ -2,6 +2,11 @@
 //!
 //! The shape follows the WinRT one node for node, so `opencomp` can map
 //! `ContainerVisual` and `SpriteVisual` onto it without a translation layer.
+//!
+//! Transforms compose down the tree as 2D affine matrices, so a child is placed in its parent's
+//! transformed space. Clips stay axis-aligned rectangles: a rotation cannot be expressed by a
+//! scissor, so a rotated draw is bounded by its own axis-aligned bounds and its clip is not
+//! applied. Translation and scale, which is what a zoom uses, keep exact clipping.
 
 /// A solid rectangle in canvas pixels: origin, then size.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -21,14 +26,6 @@ impl Rect {
             height,
         }
     }
-
-    pub(crate) fn as_pixels(&self, scale: f32) -> (u32, u32, u32, u32) {
-        let x = (self.x * scale).round().max(0.0) as u32;
-        let y = (self.y * scale).round().max(0.0) as u32;
-        let width = (self.width * scale).round().max(0.0) as u32;
-        let height = (self.height * scale).round().max(0.0) as u32;
-        (x, y, width, height)
-    }
 }
 
 /// One node of the tree. The shape is deliberately the WinRT one: an offset, a size, a colour and
@@ -42,6 +39,12 @@ pub struct Visual {
     pub color: [f32; 4],
     /// Multiplied down the tree, like a group's opacity.
     pub opacity: f32,
+    /// Scale about `center`, in the node's own coordinates.
+    pub scale: [f32; 2],
+    /// Rotation in radians about `center`.
+    pub rotation: f32,
+    /// The point `scale` and `rotation` act around, in the node's own coordinates.
+    pub center: [f32; 2],
     /// Children are clipped to this rectangle in the node's own coordinates.
     pub clip: Option<(f32, f32, f32, f32)>,
     pub children: Vec<Visual>,
@@ -54,6 +57,9 @@ impl Default for Visual {
             size: [0.0, 0.0],
             color: [0.0, 0.0, 0.0, 0.0],
             opacity: 1.0,
+            scale: [1.0, 1.0],
+            rotation: 0.0,
+            center: [0.0, 0.0],
             clip: None,
             children: Vec::new(),
         }
@@ -92,73 +98,197 @@ impl Visual {
     }
 }
 
-/// The part of `rect` that survives `clip`, or `None` when nothing does.
-fn intersect(rect: Rect, clip: (f32, f32, f32, f32)) -> Option<Rect> {
-    let left = rect.x.max(clip.0);
-    let top = rect.y.max(clip.1);
-    let right = (rect.x + rect.width).min(clip.0 + clip.2);
-    let bottom = (rect.y + rect.height).min(clip.1 + clip.3);
-    (right > left && bottom > top).then(|| Rect::new(left, top, right - left, bottom - top))
+/// A 2D affine transform: `x' = m[0] x + m[1] y + m[2]`, `y' = m[3] x + m[4] y + m[5]`.
+///
+/// Six entries are enough for translation, rotation and scale. The third row of the 3x3 matrix
+/// is always `[0, 0, 1]`, so it is not stored.
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct Affine {
+    m: [f32; 6],
 }
 
-/// A rectangle ready to draw, with the tree's translations and opacities applied.
+impl Affine {
+    const IDENTITY: Self = Self {
+        m: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+    };
+
+    fn translate(x: f32, y: f32) -> Self {
+        Self {
+            m: [1.0, 0.0, x, 0.0, 1.0, y],
+        }
+    }
+
+    fn rotate(radians: f32) -> Self {
+        let (sin, cos) = radians.sin_cos();
+        Self {
+            m: [cos, -sin, 0.0, sin, cos, 0.0],
+        }
+    }
+
+    fn scale([x, y]: [f32; 2]) -> Self {
+        Self {
+            m: [x, 0.0, 0.0, 0.0, y, 0.0],
+        }
+    }
+
+    fn transform_point(self, [x, y]: [f32; 2]) -> [f32; 2] {
+        [
+            self.m[0] * x + self.m[1] * y + self.m[2],
+            self.m[3] * x + self.m[4] * y + self.m[5],
+        ]
+    }
+
+    /// Whether the transform maps axis-aligned rectangles to axis-aligned rectangles.
+    ///
+    /// A rotation by a multiple of 90 degrees also qualifies, but is treated as rotated; the
+    /// only cost is a looser scissor, never a wrong pixel.
+    fn axis_aligned(self) -> bool {
+        self.m[1] == 0.0 && self.m[3] == 0.0
+    }
+}
+
+/// `self * other` applies `other` first, the order points compose in.
+impl core::ops::Mul for Affine {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        let a = self.m;
+        let b = other.m;
+        Self {
+            m: [
+                a[0] * b[0] + a[1] * b[3],
+                a[0] * b[1] + a[1] * b[4],
+                a[0] * b[2] + a[1] * b[5] + a[2],
+                a[3] * b[0] + a[4] * b[3],
+                a[3] * b[1] + a[4] * b[4],
+                a[3] * b[2] + a[4] * b[5] + a[5],
+            ],
+        }
+    }
+}
+
+/// The four corners of a rectangle in local coordinates, clockwise from its top-left.
+fn corners(transform: Affine, rect: Rect) -> [[f32; 2]; 4] {
+    [
+        transform.transform_point([rect.x, rect.y]),
+        transform.transform_point([rect.x + rect.width, rect.y]),
+        transform.transform_point([rect.x + rect.width, rect.y + rect.height]),
+        transform.transform_point([rect.x, rect.y + rect.height]),
+    ]
+}
+
+/// The axis-aligned bounds of four corners.
+fn bounds(corners: [[f32; 2]; 4]) -> Rect {
+    let mut left = f32::INFINITY;
+    let mut top = f32::INFINITY;
+    let mut right = f32::NEG_INFINITY;
+    let mut bottom = f32::NEG_INFINITY;
+    for [x, y] in corners {
+        left = left.min(x);
+        top = top.min(y);
+        right = right.max(x);
+        bottom = bottom.max(y);
+    }
+    Rect::new(left, top, right - left, bottom - top)
+}
+
+/// The part of both rectangles, with a zero size when they do not meet.
+fn overlap(rect: Rect, clip: Rect) -> Rect {
+    let left = rect.x.max(clip.x);
+    let top = rect.y.max(clip.y);
+    let right = (rect.x + rect.width).min(clip.x + clip.width);
+    let bottom = (rect.y + rect.height).min(clip.y + clip.height);
+    Rect::new(left, top, (right - left).max(0.0), (bottom - top).max(0.0))
+}
+
+/// A rectangle ready to draw, with the tree's transforms, translations and opacities applied.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct Draw {
-    pub(crate) rect: Rect,
+    /// The four corners in canvas units, in the order [`corners`] produces.
+    pub(crate) corners: [[f32; 2]; 4],
+    /// The axis-aligned bounds of `corners`, already narrowed by the accumulated clip when the
+    /// transform is axis aligned.
+    pub(crate) scissor: Rect,
     pub(crate) color: [f32; 4],
 }
 
-/// Flatten the tree into draw order, carrying the accumulated clip rectangle in canvas pixels.
-pub(crate) fn flatten(
-    visual: &Visual,
-    origin: (f32, f32),
-    opacity: f32,
-    clip: Option<(f32, f32, f32, f32)>,
-    out: &mut Vec<Draw>,
-) {
-    let x = origin.0 + visual.offset[0];
-    let y = origin.1 + visual.offset[1];
+/// Flatten a root tree, whose parent space is the canvas, into draw order.
+pub(crate) fn flatten_root(visual: &Visual, out: &mut Vec<Draw>) {
+    flatten(visual, Affine::IDENTITY, 1.0, None, out);
+}
+
+/// Flatten the tree into draw order, carrying the accumulated transform, opacity and clip.
+fn flatten(visual: &Visual, parent: Affine, opacity: f32, clip: Option<Rect>, out: &mut Vec<Draw>) {
+    // WinRT places a visual by its offset, then rotates and scales it about its centre point.
+    let local = Affine::translate(visual.center[0], visual.center[1])
+        * Affine::rotate(visual.rotation)
+        * Affine::scale(visual.scale)
+        * Affine::translate(-visual.center[0], -visual.center[1]);
+    let world = parent * Affine::translate(visual.offset[0], visual.offset[1]) * local;
     let alpha = opacity * visual.opacity;
-    let draw = Rect::new(x, y, visual.size[0], visual.size[1]);
+
     if visual.size[0] > 0.0 && visual.size[1] > 0.0 && alpha > 0.0 && visual.color[3] > 0.0 {
-        if let Some(clip) = clip {
-            if let Some(visible) = intersect(draw, clip) {
-                out.push(Draw {
-                    rect: visible,
-                    color: [
-                        visual.color[0],
-                        visual.color[1],
-                        visual.color[2],
-                        visual.color[3] * alpha,
-                    ],
-                });
-            }
+        let corners = corners(world, Rect::new(0.0, 0.0, visual.size[0], visual.size[1]));
+        let bounds = bounds(corners);
+        // A scissor is always a rectangle, so a rotated clip has no exact rectangle to use.
+        // Restrict axis-aligned draws to the clip; for a rotated draw keep only its own bounds
+        // and let the clip go, which is the limitation documented at the top of this module.
+        let scissor = if world.axis_aligned() {
+            clip.map_or(bounds, |clip| overlap(bounds, clip))
         } else {
-            out.push(Draw {
-                rect: draw,
-                color: [
-                    visual.color[0],
-                    visual.color[1],
-                    visual.color[2],
-                    visual.color[3] * alpha,
-                ],
-            });
-        }
+            bounds
+        };
+        out.push(Draw {
+            corners,
+            scissor,
+            color: [
+                visual.color[0],
+                visual.color[1],
+                visual.color[2],
+                visual.color[3] * alpha,
+            ],
+        });
     }
-    let clip = visual.clip.map_or(clip, |local| {
-        let absolute = (x + local.0, y + local.1, local.2, local.3);
+
+    let clip = visual.clip.map_or(clip, |(x, y, width, height)| {
+        let absolute = bounds(corners(world, Rect::new(x, y, width, height)));
         Some(match clip {
-            Some(parent) => {
-                let left = parent.0.max(absolute.0);
-                let top = parent.1.max(absolute.1);
-                let right = (parent.0 + parent.2).min(absolute.0 + absolute.2);
-                let bottom = (parent.1 + parent.3).min(absolute.1 + absolute.3);
-                (left, top, (right - left).max(0.0), (bottom - top).max(0.0))
-            }
+            Some(parent) => overlap(absolute, parent),
             None => absolute,
         })
     });
     for child in &visual.children {
-        flatten(child, (x, y), alpha, clip, out);
+        flatten(child, world, alpha, clip, out);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn round_trip(transform: Affine, point: [f32; 2]) -> [f32; 2] {
+        transform.transform_point(point)
+    }
+
+    #[test]
+    fn an_identity_transform_leaves_points_alone() {
+        assert_eq!(round_trip(Affine::IDENTITY, [3.0, 4.0]), [3.0, 4.0]);
+    }
+
+    #[test]
+    fn a_translation_is_applied_before_its_parent() {
+        let parent = Affine::translate(10.0, 0.0);
+        let child = Affine::translate(1.0, 2.0);
+        assert_eq!(round_trip(parent * child, [0.0, 0.0]), [11.0, 2.0]);
+    }
+
+    #[test]
+    fn a_scale_about_the_centre_keeps_the_centre_fixed() {
+        let centre = [4.0, 4.0];
+        let transform = Affine::translate(centre[0], centre[1])
+            * Affine::scale([2.0, 2.0])
+            * Affine::translate(-centre[0], -centre[1]);
+        assert_eq!(round_trip(transform, centre), centre);
+        assert_eq!(round_trip(transform, [0.0, 0.0]), [-4.0, -4.0]);
     }
 }

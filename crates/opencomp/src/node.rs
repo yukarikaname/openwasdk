@@ -22,6 +22,10 @@ pub struct Node {
     pub offset: Vector3,
     pub size: Vector2,
     pub opacity: f32,
+    /// Scale and rotation about `center`, both in the node's own coordinates.
+    pub scale: Vector3,
+    pub rotation: f32,
+    pub center: Vector3,
     pub visible: bool,
     pub hit_test_visible: bool,
     pub color: [f32; 4],
@@ -68,6 +72,13 @@ impl Default for Node {
             offset: Vector3::default(),
             size: Vector2::default(),
             opacity: 1.0,
+            scale: Vector3 {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            rotation: 0.0,
+            center: Vector3::default(),
             visible: true,
             hit_test_visible: true,
             color: [0.0; 4],
@@ -153,6 +164,9 @@ fn snapshot_at(
             size: [size.x, size.y],
             color,
             opacity,
+            scale: [node.scale.x, node.scale.y],
+            rotation: node.rotation,
+            center: [node.center.x, node.center.y],
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
         };
@@ -351,6 +365,29 @@ mod tests {
 
         stop_animation(&root, Property::Opacity);
         assert_eq!(snapshot(&root).unwrap().opacity, 1.0);
+    }
+
+    #[test]
+    fn scale_and_rotation_reach_the_snapshot() {
+        let root = node(1.0);
+        {
+            let mut root = root.lock().unwrap();
+            root.scale = Vector3 {
+                x: 2.0,
+                y: 3.0,
+                z: 1.0,
+            };
+            root.rotation = std::f32::consts::FRAC_PI_4;
+            root.center = Vector3 {
+                x: 4.0,
+                y: 5.0,
+                z: 0.0,
+            };
+        }
+        let visual = snapshot(&root).unwrap();
+        assert_eq!(visual.scale, [2.0, 3.0]);
+        assert_eq!(visual.rotation, std::f32::consts::FRAC_PI_4);
+        assert_eq!(visual.center, [4.0, 5.0]);
     }
 
     #[test]
