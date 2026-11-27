@@ -155,9 +155,10 @@ private interface is counted.
 | --- | --- | --- |
 | 0 | `comptrace` | A proxy logs WinUI 3 Gallery's Composition calls and produces the interface list |
 | 1 | `xwinui` | An unmodified WinUI 3 sample builds on Linux and runs under Wine with the official runtime |
-| 2 | `opencomp` | The same sample starts with the official XAML DLLs and our Composition, and draws one page |
-| 3 | `openxaml` | The sample runs without `Microsoft.UI.Xaml.Internal.dll` |
-| 4 | `openhost` | No Microsoft runtime DLL remains; only Wine's platform layer |
+| 2 | `opencomp` | A Composition-only program creates a visual tree on our DLL and draws it |
+| 3 | composition-only host | The same program hosts its tree in an HWND through `Microsoft.UI.Content`/`Windowing`, with no XAML loaded |
+| 4 | `openxaml` | A WinUI 3 sample runs without `Microsoft.UI.Xaml.Internal.dll` |
+| 5 | `openhost` | No Microsoft runtime DLL remains; only Wine's platform layer |
 
 ## Risks
 

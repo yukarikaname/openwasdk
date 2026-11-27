@@ -31,7 +31,7 @@ compiled XAML and the Wine host stay as they are.
 | `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | factory only |
 | `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | draws rectangles |
 | `openxaml` | `Microsoft.UI.Xaml.Internal` replacement: XBF loader, property system, layout, controls | planned |
-| `openhost` | App model, CoreWindow, activation, PE/WinRT host glue | planned |
+| `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | planned |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
@@ -108,11 +108,14 @@ docs/                  architecture, measured scale, milestones
 ## Roadmap
 
 1. `comptrace` — metadata reports and the generator (done).
-2. `opencomp` — first frame: `Compositor`, `ContainerVisual`, `SpriteVisual`,
-   `CompositionTarget` on wgpu.
-3. `openxaml` — XBF loader and the XAML runtime.
-4. `openhost` — run without the Microsoft runtime DLLs.
-5. `xwinui` — cross-compilation, packaging and deployment.
+2. `opencomp` — first frame: `Compositor`, `ContainerVisual`, `SpriteVisual`
+   on wgpu.
+3. **Composition-only apps** — a program that hosts a visual tree in an HWND
+   through `Microsoft.UI.Content`/`Microsoft.UI.Windowing` and never loads XAML.
+   This is the first target that can run end to end, and the smallest one.
+4. `openxaml` — XBF loader and the XAML runtime on top of the same compositor.
+5. `openhost` — run without the Microsoft runtime DLLs.
+6. `xwinui` — cross-compilation, packaging and deployment.
 
 ## License
 
