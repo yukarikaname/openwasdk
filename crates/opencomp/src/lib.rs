@@ -230,7 +230,7 @@ mod export_tests {
 mod abi {
     use crate::bindings::Microsoft::UI::Composition::{
         CompositionBrush, ICompositor, IContainerVisual, ISpriteVisual, IVisual, IVisual2,
-        InsetClip,
+        InsetClip, Visual,
     };
     use crate::bindings::Windows::UI::Color;
     use windows_core::Interface;
@@ -359,6 +359,24 @@ mod abi {
 
         collection.Remove(&between).unwrap();
         assert_eq!(collection.Count().unwrap(), 2);
+    }
+
+    #[test]
+    fn a_parent_for_transform_round_trips() {
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let parent = compositor.CreateContainerVisual().unwrap();
+        let visual: IVisual2 = sprite.cast().unwrap();
+        // Nullable in the ABI, so an unset reference still reports `E_NOTIMPL`.
+        assert!(visual.ParentForTransform().is_err());
+
+        let parent_visual: Visual = parent.cast().unwrap();
+        visual.SetParentForTransform(&parent_visual).unwrap();
+        let stored = visual.ParentForTransform().unwrap();
+        assert_eq!(
+            Interface::as_raw(&stored),
+            Interface::as_raw(&parent_visual)
+        );
     }
 
     #[test]

@@ -90,26 +90,54 @@ pub fn create() -> Result<CompositionAnimationGroup> {
 /// not parse. A group from another implementation has no list to read, so that
 /// case reports `E_NOTIMPL` rather than pretending it started something.
 pub(crate) fn start(node: &crate::node::NodeRef, group: &ICompositionAnimationBase) -> Result<()> {
-    let Some(state) = crate::identity::lookup::<_, Mutex<Vec<CompositionAnimation>>>(group) else {
+    let Some(animations) = animations_of(group) else {
         return crate::object::not_implemented();
     };
-    // Copy the list out and release the lock before touching the node: a client
-    // may hold the group lock while it waits for the animation to start.
-    let animations = state.lock().unwrap().clone();
-    for animation in animations {
-        let target = animation
-            .cast::<ICompositionAnimation2>()
-            .ok()
-            .and_then(|animation| animation.Target().ok())
-            .unwrap_or_default();
-        let Some(property) = crate::node::Property::parse(&target) else {
-            continue;
-        };
-        if let Some(keyframes) = crate::animation::keyframes(&animation) {
-            crate::node::start_animation(node, property, keyframes);
-        }
+    for (property, keyframes) in animations {
+        crate::node::start_animation(node, property, keyframes);
     }
     Ok(())
+}
+
+/// Stop every animation a group made by this DLL started.
+///
+/// Stopping follows the same target names as starting, so the two calls always
+/// address the same node property. A foreign group has no list and reports
+/// `E_NOTIMPL`, exactly as `start` does.
+pub(crate) fn stop(node: &crate::node::NodeRef, group: &ICompositionAnimationBase) -> Result<()> {
+    let Some(animations) = animations_of(group) else {
+        return crate::object::not_implemented();
+    };
+    for (property, _) in animations {
+        crate::node::stop_animation(node, property);
+    }
+    Ok(())
+}
+
+/// The targets and curves a group holds, or `None` for a foreign group.
+///
+/// The list is copied out and the lock released before touching the node: a
+/// client may hold the group lock while it waits for an animation to start.
+fn animations_of(
+    group: &ICompositionAnimationBase,
+) -> Option<Vec<(crate::node::Property, opencomp_core::Keyframes)>> {
+    let state = crate::identity::lookup::<_, Mutex<Vec<CompositionAnimation>>>(group)?;
+    let animations = state.lock().unwrap().clone();
+    Some(
+        animations
+            .into_iter()
+            .filter_map(|animation| {
+                let target = animation
+                    .cast::<ICompositionAnimation2>()
+                    .ok()
+                    .and_then(|animation| animation.Target().ok())
+                    .unwrap_or_default();
+                let property = crate::node::Property::parse(&target)?;
+                let keyframes = crate::animation::keyframes(&animation)?;
+                Some((property, keyframes))
+            })
+            .collect(),
+    )
 }
 
 #[cfg(all(test, windows))]
@@ -170,6 +198,33 @@ mod tests {
         let node = crate::node::resolve(&sprite).unwrap();
         let tree = crate::node::snapshot(&node).unwrap();
         assert_eq!(tree.opacity, 0.25);
+    }
+
+    #[test]
+    fn stopping_a_group_stops_what_it_started() {
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let group = compositor2().CreateAnimationGroup().unwrap();
+        let group: ICompositionAnimationGroup = group.cast().unwrap();
+
+        let opacity = compositor.CreateScalarKeyFrameAnimation().unwrap();
+        let target: ICompositionAnimation2 = opacity.cast().unwrap();
+        target.SetTarget("Opacity").unwrap();
+        let keyframes: IScalarKeyFrameAnimation = opacity.cast().unwrap();
+        keyframes.InsertKeyFrame(0.0, 0.25).unwrap();
+        let opacity: CompositionAnimation = opacity.cast().unwrap();
+        group.Add(&opacity).unwrap();
+
+        let base: ICompositionAnimationBase = group.cast().unwrap();
+        let object: ICompositionObject2 = sprite.cast().unwrap();
+        object.StartAnimationGroup(&base).unwrap();
+        let node = crate::node::resolve(&sprite).unwrap();
+        assert_eq!(node.lock().unwrap().animations.len(), 1);
+
+        object.StopAnimationGroup(&base).unwrap();
+        assert!(node.lock().unwrap().animations.is_empty());
+        // `LeaveCurrentValue` keeps the sampled value on the node.
+        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 0.25);
     }
 
     #[test]

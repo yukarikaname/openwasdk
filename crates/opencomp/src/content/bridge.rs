@@ -22,6 +22,7 @@ struct BridgeState {
     rect: RectInt32,
     scale: f32,
     resize_policy: ContentSizePolicy,
+    layout_override: Option<ContentLayoutDirection>,
     island: Option<SharedIsland>,
     /// The frame loop, started on the first `Show` and stopped by `Hide` or `Close`.
     presenter: Option<crate::present::Window>,
@@ -35,6 +36,7 @@ impl BridgeState {
             rect: RectInt32::default(),
             scale: 1.0,
             resize_policy: ContentSizePolicy::None,
+            layout_override: None,
             island: None,
             presenter: None,
         }
@@ -77,13 +79,23 @@ impl IContentSiteBridge_Impl for Bridge_Impl {
     fn LayoutDirectionOverride(
         &self,
     ) -> Result<windows_reference::IReference<ContentLayoutDirection>> {
-        not_implemented()
+        match self.state.lock().unwrap().layout_override {
+            // A stock reference boxes the value; the island reads the plain enum.
+            Some(value) => Ok(windows_reference::IReference::from(value)),
+            // Nullable in the ABI; the trait cannot say so.
+            None => not_implemented(),
+        }
     }
     fn SetLayoutDirectionOverride(
         &self,
-        _value: Ref<windows_reference::IReference<ContentLayoutDirection>>,
+        value: Ref<windows_reference::IReference<ContentLayoutDirection>>,
     ) -> Result<()> {
-        not_implemented()
+        let direction = match value.as_ref() {
+            Some(reference) => Some(reference.Value()?),
+            None => None,
+        };
+        self.state.lock().unwrap().layout_override = direction;
+        Ok(())
     }
     fn OverrideScale(&self) -> Result<f32> {
         Ok(self.state.lock().unwrap().scale)
@@ -323,6 +335,25 @@ mod tests {
         let node = root_node(&island).unwrap();
         let tree = crate::node::snapshot_in(&node, size).unwrap();
         assert_eq!(tree.size, [800.0, 600.0]);
+    }
+
+    #[test]
+    fn a_layout_direction_override_round_trips() {
+        let bridge = bridge(0x1234);
+        let site: IContentSiteBridge = bridge.cast().unwrap();
+        // Unset, the property is nullable in the ABI and the trait cannot say so.
+        assert!(site.LayoutDirectionOverride().is_err());
+
+        // The client-facing setter boxes the enum into the `IReference` the ABI takes.
+        site.SetLayoutDirectionOverride(Some(ContentLayoutDirection::RightToLeft))
+            .unwrap();
+        assert_eq!(
+            site.LayoutDirectionOverride().unwrap(),
+            ContentLayoutDirection::RightToLeft
+        );
+
+        site.SetLayoutDirectionOverride(None).unwrap();
+        assert!(site.LayoutDirectionOverride().is_err());
     }
 
     #[test]

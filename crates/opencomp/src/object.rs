@@ -83,11 +83,19 @@ macro_rules! composition_followups {
             }
             fn StopAnimationGroup(
                 &self,
-                _value: ::windows_core::Ref<
+                value: ::windows_core::Ref<
                     $crate::bindings::Microsoft::UI::Composition::ICompositionAnimationBase,
                 >,
             ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                // Stop only what a group this DLL made had started. A foreign group
+                // keeps no list here, so it still reports `E_NOTIMPL`.
+                match (
+                    $crate::object::GroupTarget::group_target(self),
+                    value.as_ref(),
+                ) {
+                    (Some(node), Some(group)) => $crate::animation_group::stop(node, group),
+                    _ => $crate::object::not_implemented(),
+                }
             }
         }
 
@@ -381,9 +389,14 @@ macro_rules! visual_trait {
 
         impl IVisual2_Impl for $impl_type {
             fn ParentForTransform(&self) -> windows_core::Result<Visual> {
-                $crate::object::not_implemented()
+                match self.parent_for_transform.lock().unwrap().clone() {
+                    Some(visual) => Ok(visual),
+                    // Nullable in the ABI; the trait cannot say so.
+                    None => $crate::object::not_implemented(),
+                }
             }
-            fn SetParentForTransform(&self, _value: Ref<Visual>) -> windows_core::Result<()> {
+            fn SetParentForTransform(&self, value: Ref<Visual>) -> windows_core::Result<()> {
+                *self.parent_for_transform.lock().unwrap() = value.cloned();
                 Ok(())
             }
             fn RelativeOffsetAdjustment(&self) -> windows_core::Result<Vector3> {

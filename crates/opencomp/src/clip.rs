@@ -19,7 +19,99 @@ use crate::bindings::Microsoft::UI::Composition::{
 };
 use crate::object::{composition_object, not_implemented};
 use windows_core::{Interface, Ref, Result};
-use windows_numerics::Vector2;
+use windows_numerics::{Matrix3x2, Vector2};
+
+/// The transform `ICompositionClip2` exposes on every clip.
+///
+/// The renderer applies a clip's insets or geometry to the visual as it is, so these
+/// values are kept for a client that reads them back and are not folded into the
+/// node. A clip with no transform set answers the identity, as the contract says.
+struct ClipTransform {
+    anchor: Vector2,
+    center: Vector2,
+    offset: Vector2,
+    rotation: f32,
+    scale: Vector2,
+    matrix: Matrix3x2,
+}
+
+impl Default for ClipTransform {
+    fn default() -> Self {
+        Self {
+            anchor: Vector2::default(),
+            center: Vector2::default(),
+            offset: Vector2::default(),
+            rotation: 0.0,
+            scale: Vector2 { x: 1.0, y: 1.0 },
+            matrix: Matrix3x2 {
+                m11: 1.0,
+                m12: 0.0,
+                m21: 0.0,
+                m22: 1.0,
+                m31: 0.0,
+                m32: 0.0,
+            },
+        }
+    }
+}
+
+/// The `ICompositionClip2` half both clip objects share. The bodies expand in this
+/// module, where `ClipTransform` and the traits are in scope.
+macro_rules! clip_transform {
+    ($impl_type:ident) => {
+        impl ICompositionClip2_Impl for $impl_type {
+            fn AnchorPoint(&self) -> Result<Vector2> {
+                Ok(self.transform.lock().unwrap().anchor)
+            }
+            fn SetAnchorPoint(&self, value: &Vector2) -> Result<()> {
+                self.transform.lock().unwrap().anchor = *value;
+                Ok(())
+            }
+            fn CenterPoint(&self) -> Result<Vector2> {
+                Ok(self.transform.lock().unwrap().center)
+            }
+            fn SetCenterPoint(&self, value: &Vector2) -> Result<()> {
+                self.transform.lock().unwrap().center = *value;
+                Ok(())
+            }
+            fn Offset(&self) -> Result<Vector2> {
+                Ok(self.transform.lock().unwrap().offset)
+            }
+            fn SetOffset(&self, value: &Vector2) -> Result<()> {
+                self.transform.lock().unwrap().offset = *value;
+                Ok(())
+            }
+            fn RotationAngle(&self) -> Result<f32> {
+                Ok(self.transform.lock().unwrap().rotation)
+            }
+            fn SetRotationAngle(&self, value: f32) -> Result<()> {
+                self.transform.lock().unwrap().rotation = value;
+                Ok(())
+            }
+            fn RotationAngleInDegrees(&self) -> Result<f32> {
+                Ok(self.transform.lock().unwrap().rotation.to_degrees())
+            }
+            fn SetRotationAngleInDegrees(&self, value: f32) -> Result<()> {
+                self.transform.lock().unwrap().rotation = value.to_radians();
+                Ok(())
+            }
+            fn Scale(&self) -> Result<Vector2> {
+                Ok(self.transform.lock().unwrap().scale)
+            }
+            fn SetScale(&self, value: &Vector2) -> Result<()> {
+                self.transform.lock().unwrap().scale = *value;
+                Ok(())
+            }
+            fn TransformMatrix(&self) -> Result<Matrix3x2> {
+                Ok(self.transform.lock().unwrap().matrix)
+            }
+            fn SetTransformMatrix(&self, value: &Matrix3x2) -> Result<()> {
+                self.transform.lock().unwrap().matrix = *value;
+                Ok(())
+            }
+        }
+    };
+}
 
 #[windows_core::implement(
     ICompositionObject,
@@ -33,56 +125,13 @@ use windows_numerics::Vector2;
 pub struct InsetClipObject {
     /// Left, top, right, bottom.
     insets: Mutex<[f32; 4]>,
+    transform: Mutex<ClipTransform>,
 }
 
 composition_object!(InsetClipObject_Impl);
+clip_transform!(InsetClipObject_Impl);
 
 impl ICompositionClip_Impl for InsetClipObject_Impl {}
-
-impl ICompositionClip2_Impl for InsetClipObject_Impl {
-    fn AnchorPoint(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetAnchorPoint(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn CenterPoint(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetCenterPoint(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn Offset(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetOffset(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn RotationAngle(&self) -> Result<f32> {
-        not_implemented()
-    }
-    fn SetRotationAngle(&self, _value: f32) -> Result<()> {
-        not_implemented()
-    }
-    fn RotationAngleInDegrees(&self) -> Result<f32> {
-        not_implemented()
-    }
-    fn SetRotationAngleInDegrees(&self, _value: f32) -> Result<()> {
-        not_implemented()
-    }
-    fn Scale(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetScale(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn TransformMatrix(&self) -> Result<windows_numerics::Matrix3x2> {
-        not_implemented()
-    }
-    fn SetTransformMatrix(&self, _value: &windows_numerics::Matrix3x2) -> Result<()> {
-        not_implemented()
-    }
-}
 
 impl IInsetClip_Impl for InsetClipObject_Impl {
     fn LeftInset(&self) -> Result<f32> {
@@ -134,56 +183,13 @@ impl IInsetClip_Impl for InsetClipObject_Impl {
 )]
 pub struct GeometricClipObject {
     geometry: Mutex<Option<CompositionGeometry>>,
+    transform: Mutex<ClipTransform>,
 }
 
 composition_object!(GeometricClipObject_Impl);
+clip_transform!(GeometricClipObject_Impl);
 
 impl ICompositionClip_Impl for GeometricClipObject_Impl {}
-
-impl ICompositionClip2_Impl for GeometricClipObject_Impl {
-    fn AnchorPoint(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetAnchorPoint(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn CenterPoint(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetCenterPoint(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn Offset(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetOffset(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn RotationAngle(&self) -> Result<f32> {
-        not_implemented()
-    }
-    fn SetRotationAngle(&self, _value: f32) -> Result<()> {
-        not_implemented()
-    }
-    fn RotationAngleInDegrees(&self) -> Result<f32> {
-        not_implemented()
-    }
-    fn SetRotationAngleInDegrees(&self, _value: f32) -> Result<()> {
-        not_implemented()
-    }
-    fn Scale(&self) -> Result<Vector2> {
-        not_implemented()
-    }
-    fn SetScale(&self, _value: &Vector2) -> Result<()> {
-        not_implemented()
-    }
-    fn TransformMatrix(&self) -> Result<windows_numerics::Matrix3x2> {
-        not_implemented()
-    }
-    fn SetTransformMatrix(&self, _value: &windows_numerics::Matrix3x2) -> Result<()> {
-        not_implemented()
-    }
-}
 
 impl ICompositionGeometricClip_Impl for GeometricClipObject_Impl {
     fn Geometry(&self) -> Result<CompositionGeometry> {
@@ -219,6 +225,7 @@ pub fn create() -> Result<InsetClip> {
 pub fn create_with(insets: [f32; 4]) -> Result<InsetClip> {
     let clip: IInsetClip = InsetClipObject {
         insets: Mutex::new(insets),
+        transform: Mutex::new(ClipTransform::default()),
     }
     .into();
     clip.cast()
@@ -228,6 +235,7 @@ pub fn create_with(insets: [f32; 4]) -> Result<InsetClip> {
 pub fn geometric(geometry: Option<CompositionGeometry>) -> Result<CompositionGeometricClip> {
     let clip: ICompositionGeometricClip = GeometricClipObject {
         geometry: Mutex::new(geometry),
+        transform: Mutex::new(ClipTransform::default()),
     }
     .into();
     clip.cast()
@@ -240,6 +248,7 @@ pub fn geometric(geometry: Option<CompositionGeometry>) -> Result<CompositionGeo
 pub fn empty() -> Result<CompositionClip> {
     let clip: IInsetClip = InsetClipObject {
         insets: Mutex::new([0.0; 4]),
+        transform: Mutex::new(ClipTransform::default()),
     }
     .into();
     clip.cast()
@@ -289,9 +298,9 @@ pub fn shape(clip: &CompositionClip, size: Vector2) -> Option<([f32; 4], [f32; 4
 mod tests {
     use super::*;
     use crate::bindings::Microsoft::UI::Composition::{
-        CompositionClip, ICompositor, ICompositor5, ICompositor6, IVisual,
+        CompositionClip, ICompositionClip2, ICompositor, ICompositor5, ICompositor6, IVisual,
     };
-    use windows_numerics::Vector2;
+    use windows_numerics::{Matrix3x2, Vector2};
 
     fn compositor() -> ICompositor {
         crate::compositor::instance().unwrap().cast().unwrap()
@@ -326,6 +335,62 @@ mod tests {
         let tree = crate::node::snapshot(&node).unwrap();
         assert_eq!(tree.clip, Some((10.0, 5.0, 90.0, 40.0)));
         assert_eq!(tree.radius, [12.0; 4]);
+    }
+
+    /// The transform is the same state on either clip class; only the class differs.
+    fn transform_round_trips(clip: &ICompositionClip2) {
+        assert_eq!(clip.AnchorPoint().unwrap(), Vector2::default());
+        assert_eq!(clip.CenterPoint().unwrap(), Vector2::default());
+        assert_eq!(clip.Offset().unwrap(), Vector2::default());
+        assert_eq!(clip.Scale().unwrap(), Vector2 { x: 1.0, y: 1.0 });
+        assert_eq!(clip.RotationAngle().unwrap(), 0.0);
+        assert_eq!(
+            clip.TransformMatrix().unwrap(),
+            Matrix3x2 {
+                m11: 1.0,
+                m12: 0.0,
+                m21: 0.0,
+                m22: 1.0,
+                m31: 0.0,
+                m32: 0.0,
+            }
+        );
+
+        clip.SetAnchorPoint(Vector2 { x: 0.5, y: 0.25 }).unwrap();
+        clip.SetCenterPoint(Vector2 { x: 2.0, y: 3.0 }).unwrap();
+        clip.SetOffset(Vector2 { x: 4.0, y: 5.0 }).unwrap();
+        clip.SetScale(Vector2 { x: 6.0, y: 7.0 }).unwrap();
+        clip.SetRotationAngleInDegrees(90.0).unwrap();
+        let matrix = Matrix3x2 {
+            m11: 8.0,
+            m12: 9.0,
+            m21: 10.0,
+            m22: 11.0,
+            m31: 12.0,
+            m32: 13.0,
+        };
+        clip.SetTransformMatrix(matrix).unwrap();
+
+        assert_eq!(clip.AnchorPoint().unwrap(), Vector2 { x: 0.5, y: 0.25 });
+        assert_eq!(clip.CenterPoint().unwrap(), Vector2 { x: 2.0, y: 3.0 });
+        assert_eq!(clip.Offset().unwrap(), Vector2 { x: 4.0, y: 5.0 });
+        assert_eq!(clip.Scale().unwrap(), Vector2 { x: 6.0, y: 7.0 });
+        assert!((clip.RotationAngle().unwrap() - std::f32::consts::FRAC_PI_2).abs() < 1e-6);
+        assert!((clip.RotationAngleInDegrees().unwrap() - 90.0).abs() < 1e-4);
+        assert_eq!(clip.TransformMatrix().unwrap(), matrix);
+    }
+
+    #[test]
+    fn both_clip_classes_keep_their_transform() {
+        let compositor = compositor();
+        let inset = compositor.CreateInsetClip().unwrap();
+        transform_round_trips(&inset.cast().unwrap());
+        let geometric = compositor
+            .cast::<ICompositor6>()
+            .unwrap()
+            .CreateGeometricClip()
+            .unwrap();
+        transform_round_trips(&geometric.cast().unwrap());
     }
 
     #[test]

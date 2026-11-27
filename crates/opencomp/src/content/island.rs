@@ -10,10 +10,11 @@ use crate::bindings::Windows::Foundation::Collections::IPropertySet;
 use crate::bindings::Windows::Foundation::TypedEventHandler;
 use crate::node::NodeRef;
 use crate::object::not_implemented;
-use windows_core::{Error, HRESULT, Interface, Ref, Result};
+use windows_core::{Error, HRESULT, IInspectable, Interface, Ref, Result};
 use windows_numerics::Vector2;
 
 const E_INVALIDARG: HRESULT = HRESULT(0x8007_0057u32 as i32);
+const E_POINTER: HRESULT = HRESULT(0x8000_4003u32 as i32);
 
 /// State shared by the island object and whichever bridge is connected to it.
 pub(crate) struct IslandState {
@@ -25,6 +26,15 @@ pub(crate) struct IslandState {
     pub(crate) site_enabled: bool,
     pub(crate) site_visible: bool,
     pub(crate) hit_test_visible: bool,
+    layout_direction: ContentLayoutDirection,
+    rasterization_scale: f32,
+    /// Tokens are handed out from one counter, so a token from one event never
+    /// removes a handler registered on the other. The handlers themselves live on
+    /// the object: a COM pointer is not `Send`, and this state is published by
+    /// identity, which is.
+    next_token: i64,
+    automation_tokens: Vec<i64>,
+    state_tokens: Vec<i64>,
 }
 
 impl IslandState {
@@ -38,7 +48,18 @@ impl IslandState {
             site_enabled: false,
             site_visible: false,
             hit_test_visible: true,
+            layout_direction: ContentLayoutDirection::LeftToRight,
+            rasterization_scale: 1.0,
+            next_token: 1,
+            automation_tokens: Vec::new(),
+            state_tokens: Vec::new(),
         }
+    }
+
+    fn token(&mut self) -> i64 {
+        let token = self.next_token;
+        self.next_token += 1;
+        token
     }
 }
 
@@ -57,17 +78,35 @@ pub(crate) fn shared(island: &ContentIsland) -> Option<SharedIsland> {
 struct Island {
     state: SharedIsland,
     id: u64,
+    app_data: Mutex<Option<IInspectable>>,
+    automation_handlers: Mutex<
+        Vec<(
+            i64,
+            TypedEventHandler<ContentIsland, ContentIslandAutomationProviderRequestedEventArgs>,
+        )>,
+    >,
+    state_handlers: Mutex<
+        Vec<(
+            i64,
+            TypedEventHandler<ContentIsland, ContentIslandStateChangedEventArgs>,
+        )>,
+    >,
 }
 
 impl IContentIsland_Impl for Island_Impl {
     fn ActualSize(&self) -> Result<Vector2> {
         Ok(self.state.lock().unwrap().size)
     }
-    fn AppData(&self) -> Result<windows_core::IInspectable> {
-        not_implemented()
+    fn AppData(&self) -> Result<IInspectable> {
+        match self.app_data.lock().unwrap().clone() {
+            Some(value) => Ok(value),
+            // Nullable in the ABI; the trait cannot say so.
+            None => not_implemented(),
+        }
     }
-    fn SetAppData(&self, _value: Ref<windows_core::IInspectable>) -> Result<()> {
-        not_implemented()
+    fn SetAppData(&self, value: Ref<IInspectable>) -> Result<()> {
+        *self.app_data.lock().unwrap() = value.cloned();
+        Ok(())
     }
     fn CoordinateConverter(&self) -> Result<ContentCoordinateConverter> {
         not_implemented()
@@ -115,10 +154,10 @@ impl IContentIsland_Impl for Island_Impl {
         Ok(self.state.lock().unwrap().site_visible)
     }
     fn LayoutDirection(&self) -> Result<ContentLayoutDirection> {
-        not_implemented()
+        Ok(self.state.lock().unwrap().layout_direction)
     }
     fn RasterizationScale(&self) -> Result<f32> {
-        not_implemented()
+        Ok(self.state.lock().unwrap().rasterization_scale)
     }
     fn GetAutomationHostProvider(&self) -> Result<windows_core::IInspectable> {
         not_implemented()
@@ -132,23 +171,64 @@ impl IContentIsland_Impl for Island_Impl {
     }
     fn AutomationProviderRequested(
         &self,
-        _handler: Ref<
+        handler: Ref<
             TypedEventHandler<ContentIsland, ContentIslandAutomationProviderRequestedEventArgs>,
         >,
     ) -> Result<i64> {
-        not_implemented()
+        let Some(handler) = handler.cloned() else {
+            return Err(Error::from_hresult(E_POINTER));
+        };
+        let token = {
+            let mut state = self.state.lock().unwrap();
+            let token = state.token();
+            state.automation_tokens.push(token);
+            token
+        };
+        self.automation_handlers
+            .lock()
+            .unwrap()
+            .push((token, handler));
+        Ok(token)
     }
-    fn RemoveAutomationProviderRequested(&self, _token: i64) -> Result<()> {
-        not_implemented()
+    fn RemoveAutomationProviderRequested(&self, token: i64) -> Result<()> {
+        self.state
+            .lock()
+            .unwrap()
+            .automation_tokens
+            .retain(|existing| *existing != token);
+        self.automation_handlers
+            .lock()
+            .unwrap()
+            .retain(|(existing, _)| *existing != token);
+        Ok(())
     }
     fn StateChanged(
         &self,
-        _handler: Ref<TypedEventHandler<ContentIsland, ContentIslandStateChangedEventArgs>>,
+        handler: Ref<TypedEventHandler<ContentIsland, ContentIslandStateChangedEventArgs>>,
     ) -> Result<i64> {
-        not_implemented()
+        let Some(handler) = handler.cloned() else {
+            return Err(Error::from_hresult(E_POINTER));
+        };
+        let token = {
+            let mut state = self.state.lock().unwrap();
+            let token = state.token();
+            state.state_tokens.push(token);
+            token
+        };
+        self.state_handlers.lock().unwrap().push((token, handler));
+        Ok(token)
     }
-    fn RemoveStateChanged(&self, _token: i64) -> Result<()> {
-        not_implemented()
+    fn RemoveStateChanged(&self, token: i64) -> Result<()> {
+        self.state
+            .lock()
+            .unwrap()
+            .state_tokens
+            .retain(|existing| *existing != token);
+        self.state_handlers
+            .lock()
+            .unwrap()
+            .retain(|(existing, _)| *existing != token);
+        Ok(())
     }
 }
 
@@ -193,6 +273,9 @@ fn create_island(node: NodeRef) -> Result<ContentIsland> {
     let island: IContentIsland = Island {
         state: state.clone(),
         id: NEXT_ID.fetch_add(1, Ordering::Relaxed),
+        app_data: Mutex::new(None),
+        automation_handlers: Mutex::new(Vec::new()),
+        state_handlers: Mutex::new(Vec::new()),
     }
     .into();
     crate::identity::publish(&island, &state);
@@ -206,7 +289,95 @@ pub(crate) fn island_statics() -> Result<IContentIslandStatics> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bindings::Microsoft::UI::Composition::ICompositor;
     use windows_core::Interface;
+
+    #[test]
+    fn an_island_keeps_app_data_and_event_tokens() {
+        let compositor: ICompositor = crate::compositor::instance().unwrap().cast().unwrap();
+        let root = compositor.CreateContainerVisual().unwrap();
+        let visual: Visual = root.cast().unwrap();
+        let island = island_from_visual(&visual).unwrap();
+        let api: IContentIsland = island.cast().unwrap();
+
+        let payload: IInspectable = root.cast().unwrap();
+        api.SetAppData(&payload).unwrap();
+        let stored = api.AppData().unwrap();
+        assert_eq!(Interface::as_raw(&stored), Interface::as_raw(&payload));
+        assert_eq!(
+            api.LayoutDirection().unwrap(),
+            ContentLayoutDirection::LeftToRight
+        );
+        assert_eq!(api.RasterizationScale().unwrap(), 1.0);
+
+        // The client-facing helpers wrap the event as an `EventRevoker`; the token
+        // an ABI caller sees is only reachable through the vtable.
+        let handler = TypedEventHandler::<
+            ContentIsland,
+            ContentIslandAutomationProviderRequestedEventArgs,
+        >::new(|_, _| {});
+        let vtable = Interface::vtable(&api);
+        let mut token = 0i64;
+        unsafe {
+            (vtable.AutomationProviderRequested)(
+                Interface::as_raw(&api),
+                handler.as_raw(),
+                &mut token,
+            )
+            .ok()
+            .unwrap();
+        }
+        assert!(token > 0);
+        assert_eq!(
+            shared(&island)
+                .unwrap()
+                .lock()
+                .unwrap()
+                .automation_tokens
+                .len(),
+            1
+        );
+        unsafe {
+            (vtable.RemoveAutomationProviderRequested)(Interface::as_raw(&api), token)
+                .ok()
+                .unwrap();
+        }
+        assert!(
+            shared(&island)
+                .unwrap()
+                .lock()
+                .unwrap()
+                .automation_tokens
+                .is_empty()
+        );
+
+        let handler =
+            TypedEventHandler::<ContentIsland, ContentIslandStateChangedEventArgs>::new(|_, _| {});
+        let mut token = 0i64;
+        unsafe {
+            (vtable.StateChanged)(Interface::as_raw(&api), handler.as_raw(), &mut token)
+                .ok()
+                .unwrap();
+        }
+        assert!(token > 0);
+        assert_eq!(
+            shared(&island).unwrap().lock().unwrap().state_tokens.len(),
+            1
+        );
+        unsafe {
+            (vtable.RemoveStateChanged)(Interface::as_raw(&api), token)
+                .ok()
+                .unwrap();
+        }
+        assert!(
+            shared(&island)
+                .unwrap()
+                .lock()
+                .unwrap()
+                .state_tokens
+                .is_empty()
+        );
+    }
 
     /// A statics object is reached only through `QueryInterface` and then called through
     /// its vtable, so the two pointers that has to work on are asserted here: a broken

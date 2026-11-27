@@ -31,6 +31,8 @@ use windows_core::{Interface, Result};
 pub struct ContainerVisualObject {
     node: NodeRef,
     clip: Mutex<Option<CompositionClip>>,
+    /// `IVisual2.ParentForTransform`: a reference a client sets, not the tree parent.
+    parent_for_transform: Mutex<Option<Visual>>,
 }
 
 #[windows_core::implement(
@@ -49,6 +51,7 @@ pub struct SpriteVisualObject {
     node: NodeRef,
     clip: Mutex<Option<CompositionClip>>,
     brush: Mutex<Option<CompositionBrush>>,
+    parent_for_transform: Mutex<Option<Visual>>,
 }
 
 composition_object!(ContainerVisualObject_Impl, node);
@@ -122,6 +125,7 @@ pub fn container() -> Result<ContainerVisual> {
     let object: IContainerVisual = ContainerVisualObject {
         node: node.clone(),
         clip: Mutex::new(None),
+        parent_for_transform: Mutex::new(None),
     }
     .into();
     node::publish(&object, &node);
@@ -135,6 +139,7 @@ pub fn sprite() -> Result<SpriteVisual> {
         node: node.clone(),
         clip: Mutex::new(None),
         brush: Mutex::new(None),
+        parent_for_transform: Mutex::new(None),
     }
     .into();
     node::publish(&object, &node);
