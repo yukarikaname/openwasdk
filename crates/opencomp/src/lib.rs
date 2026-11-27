@@ -34,6 +34,8 @@ mod color_animation;
 #[cfg(windows)]
 mod compositor;
 #[cfg(windows)]
+mod compositor_ext;
+#[cfg(windows)]
 mod easing;
 mod identity;
 mod node;

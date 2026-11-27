@@ -14,7 +14,17 @@ fn not_implemented<T>() -> Result<T> {
 }
 
 /// `ICompositor` as an object the runtime can hand out.
-#[windows_core::implement(ICompositor)]
+#[windows_core::implement(
+    ICompositor,
+    ICompositor2,
+    ICompositor4,
+    ICompositor5,
+    ICompositor6,
+    ICompositor8,
+    ICompositorWithProjectedShadow,
+    ICompositorWithRadialGradient,
+    ICompositorWithVisualSurface
+)]
 pub struct Compositor;
 
 /// The object as `IInspectable`, which is what `IActivationFactory::ActivateInstance` returns.
