@@ -58,8 +58,11 @@ The proxy is useful outside this project: it is a WinRT call tracer.
   and transaction semantics, `CompositionTarget`, device loss.
 - Renderer: wgpu (Vulkan/Metal/D3D12) with Skia for text and vector work. The
   same core runs native on Linux/macOS for tooling and tests.
-- No DWM and no DirectComposition: presentation goes straight to a window
-  (HWND under Wine, native surfaces elsewhere).
+- No DWM and no DirectComposition: presentation goes straight to a window. The
+  window is always a Win32 one, so the process is a Windows process: under Wine
+  on Linux and macOS, or on Windows itself. The only native surfaces are in our
+  own preview tooling, which draws a tree with wgpu on the host without running
+  any Windows binary.
 - D3D interop: XAML hands over D3D textures through composition surfaces; those
   must be consumable by the renderer (Wine's d3d11 or a conversion to wgpu).
 
@@ -204,6 +207,10 @@ The build half, independent from the runtime:
 4. **Run** — push to a Windows machine over SSH, or install into a Wine prefix
    running the OpenWASDK runtime; stream the debug output back.
 
+`xwinui` builds and packages; it does not run anything natively. A WinUI 3
+application is a Windows PE that calls `user32`, `d3d11`, `d2d1`, `dwrite` and
+`combase`, so "running" it always means Wine (or Windows), whatever we replace.
+
 The first milestone is to build a plain WinUI 3 app on Linux and run it under
 Wine with the official runtime. That validates the toolchain before any
 runtime code exists, and it produces the test binaries `comptrace` needs.
@@ -242,7 +249,7 @@ cross the boundary.
 
 | # | Milestone | Exit criterion |
 | --- | --- | --- |
-| 0 | `comptrace` | A proxy logs WinUI 3 Gallery's Composition calls and produces the interface list |
+| 0 | `comptrace` | The interface list is measured from the shipped binaries: 73 Composition interfaces, 14 private IIDs (done) |
 | 1 | `xwinui` | An unmodified WinUI 3 sample builds on Linux and runs under Wine with the official runtime |
 | 2 | `opencomp` | A Composition-only program creates a visual tree on our DLL and draws it |
 | 3 | composition-only host | The same program hosts its tree in an HWND through `Microsoft.UI.Content`/`Windowing`, with no XAML loaded |

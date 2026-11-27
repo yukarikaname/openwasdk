@@ -69,6 +69,23 @@ the application's own package) is the one worth replacing: it needs no DWM.
   never translated. A translation would be a derivative work and would put an
   LGPL file in an MIT crate; that trade is not worth it.
 
+## What "native" means here
+
+Nothing runs natively. A WinUI 3 application is a Windows PE that calls
+`user32`, `combase`, `d3d11`, `d2d1` and `dwrite`; replacing the App SDK's DLLs
+does not remove any of that, so the process is a Windows process under Wine (or
+on Windows). `xwinui` is the build half — cross-compile, package, deploy — and
+runs nothing by itself.
+
+What does run natively is our own code: `opencomp-core` draws a tree with wgpu on
+Metal, Vulkan or D3D12, and the two examples use that for previews and tests.
+That is a way to look at a tree without a Windows binary, not a way to run an app.
+
+An arm64 path exists and still involves Wine: native arm64 Wine runs arm64 PE,
+and the App SDK package ships `win-arm64` and `win-arm64ec` binaries, so a chain
+with no Rosetta is possible if our DLLs are built for `aarch64` too. On macOS the
+x64 binaries need Rosetta, which is the only reason it came up.
+
 ## The acceptance ladder
 
 The goal is not "our tests pass", it is "an unmodified application runs". Each

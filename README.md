@@ -1,7 +1,7 @@
 # OpenWASDK
 
 An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
-**build them anywhere, and run existing binaries on Linux**.
+**build them anywhere, and run existing binaries on Linux under Wine**.
 
 > Status: technical validation. `comptrace` works, `opencomp` builds a visual
 > tree through its ABI, and `opencomp-core` draws that tree on a GPU; no WinUI

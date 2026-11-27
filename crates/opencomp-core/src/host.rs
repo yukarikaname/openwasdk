@@ -18,6 +18,26 @@ pub struct Host {
 }
 
 impl Host {
+    /// A surface on a Win32 window the caller owns.
+    ///
+    /// The window handle outlives the host; a host that outlives its window is a use
+    /// after free, which is why the DLL stops the presenting thread before the site
+    /// goes away.
+    #[cfg(windows)]
+    pub fn for_win32(hwnd: u64, size: (u32, u32), background: [f32; 4]) -> Option<Self> {
+        use wgpu::rwh::{RawWindowHandle, Win32WindowHandle};
+
+        let handle = Win32WindowHandle::new(std::num::NonZeroIsize::new(hwnd as isize)?);
+        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor::new_without_display_handle());
+        let target = wgpu::SurfaceTargetUnsafe::RawHandle {
+            raw_display_handle: None,
+            raw_window_handle: RawWindowHandle::Win32(handle),
+        };
+        // Safety: the caller guarantees the window outlives the surface.
+        let surface = unsafe { instance.create_surface_unsafe(target) }.ok()?;
+        Self::new(&instance, surface, size, background)
+    }
+
     /// Wrap a surface the caller created and configured nothing on.
     ///
     /// Returns `None` when the machine has no adapter that can drive this surface.
