@@ -23,6 +23,9 @@ mod xaml_bindings;
 mod windows;
 
 #[cfg(windows)]
+mod proxy;
+
+#[cfg(windows)]
 mod shim;
 
 #[cfg(windows)]

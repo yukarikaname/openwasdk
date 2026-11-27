@@ -93,6 +93,31 @@ jobs:
           # prints on the platform it was built for is the baseline for what Wine does.
           OPENCOMP_XAML_PROBE_START=1 ./xaml-probe.exe
 
+      # The engine's input core is a private conversation between the UDK layer and the
+      # system `coremessaging.dll`. Here the object exists, so this run wraps it in a proxy
+      # that forwards every call and prints the slot, the arguments and the HRESULT. That
+      # trace is what the stand-in for Wine has to reproduce, and there is no other way to
+      # learn it: none of those interfaces is documented.
+      - name: Trace the CoreUI session
+        shell: bash
+        continue-on-error: true
+        timeout-minutes: 5
+        env:
+          OPENCOMP_COREUI: proxy
+          OPENCOMP_TRACE: "1"
+        run: |
+          cd target/appsdk
+          export XAML_DLL="$PWD/Microsoft.ui.xaml.dll"
+          export OPENCOMP_XAML_PROBE_START=1
+          ./xaml-probe.exe 2>&1 | grep -E "^(proxy|xaml-probe):" > coreui-trace.txt || true
+          head -60 coreui-trace.txt
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: coreui-trace
+          path: target/appsdk/coreui-trace.txt
+
       # `OPENCOMP_TRACE` makes our DLLs name what they are doing, which is the only
       # diagnostic a Windows-only test has: the runner has no debugger attached.
       - name: Test

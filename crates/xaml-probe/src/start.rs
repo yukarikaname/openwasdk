@@ -390,6 +390,12 @@ pub(crate) fn run(module: HMODULE) -> i32 {
                 eprintln!("xaml-probe: CoreUICreate from {MESSAGING}");
             }
         }
+    } else if std::env::var_os("OPENCOMP_COREUI").is_some_and(|value| value == "proxy") {
+        // Measurement on the platform where the real object exists: the same call, the
+        // same session, with every method the engine uses printed.
+        if crate::proxy::install_and_answer() {
+            eprintln!("xaml-probe: CoreUICreate from a proxy over the system session");
+        }
     } else {
         let ours = crate::windows::load(std::path::Path::new(OWN_MESSAGING));
         if let Some(create) = ours.and_then(|ours| crate::windows::export(ours, "CoreUICreate")) {

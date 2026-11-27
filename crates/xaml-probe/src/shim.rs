@@ -256,6 +256,21 @@ unsafe extern "system" fn cancel_wait_completion_packet(_packet: *mut c_void, _w
     0
 }
 
+/// `GetProcAddress(LoadLibrary(library), name)`, or nothing when either step fails.
+pub(crate) fn entry(library: &[u8], name: &[u8]) -> Option<*mut c_void> {
+    #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn LoadLibraryA(name: *const u8) -> *mut c_void;
+        fn GetProcAddress(module: *mut c_void, name: *const u8) -> *mut c_void;
+    }
+    let module = unsafe { LoadLibraryA(library.as_ptr()) };
+    if module.is_null() {
+        return None;
+    }
+    let found = unsafe { GetProcAddress(module, name.as_ptr()) };
+    (!found.is_null()).then_some(found)
+}
+
 /// The imports a DLL needs answered before it can be used at all.
 const LATE_ENTRIES: &[Entry] = &[
     Entry {
