@@ -138,6 +138,33 @@ impl Metadata {
         }
     }
 
+    /*
+     * Namespace recorded for a file-local type.  Unknown types use their XML
+     * namespace; markup directives have none and callers substitute the XAML
+     * namespace; everything else is the CLR type namespace name.
+     */
+    pub fn type_namespace_name(&self, index: u32) -> Option<&str> {
+        let entry = self.types.get(index as usize)?;
+        if entry.flags & TYPE_FLAG_UNKNOWN != 0 {
+            return self.xml_namespace(entry.namespace);
+        }
+        if entry.flags & TYPE_FLAG_MARKUP_DIRECTIVE != 0 {
+            return None;
+        }
+        self.type_namespaces
+            .get(entry.namespace as usize)
+            .map(|namespace| namespace.name.as_str())
+    }
+
+    /* Namespace of a file-local property, when the metadata records one. */
+    pub fn property_namespace(&self, index: u32) -> Option<&str> {
+        let entry = self.properties.get(index as usize)?;
+        if entry.flags & (PROPERTY_FLAG_MARKUP_DIRECTIVE | PROPERTY_FLAG_IMPLICIT) != 0 {
+            return None;
+        }
+        self.type_namespace_name(entry.declaring_type)
+    }
+
     /* Resolve a file-local property id to a display name. */
     pub fn property_full_name(&self, index: u32) -> Option<String> {
         let entry = self.properties.get(index as usize)?;

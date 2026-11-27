@@ -16,7 +16,7 @@
 use crate::cursor::Cursor;
 use crate::error::XbfError;
 use crate::metadata::Metadata;
-use crate::node::CustomData;
+use crate::node::{CustomData, ResourceKey};
 use crate::node_value::{read_persisted, read_shared_string, read_value};
 
 pub(crate) fn parse(
@@ -26,12 +26,38 @@ pub(crate) fn parse(
 ) -> Result<CustomData, XbfError> {
     let kind = cursor.leb_u32()?;
     let mut names = Vec::new();
+    let mut explicit_keys = Vec::new();
+    let mut implicit_keys = Vec::new();
 
     match kind {
-        371 => read_resource_dictionary_v1(cursor, metadata, &mut names)?,
-        7 => read_resource_dictionary_v2(cursor, metadata, &mut names)?,
-        10 => read_resource_dictionary_v3(cursor, metadata, &mut names)?,
-        12 => read_resource_dictionary_v4(cursor, metadata, &mut names)?,
+        371 => read_resource_dictionary_v1(
+            cursor,
+            metadata,
+            &mut names,
+            &mut explicit_keys,
+            &mut implicit_keys,
+        )?,
+        7 => read_resource_dictionary_v2(
+            cursor,
+            metadata,
+            &mut names,
+            &mut explicit_keys,
+            &mut implicit_keys,
+        )?,
+        10 => read_resource_dictionary_v3(
+            cursor,
+            metadata,
+            &mut names,
+            &mut explicit_keys,
+            &mut implicit_keys,
+        )?,
+        12 => read_resource_dictionary_v4(
+            cursor,
+            metadata,
+            &mut names,
+            &mut explicit_keys,
+            &mut implicit_keys,
+        )?,
         2 | 8 => read_style(cursor, metadata, false)?,
         11 => read_style(cursor, metadata, true)?,
         745 => read_deferred_element(cursor, metadata, kind, &mut names)?,
@@ -44,6 +70,8 @@ pub(crate) fn parse(
         kind,
         kind_name: kind_name(kind),
         names,
+        explicit_keys,
+        implicit_keys,
     })
 }
 
@@ -81,14 +109,19 @@ fn read_count(cursor: &mut Cursor, table: &'static str) -> Result<usize, XbfErro
     Ok(count as usize)
 }
 
-fn read_kv_vec(cursor: &mut Cursor, metadata: &Metadata) -> Result<Vec<String>, XbfError> {
+fn read_key_vec(cursor: &mut Cursor, metadata: &Metadata) -> Result<Vec<ResourceKey>, XbfError> {
     let count = read_count(cursor, "resource key vector")?;
     let mut keys = Vec::new();
     for _ in 0..count {
-        keys.push(read_shared_string(cursor, metadata)?);
-        let _ = cursor.leb_u32()?;
+        let name = read_shared_string(cursor, metadata)?;
+        let offset = cursor.leb_u32()?;
+        keys.push(ResourceKey { name, offset });
     }
     Ok(keys)
+}
+
+fn extend_names(names: &mut Vec<String>, keys: &[ResourceKey]) {
+    names.extend(keys.iter().map(|key| key.name.clone()));
 }
 
 fn read_string_vec(cursor: &mut Cursor, metadata: &Metadata) -> Result<Vec<String>, XbfError> {
@@ -135,10 +168,16 @@ fn read_resource_dictionary_v1(
     cursor: &mut Cursor,
     metadata: &Metadata,
     names: &mut Vec<String>,
+    explicit_keys: &mut Vec<ResourceKey>,
+    implicit_keys: &mut Vec<ResourceKey>,
 ) -> Result<(), XbfError> {
-    names.extend(read_kv_vec(cursor, metadata)?);
+    let explicit = read_key_vec(cursor, metadata)?;
+    extend_names(names, &explicit);
+    explicit_keys.extend(explicit);
     names.extend(read_string_vec(cursor, metadata)?);
-    names.extend(read_kv_vec(cursor, metadata)?);
+    let implicit = read_key_vec(cursor, metadata)?;
+    extend_names(names, &implicit);
+    implicit_keys.extend(implicit);
     let _ = read_string_vec(cursor, metadata)?;
     let _ = read_string_vec(cursor, metadata)?;
     Ok(())
@@ -149,10 +188,16 @@ fn read_resource_dictionary_v2(
     cursor: &mut Cursor,
     metadata: &Metadata,
     names: &mut Vec<String>,
+    explicit_keys: &mut Vec<ResourceKey>,
+    implicit_keys: &mut Vec<ResourceKey>,
 ) -> Result<(), XbfError> {
-    names.extend(read_kv_vec(cursor, metadata)?);
+    let explicit = read_key_vec(cursor, metadata)?;
+    extend_names(names, &explicit);
+    explicit_keys.extend(explicit);
     names.extend(read_string_vec(cursor, metadata)?);
-    names.extend(read_kv_vec(cursor, metadata)?);
+    let implicit = read_key_vec(cursor, metadata)?;
+    extend_names(names, &implicit);
+    implicit_keys.extend(implicit);
     let _ = read_string_vec(cursor, metadata)?;
     Ok(())
 }
@@ -162,10 +207,16 @@ fn read_resource_dictionary_v3(
     cursor: &mut Cursor,
     metadata: &Metadata,
     names: &mut Vec<String>,
+    explicit_keys: &mut Vec<ResourceKey>,
+    implicit_keys: &mut Vec<ResourceKey>,
 ) -> Result<(), XbfError> {
-    names.extend(read_kv_vec(cursor, metadata)?);
+    let explicit = read_key_vec(cursor, metadata)?;
+    extend_names(names, &explicit);
+    explicit_keys.extend(explicit);
     names.extend(read_string_vec(cursor, metadata)?);
-    names.extend(read_kv_vec(cursor, metadata)?);
+    let implicit = read_key_vec(cursor, metadata)?;
+    extend_names(names, &implicit);
+    implicit_keys.extend(implicit);
     read_conditional_keys(cursor, metadata)?;
     read_conditional_keys(cursor, metadata)?;
     read_conditional_objects(cursor, metadata)?;
@@ -177,12 +228,21 @@ fn read_resource_dictionary_v4(
     cursor: &mut Cursor,
     metadata: &Metadata,
     names: &mut Vec<String>,
+    explicit_keys: &mut Vec<ResourceKey>,
+    implicit_keys: &mut Vec<ResourceKey>,
 ) -> Result<(), XbfError> {
     let count = read_count(cursor, "resource map")?;
     for _ in 0..count {
-        names.push(read_shared_string(cursor, metadata)?);
-        let _ = cursor.u64()?;
-        let _ = cursor.leb_u32()?;
+        let name = read_shared_string(cursor, metadata)?;
+        let hash = cursor.u64()?;
+        let offset = cursor.leb_u32()?;
+        names.push(name.clone());
+        let key = ResourceKey { name, offset };
+        if hash & 1 != 0 {
+            implicit_keys.push(key);
+        } else {
+            explicit_keys.push(key);
+        }
     }
 
     names.extend(read_string_vec(cursor, metadata)?);

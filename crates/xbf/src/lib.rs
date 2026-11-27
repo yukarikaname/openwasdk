@@ -23,6 +23,7 @@ mod custom;
 mod error;
 mod header;
 mod metadata;
+pub mod model;
 mod node;
 mod node_value;
 mod node_wire;
@@ -36,7 +37,10 @@ pub use metadata::{
     TYPE_FLAG_MARKUP_DIRECTIVE, TYPE_FLAG_UNKNOWN, TypeEntry, TypeNamespaceEntry,
     provider_kind_name,
 };
-pub use node::{CustomData, Node, NodeKind, NodeStream, PersistedNode, Predicate, Value};
+pub use model::{Element, Model, Property};
+pub use node::{
+    CustomData, Node, NodeKind, NodeStream, PersistedNode, Predicate, ResourceKey, Value,
+};
 
 use std::path::Path;
 
@@ -88,6 +92,11 @@ impl Xbf {
             Some(name) => name.to_string(),
             None => format!("namespace#{}", node.id),
         }
+    }
+
+    /* Build the typed element tree described by the node streams. */
+    pub fn model(&self) -> Result<Model, XbfError> {
+        model::build(self)
     }
 }
 

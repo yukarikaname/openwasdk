@@ -5,6 +5,9 @@
  * pre-order structure the XAML object writer sees.  Type, property and
  * namespace references are resolved through the stable index tables or the
  * file's own metadata, depending on bit 15 of the persisted id.
+ *
+ * --model prints the typed element tree instead, one Type.property = value
+ * line per property; --json prints the same model as JSON.
  */
 
 use std::fmt::Write as _;
@@ -16,11 +19,18 @@ use xbf::{NodeKind, PersistedNode, Xbf};
 fn main() -> ExitCode {
     let mut path = None;
     let mut show_metadata = false;
+    let mut show_model = false;
+    let mut show_json = false;
     for arg in std::env::args().skip(1) {
         match arg.as_str() {
             "--metadata" => show_metadata = true,
+            "--model" => show_model = true,
+            "--json" => {
+                show_model = true;
+                show_json = true;
+            }
             "-h" | "--help" => {
-                println!("usage: dump [--metadata] <file.xbf>");
+                println!("usage: dump [--metadata] [--model | --json] <file.xbf>");
                 return ExitCode::SUCCESS;
             }
             other => path = Some(other.to_string()),
@@ -28,17 +38,37 @@ fn main() -> ExitCode {
     }
 
     let Some(path) = path else {
-        eprintln!("usage: dump [--metadata] <file.xbf>");
+        eprintln!("usage: dump [--metadata] [--model | --json] <file.xbf>");
         return ExitCode::from(2);
     };
 
     match xbf::parse_file(Path::new(&path)) {
         Ok(file) => {
+            if show_model {
+                return print_model(&file, show_json);
+            }
             print_header(&path, &file);
             if show_metadata {
                 print_metadata(&file);
             }
             print_streams(&file);
+            ExitCode::SUCCESS
+        }
+        Err(error) => {
+            eprintln!("error: {error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn print_model(file: &Xbf, json: bool) -> ExitCode {
+    match file.model() {
+        Ok(model) => {
+            if json {
+                print!("{}", model.to_json());
+            } else {
+                print!("{}", model.to_text());
+            }
             ExitCode::SUCCESS
         }
         Err(error) => {

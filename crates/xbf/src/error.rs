@@ -81,6 +81,13 @@ pub enum XbfError {
     BadSubstream {
         index: usize,
     },
+    /* The node stream cannot be represented by the typed model. */
+    ModelError {
+        stream: usize,
+        index: usize,
+        kind: &'static str,
+        reason: &'static str,
+    },
 }
 
 impl fmt::Display for XbfError {
@@ -156,6 +163,15 @@ impl fmt::Display for XbfError {
             XbfError::BadSubstream { index } => {
                 write!(f, "substream table entry {index} is out of bounds")
             }
+            XbfError::ModelError {
+                stream,
+                index,
+                kind,
+                reason,
+            } => write!(
+                f,
+                "model: {reason} at substream {stream} node {index} ({kind})"
+            ),
         }
     }
 }

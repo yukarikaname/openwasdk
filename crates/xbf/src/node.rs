@@ -21,11 +21,24 @@ pub struct Predicate {
     pub arguments: String,
 }
 
+/*
+ * A resource dictionary key and the stream offset of the node that realizes
+ * its value.  The offset is relative to the first node of the referenced
+ * substream, exactly as StoredStreamOffsetToken is encoded.
+ */
+#[derive(Clone, Debug)]
+pub struct ResourceKey {
+    pub name: String,
+    pub offset: u32,
+}
+
 #[derive(Clone, Debug)]
 pub struct CustomData {
     pub kind: u32,
     pub kind_name: &'static str,
     pub names: Vec<String>,
+    pub explicit_keys: Vec<ResourceKey>,
+    pub implicit_keys: Vec<ResourceKey>,
 }
 
 #[derive(Clone, Debug)]
