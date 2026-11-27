@@ -31,10 +31,11 @@ compiled XAML and the Wine host stay as they are.
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
 | `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | visuals, brushes, clips, animations, property sets |
 | `opencomp-core` | Visual tree, draw list and animation sampler; wgpu renderer behind a `preview` feature | trees with transforms, clip, opacity, bitmaps, rounded corners; previews offscreen or on a swapchain |
-| `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | planned |
+| `xbf` | XBF reader, ported from the MIT sources: header, metadata tables, node stream | parses the theme resources WinUI ships |
+| `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | element model, layout and a composition tree; no controls yet |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 6 conversions, 143 stubs |
-| `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | planned |
-| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
+| `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | Content hosting lives in `opencomp`; activation and the PE host are planned |
+| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, activation manifest, `dotnet` build through Wine's XAML compiler |
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
 What this project does **not** do — the boundary against Wine, DXVK and
