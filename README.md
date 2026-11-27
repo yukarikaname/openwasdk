@@ -37,6 +37,9 @@ compiled XAML and the Wine host stay as they are.
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
+What this project does **not** do — the boundary against Wine, DXVK and
+`wine-uwp` — is in [`docs/scope.md`](docs/scope.md), with the acceptance ladder
+that ends at running WinUI 3 Gallery unmodified.
 What the shipped App SDK binaries contain — layers, interface counts, the private
 boundary — is in [`docs/winui-anatomy.md`](docs/winui-anatomy.md).
 
