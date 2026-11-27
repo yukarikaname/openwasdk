@@ -9,6 +9,6 @@ rust-version.workspace = true
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-object = { version = "0.37", default-features = false, features = ["std", "read", "pe"] }
+object = { version = "0.41", default-features = false, features = ["std", "read", "pe"] }
 windows-bindgen = "0.100"
 windows-metadata = "0.100"
