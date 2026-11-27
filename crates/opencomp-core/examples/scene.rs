@@ -55,5 +55,10 @@ fn scene() -> Visual {
     panel.push(
         Visual::rect(120.0, 24.0, [srgb(0.95), srgb(0.85), srgb(0.30), 1.0]).at(220.0, 150.0),
     );
+    // Turned on its own centre, which is the path a rotation takes.
+    let mut diamond = Visual::rect(40.0, 40.0, [srgb(0.55), srgb(0.40), srgb(0.95), 1.0]);
+    diamond.rotation = std::f32::consts::FRAC_PI_4;
+    diamond.center = [20.0, 20.0];
+    panel.push(diamond.at(40.0, 96.0));
     panel
 }
