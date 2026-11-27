@@ -291,7 +291,13 @@ mod tests {
         assert!(known("Microsoft.UI.Composition.Compositor"));
         assert!(known("Microsoft.UI.Content.ContentIsland"));
         assert!(known("Microsoft.UI.Content.DesktopChildSiteBridge"));
-        assert!(!known("Microsoft.UI.Composition.Visual"));
+        // A visual is a class the manifest names, so it is served -- as an unmodelled
+        // factory that refuses activation, which is a return code the engine survives.
+        assert_eq!(
+            class_of("Microsoft.UI.Composition.Visual"),
+            Some(Class::Unmodelled)
+        );
+        assert!(!known("Microsoft.UI.Composition.NotAClass"));
         assert!(!known(""));
     }
 }
