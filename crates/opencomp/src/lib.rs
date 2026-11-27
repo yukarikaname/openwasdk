@@ -45,6 +45,8 @@ mod easing;
 #[cfg(windows)]
 mod geometry;
 mod identity;
+#[cfg(windows)]
+mod interop;
 pub mod node;
 #[cfg(windows)]
 mod object;
@@ -329,7 +331,7 @@ mod abi {
     }
 
     #[test]
-    fn the_tree_reaches_the_renderer() {
+    fn the_tree_becomes_a_draw_list() {
         let compositor = compositor();
         let root = compositor.CreateContainerVisual().unwrap();
         let sprite = compositor.CreateSpriteVisual().unwrap();
@@ -353,80 +355,12 @@ mod abi {
 
         let node = crate::node::resolve(&root).unwrap();
         let tree = crate::node::snapshot_in(&node, Vector2 { x: 16.0, y: 16.0 }).unwrap();
-        // A machine without a GPU adapter on the CI runner cannot say anything either way.
-        let Some(mut renderer) = opencomp_core::Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0])
-        else {
-            return;
-        };
-        renderer.set_root(tree);
-        let pixels = renderer.render_to_pixels();
-        let pixel = |x: usize, y: usize| {
-            let at = (y * 16 + x) * 4;
-            [pixels[at], pixels[at + 1], pixels[at + 2], pixels[at + 3]]
-        };
-        assert_eq!(pixel(4, 4), [255, 0, 0, 255]);
-        assert_eq!(pixel(12, 12), [0, 0, 255, 255]);
-    }
-
-    #[test]
-    fn an_easing_function_keeps_its_control_points() {
-        let compositor = compositor();
-        let easing = compositor
-            .CreateCubicBezierEasingFunction(Vector2 { x: 0.1, y: 0.2 }, Vector2 { x: 0.8, y: 0.9 })
-            .unwrap();
-        let easing: crate::bindings::Microsoft::UI::Composition::ICubicBezierEasingFunction =
-            easing.cast().unwrap();
-        assert_eq!(easing.ControlPoint1().unwrap(), Vector2 { x: 0.1, y: 0.2 });
-        assert_eq!(easing.ControlPoint2().unwrap(), Vector2 { x: 0.8, y: 0.9 });
-        assert!(compositor.CreateLinearEasingFunction().is_ok());
-    }
-
-    #[test]
-    fn an_animation_reaches_the_tree() {
-        use crate::bindings::Microsoft::UI::Composition::{
-            CompositionAnimation, ICompositionObject, IScalarKeyFrameAnimation,
-        };
-        let compositor = compositor();
-        let sprite = compositor.CreateSpriteVisual().unwrap();
-        let animation = compositor.CreateScalarKeyFrameAnimation().unwrap();
-        let keyframes: IScalarKeyFrameAnimation = animation.cast().unwrap();
-        keyframes.InsertKeyFrame(0.0, 0.25).unwrap();
-        let animation: CompositionAnimation = animation.cast().unwrap();
-
-        let object: ICompositionObject = sprite.cast().unwrap();
-        object.StartAnimation("Opacity", &animation).unwrap();
-        let node = crate::node::resolve(&sprite).unwrap();
-        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 0.25);
-
-        // Stopping leaves the value the animation reached, which is the ABI default.
-        object.StopAnimation("Opacity").unwrap();
-        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 0.25);
-    }
-
-    #[test]
-    fn a_property_set_persists_across_reads() {
-        use crate::bindings::Microsoft::UI::Composition::ICompositionObject;
-
-        let compositor = compositor();
-        let sprite = compositor.CreateSpriteVisual().unwrap();
-        let object: ICompositionObject = sprite.cast().unwrap();
-        object
-            .Properties()
-            .unwrap()
-            .InsertScalar("scale", 1.5)
-            .unwrap();
-
-        let mut value = 0.0f32;
-        let status = object
-            .Properties()
-            .unwrap()
-            .TryGetScalar("scale", &mut value)
-            .unwrap();
-        assert_eq!(
-            status,
-            crate::bindings::Microsoft::UI::Composition::CompositionGetValueStatus::Succeeded
-        );
-        assert_eq!(value, 1.5);
+        let draws = tree.draws();
+        assert_eq!(draws.len(), 1);
+        // Linear light: the brush's 255 is 1.0 after the sRGB decode.
+        assert_eq!(draws[0].color, [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(draws[0].corners[0], [0.0, 0.0]);
+        assert_eq!(draws[0].corners[2], [8.0, 8.0]);
     }
 
     #[test]

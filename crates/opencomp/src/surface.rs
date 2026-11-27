@@ -1,16 +1,19 @@
 //! `CompositionDrawingSurface`: the CPU bitmap a surface brush draws.
 //!
-//! A surface owns an sRGB RGBA8 buffer and a size. The ABI half is the size, format and alpha
-//! mode getters plus `Resize`; nothing else is answered. Direct2D interop is not implemented:
-//! `ICompositionDrawingSurfaceInterop` is absent, so a client that calls `BeginDraw` through it
-//! fails with `E_NOINTERFACE`. This path exists for the host that owns the pixels instead:
-//! [`create`], [`surface_update`], [`surface_pixels`] and [`surface_image`].
+//! A surface owns an RGBA8 buffer, a size, and the pixel format and alpha mode it was created
+//! with. The ABI half is the size, format and alpha mode getters, `Resize`, and the
+//! `ICompositionDrawingSurfaceInterop` the graphics device route needs. That last one cannot
+//! hand out a Direct2D context: drawing through Direct2D needs `D2D1CreateDevice`, a Win32
+//! entry point this DLL does not bind, so `BeginDraw` fails with `E_NOINTERFACE`. The path for
+//! a host that owns the pixels is [`create`], [`surface_update`], [`surface_pixels`] and
+//! [`surface_image`].
 //!
 //! A surface id is also a texture id. Ids come from one global counter starting at one, so zero
 //! stays the renderer's built-in white texture. The DLL does not hold a renderer, so the host
 //! takes the buffer reported by [`surface_image`] and uploads it with `Renderer::upload_rgba`
 //! under that id before presenting.
 
+use std::ffi::c_void;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
@@ -22,8 +25,11 @@ use crate::bindings::Microsoft::UI::Composition::{
 };
 use crate::bindings::Windows::Foundation::Size;
 use crate::bindings::Windows::Graphics::SizeInt32;
+use crate::interop::{
+    ICompositionDrawingSurfaceInterop, ICompositionDrawingSurfaceInterop_Impl, PixelSize, Rect,
+};
 use crate::object::{composition_object, not_implemented};
-use windows_core::{Error, HRESULT, Interface, Result};
+use windows_core::{Error, GUID, HRESULT, Interface, Result};
 
 /// The ABI class a host passes back to [`surface_update`] and [`surface_pixels`].
 pub use crate::bindings::Microsoft::UI::Composition::CompositionDrawingSurface;
@@ -32,6 +38,8 @@ pub use crate::bindings::Microsoft::UI::Composition::CompositionDrawingSurface;
 const MAX_DIMENSION: u32 = 16384;
 
 const E_OUTOFMEMORY: HRESULT = HRESULT(0x8007_000eu32 as i32);
+const E_NOINTERFACE: HRESULT = HRESULT(0x8000_4002u32 as i32);
+const E_INVALIDARG: HRESULT = HRESULT(0x8007_0057u32 as i32);
 
 /// The next surface id. Zero is the renderer's white texture, so the counter starts at one.
 static NEXT_ID: AtomicU32 = AtomicU32::new(1);
@@ -101,6 +109,9 @@ impl Buffer {
 struct DrawingSurface {
     id: u32,
     pixels: Mutex<Buffer>,
+    // Fixed at creation: the buffer is always RGBA8, whatever the requested byte order.
+    format: DirectXPixelFormat,
+    alpha: DirectXAlphaMode,
 }
 
 impl DrawingSurface {
@@ -150,6 +161,7 @@ impl DrawingSurface {
     ICompositionObject5,
     ICompositionDrawingSurface,
     ICompositionDrawingSurface2,
+    ICompositionDrawingSurfaceInterop,
     ICompositionSurface
 )]
 pub struct DrawingSurfaceObject {
@@ -162,12 +174,11 @@ impl ICompositionSurface_Impl for DrawingSurfaceObject_Impl {}
 
 impl ICompositionDrawingSurface_Impl for DrawingSurfaceObject_Impl {
     fn AlphaMode(&self) -> Result<DirectXAlphaMode> {
-        // The buffer holds straight alpha; the renderer blends it as such.
-        Ok(DirectXAlphaMode::Straight)
+        Ok(self.surface.alpha)
     }
 
     fn PixelFormat(&self) -> Result<DirectXPixelFormat> {
-        Ok(DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb)
+        Ok(self.surface.format)
     }
 
     fn Size(&self) -> Result<Size> {
@@ -229,15 +240,95 @@ impl ICompositionDrawingSurface2_Impl for DrawingSurfaceObject_Impl {
     }
 }
 
+// The interop half of a surface. Drawing has to come from a Direct2D device context, and
+// getting one needs `D2D1CreateDevice`, a Win32 entry point this DLL does not bind; the
+// alternatives, an `IDXGISurface` over a GPU texture, need a D3D device this surface does not
+// have. Every IID, the Direct2D one included, is therefore answered with `E_NOINTERFACE`
+// rather than with a stand-in object.
+impl ICompositionDrawingSurfaceInterop_Impl for DrawingSurfaceObject_Impl {
+    fn BeginDraw(&self, _updateRect: *const Rect, _iid: &GUID) -> Result<*mut c_void> {
+        Err(Error::from_hresult(E_NOINTERFACE))
+    }
+
+    // There is no draw session to close: BeginDraw never starts one.
+    fn EndDraw(&self) -> Result<()> {
+        not_implemented()
+    }
+
+    fn Resize(&self, sizePixels: PixelSize) -> Result<()> {
+        let width = sizePixels.cx.max(0) as u32;
+        let height = sizePixels.cy.max(0) as u32;
+        if self.surface.resize(width, height) {
+            Ok(())
+        } else {
+            Err(Error::from_hresult(E_OUTOFMEMORY))
+        }
+    }
+
+    // Scrolling would have to move pixels the host may be filling; it is not part of this path.
+    fn Scroll(
+        &self,
+        _scrollRect: *const Rect,
+        _clipRect: *const Rect,
+        _offsetX: i32,
+        _offsetY: i32,
+    ) -> Result<()> {
+        not_implemented()
+    }
+
+    fn ResumeDraw(&self) -> Result<()> {
+        not_implemented()
+    }
+
+    fn SuspendDraw(&self) -> Result<()> {
+        not_implemented()
+    }
+}
+
 /// A surface of `width` by `height` pixels, zeroed, for a host to fill.
 ///
-/// The ABI has no `Compositor.CreateDrawingSurface`; the graphics-device route needs a D3D device
-/// this DLL does not have, so a host asks the crate instead.
+/// The host path is the one this crate offers directly; a WinRT client reaches
+/// [`create_sized`] through the graphics device.
 pub fn create(width: u32, height: u32) -> Result<CompositionDrawingSurface> {
+    create_with(
+        width,
+        height,
+        DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb,
+        DirectXAlphaMode::Straight,
+    )
+}
+
+/// A surface the size a graphics device was asked for, in the requested format.
+///
+/// The buffer is RGBA8 either way, so the two RGBA8 formats are the ones a client may ask
+/// for; anything else fails with `E_INVALIDARG` instead of returning swapped colors.
+pub(crate) fn create_sized(
+    size: Size,
+    format: DirectXPixelFormat,
+    alpha: DirectXAlphaMode,
+) -> Result<CompositionDrawingSurface> {
+    if format != DirectXPixelFormat::R8G8B8A8UIntNormalized
+        && format != DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb
+    {
+        return Err(Error::from_hresult(E_INVALIDARG));
+    }
+    let width = size.width.max(0.0) as u32;
+    let height = size.height.max(0.0) as u32;
+    create_with(width, height, format, alpha)
+}
+
+fn create_with(
+    width: u32,
+    height: u32,
+    format: DirectXPixelFormat,
+    alpha: DirectXAlphaMode,
+) -> Result<CompositionDrawingSurface> {
     let buffer = Buffer::new(width, height).ok_or_else(|| Error::from_hresult(E_OUTOFMEMORY))?;
     let surface = Arc::new(DrawingSurface {
         id: next_id(),
         pixels: Mutex::new(buffer),
+        format,
+        alpha,
     });
     let object: ICompositionDrawingSurface = DrawingSurfaceObject {
         surface: surface.clone(),

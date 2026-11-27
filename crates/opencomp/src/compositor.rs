@@ -5,6 +5,7 @@
 //! grows one method at a time behind the same ABI.
 
 use crate::bindings::Microsoft::UI::Composition::*;
+use crate::interop::ICompositorInterop;
 use windows_core::{Error, HRESULT, Interface, Result};
 
 const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
@@ -21,6 +22,7 @@ fn not_implemented<T>() -> Result<T> {
     ICompositor5,
     ICompositor6,
     ICompositor8,
+    ICompositorInterop,
     ICompositorWithProjectedShadow,
     ICompositorWithRadialGradient,
     ICompositorWithVisualSurface
