@@ -16,6 +16,7 @@
 use crate::{Xbf, XbfError};
 
 mod builder;
+mod frames;
 mod json;
 mod resolve;
 mod text;

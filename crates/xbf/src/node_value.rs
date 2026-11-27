@@ -63,6 +63,23 @@ pub(crate) fn read_shared_strings(
 /*
  * PersistedConstantType, XamlBinaryMetadata.h:218-232.  Decoded exactly as in
  * xamlbinaryformatsubreader2.cpp:680-787.
+ *
+ * Every kind in that enum has a model slot; nothing is dropped:
+ *
+ *   None             -> model::Value::None
+ *   IsBoolFalse/True -> model::Value::Bool
+ *   IsFloat          -> model::Value::Float
+ *   IsSigned         -> model::Value::Signed
+ *   IsSharedString   -> model::Value::String
+ *   IsThickness      -> model::Value::Thickness (CornerRadius uses this shape)
+ *   IsGridLength     -> model::Value::GridLength (unit is GridUnitType)
+ *   IsColor          -> model::Value::Color (0xAARRGGBB)
+ *   IsUniqueString   -> model::Value::String
+ *   IsNullString     -> model::Value::Null
+ *   IsEnum           -> model::Value::Enum (the index is a stable type index)
+ *
+ * A kind above IsEnum is not in this format; it is refused as
+ * UnknownConstant instead of being guessed.
  */
 pub(crate) fn read_value(
     cursor: &mut Cursor,

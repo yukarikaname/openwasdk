@@ -7,8 +7,8 @@
  */
 
 use xbf::{
-    Header, Metadata, Node, NodeKind, NodeStream, PersistedNode, Version, Xbf, XbfError,
-    model::Value,
+    Header, Metadata, Node, NodeKind, NodeStream, PersistedNode, Value as WireValue, Version, Xbf,
+    XbfError, model::Value,
 };
 
 const FIXTURE: &[u8] = include_bytes!("data/winui-theme-resources.xbf");
@@ -257,5 +257,236 @@ fn an_unmapped_node_kind_names_its_index_and_kind() {
             assert_eq!(kind, "GetResourcePropertyBag");
         }
         other => panic!("expected a model error, got {other:?}"),
+    }
+}
+
+/*
+ * Every PersistedConstantType kind the wire reader accepts has a model slot.
+ * Push one of each through the operand stack and check the tree keeps it.
+ */
+#[test]
+fn every_wire_value_kind_reaches_the_model() {
+    assert_eq!(xbf::stable::type_name(641), Some("Orientation"));
+    let grid = PersistedNode {
+        id: 442,
+        trusted: true,
+    };
+    let row = PersistedNode {
+        id: 860,
+        trusted: true,
+    };
+    let values = [
+        WireValue::None,
+        WireValue::Bool(false),
+        WireValue::Bool(true),
+        WireValue::Float(1.5),
+        WireValue::Signed(-7),
+        WireValue::SharedString("shared".to_string()),
+        WireValue::Thickness([1.0, 2.0, 3.0, 4.0]),
+        WireValue::GridLength {
+            unit: 2,
+            value: 1.5,
+        },
+        WireValue::Color(0xaabb_ccdd),
+        WireValue::UniqueString("unique".to_string()),
+        WireValue::NullString,
+        WireValue::Enum {
+            type_index: 641,
+            value: 1,
+        },
+    ];
+
+    let mut nodes = vec![
+        Node {
+            offset: 0,
+            kind: NodeKind::PushScope,
+        },
+        Node {
+            offset: 1,
+            kind: NodeKind::CreateTypeBeginInit { ty: grid },
+        },
+    ];
+    for (offset, value) in values.into_iter().enumerate() {
+        nodes.push(Node {
+            offset: offset as u32 * 2 + 2,
+            kind: NodeKind::PushConstant { value },
+        });
+        nodes.push(Node {
+            offset: offset as u32 * 2 + 3,
+            kind: NodeKind::SetValue { property: row },
+        });
+    }
+    nodes.push(Node {
+        offset: 26,
+        kind: NodeKind::PopScope,
+    });
+
+    let model = empty_file(nodes)
+        .model()
+        .expect("every value kind should reach the model");
+    let values: Vec<&Value> = model.roots[0]
+        .properties
+        .iter()
+        .map(|property| &property.value)
+        .collect();
+
+    assert_eq!(values.len(), 12);
+    assert!(matches!(values[0], Value::None));
+    assert!(matches!(values[1], Value::Bool(false)));
+    assert!(matches!(values[2], Value::Bool(true)));
+    assert!(matches!(values[3], Value::Float(value) if (*value - 1.5).abs() < f32::EPSILON));
+    assert!(matches!(values[4], Value::Signed(-7)));
+    assert!(matches!(values[5], Value::String(value) if value == "shared"));
+    assert!(matches!(values[6], Value::Thickness([1.0, 2.0, 3.0, 4.0])));
+    assert!(
+        matches!(values[7], Value::GridLength { unit: 2, value } if (*value - 1.5).abs() < f32::EPSILON)
+    );
+    assert!(matches!(values[8], Value::Color(0xaabb_ccdd)));
+    assert!(matches!(values[9], Value::String(value) if value == "unique"));
+    assert!(matches!(values[10], Value::Null));
+    assert!(
+        matches!(values[11], Value::Enum { type_name, value: 1 } if type_name == "Orientation")
+    );
+}
+
+/*
+ * PushResolvedType and PushResolvedProperty are operands like PushConstant;
+ * SetValue consumes them and the model has the Type and Property slots.
+ */
+#[test]
+fn resolved_operands_reach_the_model_through_set_value() {
+    let grid = PersistedNode {
+        id: 442,
+        trusted: true,
+    };
+    let text_block = PersistedNode {
+        id: 396,
+        trusted: true,
+    };
+    let row = PersistedNode {
+        id: 860,
+        trusted: true,
+    };
+    let file = empty_file(vec![
+        Node {
+            offset: 0,
+            kind: NodeKind::PushScope,
+        },
+        Node {
+            offset: 1,
+            kind: NodeKind::CreateTypeBeginInit { ty: grid },
+        },
+        Node {
+            offset: 2,
+            kind: NodeKind::PushResolvedType { ty: text_block },
+        },
+        Node {
+            offset: 3,
+            kind: NodeKind::SetValue { property: row },
+        },
+        Node {
+            offset: 4,
+            kind: NodeKind::PushResolvedProperty { property: row },
+        },
+        Node {
+            offset: 5,
+            kind: NodeKind::SetValue { property: row },
+        },
+        Node {
+            offset: 6,
+            kind: NodeKind::PopScope,
+        },
+    ]);
+
+    let model = file
+        .model()
+        .expect("resolved operands should reach the model");
+    let values: Vec<&Value> = model.roots[0]
+        .properties
+        .iter()
+        .map(|property| &property.value)
+        .collect();
+
+    assert!(matches!(values[0], Value::Type { name, .. } if name == "TextBlock"));
+    assert!(
+        matches!(values[1], Value::Property { name, .. } if name == "Grid_Row"),
+        "unexpected second value {:?}",
+        values[1]
+    );
+}
+
+/* File offset of one node in a parsed fixture, table included. */
+fn node_file_offset(file: &Xbf, stream: usize, index: usize) -> usize {
+    let section = 12 + file.header.metadata_size as usize;
+    let table = 4 + file.streams.len() * 8;
+    section + table + file.streams[stream].nodes[index].offset as usize
+}
+
+#[test]
+fn a_truncated_fixture_is_a_typed_error() {
+    let cut = FIXTURE.len() - 1;
+    match xbf::parse(&FIXTURE[..cut]) {
+        Err(XbfError::BadSectionSize { section, .. }) => assert_eq!(section, "node stream"),
+        Err(XbfError::Truncated { .. }) => {}
+        other => panic!("expected a typed error for {cut} bytes, got {other:?}"),
+    }
+}
+
+#[test]
+fn a_flipped_node_kind_is_a_typed_error() {
+    let file = xbf::parse(FIXTURE).expect("fixture should parse");
+    let last = file.streams[0].nodes.len() - 1;
+    let offset = node_file_offset(&file, 0, last);
+
+    let mut data = FIXTURE.to_vec();
+    data[offset] = 0xff;
+    match xbf::parse(&data) {
+        Err(XbfError::UnknownNodeKind { kind, .. }) => assert_eq!(kind, 0xff),
+        other => panic!("expected UnknownNodeKind, got {other:?}"),
+    }
+}
+
+/* EndOfStream is a sentinel; a stream that keeps going after it is corrupt. */
+#[test]
+fn nodes_after_end_of_stream_are_refused() {
+    let file = xbf::parse(FIXTURE).expect("fixture should parse");
+    let offset = node_file_offset(&file, 1, 6);
+
+    let mut data = FIXTURE.to_vec();
+    data[offset] = 37; /* EndOfStream, with the rest of the substream behind it */
+    let file = xbf::parse(&data).expect("EndOfStream itself is a valid node kind");
+    match file.model() {
+        Err(XbfError::ModelError { kind, reason, .. }) => {
+            assert_eq!(kind, "EndOfStream");
+            assert!(
+                reason.contains("nodes follow"),
+                "unexpected reason {reason}"
+            );
+        }
+        other => panic!("expected a trailing-node model error, got {other:?}"),
+    }
+}
+
+/*
+ * The last node of substream 1 closes one of its scopes.  Turning that closer
+ * into EndOfStream parses, so only the model can catch that two scopes are
+ * still open.  It must refuse rather than return the partial dictionary with
+ * the last constant dropped.
+ */
+#[test]
+fn a_flipped_node_kind_does_not_yield_a_partial_tree() {
+    let file = xbf::parse(FIXTURE).expect("fixture should parse");
+    let last = file.streams[1].nodes.len() - 1;
+    let offset = node_file_offset(&file, 1, last);
+
+    let mut data = FIXTURE.to_vec();
+    data[offset] = 37; /* EndOfStream */
+    let file = xbf::parse(&data).expect("EndOfStream itself is a valid node kind");
+    match file.model() {
+        Err(XbfError::ModelError { kind, reason, .. }) => {
+            assert_eq!(kind, "end of substream");
+            assert!(reason.contains("open scope"), "unexpected reason {reason}");
+        }
+        other => panic!("expected an unclosed-scope model error, got {other:?}"),
     }
 }
