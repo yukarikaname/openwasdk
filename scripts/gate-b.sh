@@ -71,10 +71,14 @@ else
 	echo "gate-b: no activation manifest (set ACTIVATION_MSIX); activations will fail"
 fi
 
-cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe -p opendispatch
+cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe -p opendispatch -p opencomp
 # The SDK's own `Microsoft.UI.Dispatching` server aborts on load under Wine
 # (`ntdll.NtAllocateReserveObject`), so the manifest points that namespace at ours.
 cp "$target/opendispatch.dll" "$run/" 2>/dev/null || true
+cp "$target/opencomp.dll" "$run/" 2>/dev/null || true
+# `Microsoft.Windows.ApplicationModel.Resources.dll` imports exactly one function from
+# `bcp47mrm.dll`, which Wine does not have; the shim is beside the engine like the rest.
+cp "$target/bcp47mrm.dll" "$run/" 2>/dev/null || true
 xvfb-run -a "$wine" wineboot -u >/dev/null 2>&1 || true
 # The probe and the DLLs sit together and the probe runs from that directory: a DLL
 # loaded by full path does not put its own directory on the dependency search path.

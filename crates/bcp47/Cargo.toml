@@ -1,0 +1,12 @@
+[package]
+name = "bcp47mrm"
+description = "The one BCP-47 function the App SDK's resource manager imports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "bcp47mrm"
+crate-type = ["cdylib"]

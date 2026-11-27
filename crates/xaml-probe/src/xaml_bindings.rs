@@ -12,6 +12,55 @@
 
 pub mod Microsoft {
     pub mod UI {
+        pub mod Composition {
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct Compositor(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                Compositor,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for Compositor {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, ICompositor>();
+            }
+            unsafe impl windows_core::Interface for Compositor {
+                type Vtable = <ICompositor as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <ICompositor as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for Compositor {
+                type Target = ICompositor;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for Compositor {
+                const NAME: &'static str = "Microsoft.UI.Composition.Compositor";
+            }
+            unsafe impl Send for Compositor {}
+            unsafe impl Sync for Compositor {}
+            windows_core::imp::define_interface!(
+                ICompositor,
+                ICompositor_Vtbl,
+                0x95213c13_c4cb_57de_b267_d21ab901ae38
+            );
+            impl windows_core::RuntimeType for ICompositor {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Composition.ICompositor",
+                    );
+            }
+            impl windows_core::RuntimeName for ICompositor {
+                const NAME: &'static str = "Microsoft.UI.Composition.ICompositor";
+            }
+            #[repr(C)]
+            pub struct ICompositor_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+        }
         pub mod Content {
             #[repr(transparent)]
             #[derive(Clone, Debug, Eq, PartialEq)]
@@ -78,6 +127,55 @@ pub mod Microsoft {
             }
             #[repr(C)]
             pub struct IContentIslandStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+        }
+        pub mod Dispatching {
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DispatcherQueue(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DispatcherQueue,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for DispatcherQueue {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDispatcherQueue>();
+            }
+            unsafe impl windows_core::Interface for DispatcherQueue {
+                type Vtable = <IDispatcherQueue as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IDispatcherQueue as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DispatcherQueue {
+                type Target = IDispatcherQueue;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DispatcherQueue {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.DispatcherQueue";
+            }
+            unsafe impl Send for DispatcherQueue {}
+            unsafe impl Sync for DispatcherQueue {}
+            windows_core::imp::define_interface!(
+                IDispatcherQueue,
+                IDispatcherQueue_Vtbl,
+                0xf6ebf8fa_be1c_5bf6_a467_73da28738ae8
+            );
+            impl windows_core::RuntimeType for IDispatcherQueue {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueue",
+                    );
+            }
+            impl windows_core::RuntimeName for IDispatcherQueue {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueue";
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueue_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
             }
         }
@@ -839,11 +937,1002 @@ pub mod Microsoft {
                 const NAME: windows_core::imp::ConstBuffer =
                     windows_core::imp::ConstBuffer::from_slice(b"Microsoft.UI.Xaml.IWindow");
             }
+            impl IWindow {
+                pub fn Bounds(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Foundation::Rect>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Bounds)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Visible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Visible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Content(&self) -> windows_core::Result<UIElement> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Content)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn SetContent<P0>(&self, value: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<UIElement>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetContent)(
+                            windows_core::Interface::as_raw(self),
+                            value.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn CoreWindow(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::UI::Core::CoreWindow>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CoreWindow)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Compositor(&self) -> windows_core::Result<super::Composition::Compositor> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Compositor)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Dispatcher(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::UI::Core::CoreDispatcher>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Dispatcher)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Title(&self) -> windows_core::Result<String> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Title)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| {
+                            let hstring: windows_core::HSTRING = core::mem::transmute(result__);
+                            hstring.to_string_lossy()
+                        })
+                    }
+                }
+                pub fn SetTitle(&self, value: &str) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetTitle)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(value)),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ExtendsContentIntoTitleBar(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ExtendsContentIntoTitleBar)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetExtendsContentIntoTitleBar(
+                    &self,
+                    value: bool,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetExtendsContentIntoTitleBar)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Activated<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<WindowActivatedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        WindowActivatedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                WindowActivatedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::xaml_bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                WindowActivatedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Activated)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveActivated,
+                        ))
+                    }
+                }
+                pub fn Closed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<WindowEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        WindowEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                WindowEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::xaml_bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                WindowEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Closed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveClosed,
+                        ))
+                    }
+                }
+                pub fn SizeChanged<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<WindowSizeChangedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        WindowSizeChangedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                WindowSizeChangedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::xaml_bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                WindowSizeChangedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).SizeChanged)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveSizeChanged,
+                        ))
+                    }
+                }
+                pub fn VisibilityChanged<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<WindowVisibilityChangedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        WindowVisibilityChangedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                WindowVisibilityChangedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::xaml_bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                WindowVisibilityChangedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).VisibilityChanged)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveVisibilityChanged,
+                        ))
+                    }
+                }
+                pub fn Activate(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Activate)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Close(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Close)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn SetTitleBar<P0>(&self, titlebar: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<UIElement>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetTitleBar)(
+                            windows_core::Interface::as_raw(self),
+                            titlebar.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for IWindow {
                 const NAME: &'static str = "Microsoft.UI.Xaml.IWindow";
             }
+            pub trait IWindow_Impl: windows_core::IUnknownImpl {
+                fn Bounds(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Foundation::Rect>;
+                fn Visible(&self) -> windows_core::Result<bool>;
+                fn Content(&self) -> windows_core::Result<UIElement>;
+                fn SetContent(
+                    &self,
+                    value: windows_core::Ref<UIElement>,
+                ) -> windows_core::Result<()>;
+                fn CoreWindow(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::UI::Core::CoreWindow>;
+                fn Compositor(&self) -> windows_core::Result<super::Composition::Compositor>;
+                fn Dispatcher(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::UI::Core::CoreDispatcher>;
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn Title(&self) -> windows_core::Result<windows_core::HSTRING>;
+                fn SetTitle(&self, value: &windows_core::HSTRING) -> windows_core::Result<()>;
+                fn ExtendsContentIntoTitleBar(&self) -> windows_core::Result<bool>;
+                fn SetExtendsContentIntoTitleBar(&self, value: bool) -> windows_core::Result<()>;
+                fn Activated(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            WindowActivatedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveActivated(&self, token: i64) -> windows_core::Result<()>;
+                fn Closed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            WindowEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveClosed(&self, token: i64) -> windows_core::Result<()>;
+                fn SizeChanged(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            WindowSizeChangedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveSizeChanged(&self, token: i64) -> windows_core::Result<()>;
+                fn VisibilityChanged(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            WindowVisibilityChangedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveVisibilityChanged(&self, token: i64) -> windows_core::Result<()>;
+                fn Activate(&self) -> windows_core::Result<()>;
+                fn Close(&self) -> windows_core::Result<()>;
+                fn SetTitleBar(
+                    &self,
+                    titleBar: windows_core::Ref<UIElement>,
+                ) -> windows_core::Result<()>;
+            }
+            impl IWindow_Vtbl {
+                pub const fn new<Identity: IWindow_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn Bounds<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::super::Windows::Foundation::Rect,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Bounds(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Visible<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Visible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Content<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Content(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetContent<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::SetContent(this, core::mem::transmute_copy(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn CoreWindow<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::CoreWindow(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Compositor<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Compositor(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Dispatcher<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Dispatcher(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Title<Identity: IWindow_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Title(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetTitle<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::SetTitle(this, core::mem::transmute(&value)).into()
+                        }
+                    }
+                    unsafe extern "system" fn ExtendsContentIntoTitleBar<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::ExtendsContentIntoTitleBar(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetExtendsContentIntoTitleBar<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::SetExtendsContentIntoTitleBar(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn Activated<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Activated(this, core::mem::transmute_copy(&handler))
+                            {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveActivated<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::RemoveActivated(this, token).into()
+                        }
+                    }
+                    unsafe extern "system" fn Closed<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::Closed(this, core::mem::transmute_copy(&handler)) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveClosed<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::RemoveClosed(this, token).into()
+                        }
+                    }
+                    unsafe extern "system" fn SizeChanged<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::SizeChanged(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveSizeChanged<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::RemoveSizeChanged(this, token).into()
+                        }
+                    }
+                    unsafe extern "system" fn VisibilityChanged<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IWindow_Impl::VisibilityChanged(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveVisibilityChanged<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::RemoveVisibilityChanged(this, token).into()
+                        }
+                    }
+                    unsafe extern "system" fn Activate<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::Activate(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Close<Identity: IWindow_Impl, const OFFSET: isize>(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::Close(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn SetTitleBar<
+                        Identity: IWindow_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        titlebar: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IWindow_Impl::SetTitleBar(this, core::mem::transmute_copy(&titlebar))
+                                .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<Identity, IWindow, OFFSET>(),
+                        Bounds: Bounds::<Identity, OFFSET>,
+                        Visible: Visible::<Identity, OFFSET>,
+                        Content: Content::<Identity, OFFSET>,
+                        SetContent: SetContent::<Identity, OFFSET>,
+                        CoreWindow: CoreWindow::<Identity, OFFSET>,
+                        Compositor: Compositor::<Identity, OFFSET>,
+                        Dispatcher: Dispatcher::<Identity, OFFSET>,
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        Title: Title::<Identity, OFFSET>,
+                        SetTitle: SetTitle::<Identity, OFFSET>,
+                        ExtendsContentIntoTitleBar: ExtendsContentIntoTitleBar::<Identity, OFFSET>,
+                        SetExtendsContentIntoTitleBar: SetExtendsContentIntoTitleBar::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        Activated: Activated::<Identity, OFFSET>,
+                        RemoveActivated: RemoveActivated::<Identity, OFFSET>,
+                        Closed: Closed::<Identity, OFFSET>,
+                        RemoveClosed: RemoveClosed::<Identity, OFFSET>,
+                        SizeChanged: SizeChanged::<Identity, OFFSET>,
+                        RemoveSizeChanged: RemoveSizeChanged::<Identity, OFFSET>,
+                        VisibilityChanged: VisibilityChanged::<Identity, OFFSET>,
+                        RemoveVisibilityChanged: RemoveVisibilityChanged::<Identity, OFFSET>,
+                        Activate: Activate::<Identity, OFFSET>,
+                        Close: Close::<Identity, OFFSET>,
+                        SetTitleBar: SetTitleBar::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IWindow as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct IWindow_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Bounds: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Foundation::Rect,
+                ) -> windows_core::HRESULT,
+                pub Visible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub Content: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub SetContent: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub CoreWindow: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub Compositor: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub Dispatcher: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub Title: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub SetTitle: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub ExtendsContentIntoTitleBar: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetExtendsContentIntoTitleBar:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        bool,
+                    ) -> windows_core::HRESULT,
+                pub Activated: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
+                pub RemoveActivated:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub Closed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
+                pub RemoveClosed:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub SizeChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveSizeChanged:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub VisibilityChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveVisibilityChanged:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub Activate:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Close:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub SetTitleBar: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IWindowActivatedEventArgs,
+                IWindowActivatedEventArgs_Vtbl,
+                0xc723a5ea_82c4_5dd6_861b_70ef573b88d6
+            );
+            impl windows_core::RuntimeType for IWindowActivatedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Xaml.IWindowActivatedEventArgs",
+                    );
+            }
+            impl windows_core::RuntimeName for IWindowActivatedEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.IWindowActivatedEventArgs";
+            }
+            #[repr(C)]
+            pub struct IWindowActivatedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IWindowEventArgs,
+                IWindowEventArgs_Vtbl,
+                0x1140827c_fe0a_5268_bc2b_f4492c2ccb49
+            );
+            impl windows_core::RuntimeType for IWindowEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Xaml.IWindowEventArgs",
+                    );
+            }
+            impl windows_core::RuntimeName for IWindowEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.IWindowEventArgs";
+            }
+            #[repr(C)]
+            pub struct IWindowEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IWindowSizeChangedEventArgs,
+                IWindowSizeChangedEventArgs_Vtbl,
+                0x542f6f2c_4b64_5c72_a7a5_3a7e0664b8ff
+            );
+            impl windows_core::RuntimeType for IWindowSizeChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Xaml.IWindowSizeChangedEventArgs",
+                    );
+            }
+            impl windows_core::RuntimeName for IWindowSizeChangedEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.IWindowSizeChangedEventArgs";
+            }
+            #[repr(C)]
+            pub struct IWindowSizeChangedEventArgs_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
             }
             windows_core::imp::define_interface!(
@@ -862,6 +1951,26 @@ pub mod Microsoft {
             }
             #[repr(C)]
             pub struct IWindowStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IWindowVisibilityChangedEventArgs,
+                IWindowVisibilityChangedEventArgs_Vtbl,
+                0x7bb24a6d_070c_5cb6_8e9c_547905be8265
+            );
+            impl windows_core::RuntimeType for IWindowVisibilityChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Xaml.IWindowVisibilityChangedEventArgs",
+                    );
+            }
+            impl windows_core::RuntimeName for IWindowVisibilityChangedEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.IWindowVisibilityChangedEventArgs";
+            }
+            #[repr(C)]
+            pub struct IWindowVisibilityChangedEventArgs_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
             }
             #[repr(transparent)]
@@ -919,6 +2028,122 @@ pub mod Microsoft {
             }
             unsafe impl Send for Window {}
             unsafe impl Sync for Window {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct WindowActivatedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                WindowActivatedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for WindowActivatedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IWindowActivatedEventArgs>();
+            }
+            unsafe impl windows_core::Interface for WindowActivatedEventArgs {
+                type Vtable = <IWindowActivatedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IWindowActivatedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for WindowActivatedEventArgs {
+                type Target = IWindowActivatedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for WindowActivatedEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.WindowActivatedEventArgs";
+            }
+            unsafe impl Send for WindowActivatedEventArgs {}
+            unsafe impl Sync for WindowActivatedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct WindowEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                WindowEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for WindowEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IWindowEventArgs>();
+            }
+            unsafe impl windows_core::Interface for WindowEventArgs {
+                type Vtable = <IWindowEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IWindowEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for WindowEventArgs {
+                type Target = IWindowEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for WindowEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.WindowEventArgs";
+            }
+            unsafe impl Send for WindowEventArgs {}
+            unsafe impl Sync for WindowEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct WindowSizeChangedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                WindowSizeChangedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for WindowSizeChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IWindowSizeChangedEventArgs>(
+                    );
+            }
+            unsafe impl windows_core::Interface for WindowSizeChangedEventArgs {
+                type Vtable = <IWindowSizeChangedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IWindowSizeChangedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for WindowSizeChangedEventArgs {
+                type Target = IWindowSizeChangedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for WindowSizeChangedEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.WindowSizeChangedEventArgs";
+            }
+            unsafe impl Send for WindowSizeChangedEventArgs {}
+            unsafe impl Sync for WindowSizeChangedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct WindowVisibilityChangedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                WindowVisibilityChangedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for WindowVisibilityChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IWindowVisibilityChangedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for WindowVisibilityChangedEventArgs {
+                type Vtable =
+                    <IWindowVisibilityChangedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IWindowVisibilityChangedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for WindowVisibilityChangedEventArgs {
+                type Target = IWindowVisibilityChangedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for WindowVisibilityChangedEventArgs {
+                const NAME: &'static str = "Microsoft.UI.Xaml.WindowVisibilityChangedEventArgs";
+            }
+            unsafe impl Send for WindowVisibilityChangedEventArgs {}
+            unsafe impl Sync for WindowVisibilityChangedEventArgs {}
             pub mod Controls {
                 #[repr(transparent)]
                 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1961,6 +3186,106 @@ pub mod Windows {
                     b"struct(Windows.Foundation.Size;f4;f4)",
                 );
         }
+        #[repr(transparent)]
+        #[derive(Clone, Debug, Eq, PartialEq)]
+        pub struct TypedEventHandler<TSender, TResult>(
+            windows_core::IUnknown,
+            core::marker::PhantomData<TSender>,
+            core::marker::PhantomData<TResult>,
+        )
+        where
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static;
+        unsafe impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        > windows_core::Interface for TypedEventHandler<TSender, TResult>
+        {
+            type Vtable = TypedEventHandler_Vtbl<TSender, TResult>;
+            const IID: windows_core::GUID =
+                windows_core::GUID::from_signature(<Self as windows_core::RuntimeType>::SIGNATURE);
+        }
+        impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        > windows_core::RuntimeType for TypedEventHandler<TSender, TResult>
+        {
+            const SIGNATURE: windows_core::imp::ConstBuffer = windows_core::imp::ConstBuffer::new()
+                .push_slice(b"pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f}")
+                .push_slice(b";")
+                .push_other(TSender::SIGNATURE)
+                .push_slice(b";")
+                .push_other(TResult::SIGNATURE)
+                .push_slice(b")");
+        }
+        #[repr(C)]
+        pub struct TypedEventHandler_Vtbl<TSender, TResult>
+        where
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        {
+            base__: windows_core::IUnknown_Vtbl,
+            Invoke: unsafe extern "system" fn(
+                this: *mut core::ffi::c_void,
+                sender: windows_core::imp::AbiType<TSender>,
+                args: windows_core::imp::AbiType<TResult>,
+            ) -> windows_core::HRESULT,
+            TSender: core::marker::PhantomData<TSender>,
+            TResult: core::marker::PhantomData<TResult>,
+        }
+        pub(crate) struct TypedEventHandlerBox<
+            TSender,
+            TResult,
+            F: Fn(windows_core::Ref<TSender>, windows_core::Ref<TResult>) + 'static,
+        >(core::marker::PhantomData<(TSender, TResult, fn() -> F)>)
+        where
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static;
+        impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+            F: Fn(windows_core::Ref<TSender>, windows_core::Ref<TResult>) + 'static,
+        > TypedEventHandlerBox<TSender, TResult, F>
+        {
+            pub(crate) const VTABLE: TypedEventHandler_Vtbl<TSender, TResult> =
+                TypedEventHandler_Vtbl::<TSender, TResult> {
+                    base__: windows_core::IUnknown_Vtbl {
+                        QueryInterface: windows_core::imp::DelegateBox::<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >::QueryInterface,
+                        AddRef: windows_core::imp::DelegateBox::<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >::AddRef,
+                        Release: windows_core::imp::DelegateBox::<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >::Release,
+                    },
+                    Invoke: Self::Invoke,
+                    TSender: core::marker::PhantomData::<TSender>,
+                    TResult: core::marker::PhantomData::<TResult>,
+                };
+            unsafe extern "system" fn Invoke(
+                this: *mut core::ffi::c_void,
+                sender: windows_core::imp::AbiType<TSender>,
+                args: windows_core::imp::AbiType<TResult>,
+            ) -> windows_core::HRESULT {
+                unsafe {
+                    let this = &mut *(this as *mut *mut core::ffi::c_void
+                        as *mut windows_core::imp::DelegateBox<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >);
+                    (this.invoke)(
+                        core::mem::transmute_copy(&sender),
+                        core::mem::transmute_copy(&args),
+                    );
+                    windows_core::HRESULT(0)
+                }
+            }
+        }
     }
     pub mod UI {
         #[repr(C)]
@@ -1977,6 +3302,102 @@ pub mod Windows {
         impl windows_core::RuntimeType for Color {
             const SIGNATURE: windows_core::imp::ConstBuffer =
                 windows_core::imp::ConstBuffer::from_slice(b"struct(Windows.UI.Color;u1;u1;u1;u1)");
+        }
+        pub mod Core {
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct CoreDispatcher(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                CoreDispatcher,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for CoreDispatcher {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, ICoreDispatcher>();
+            }
+            unsafe impl windows_core::Interface for CoreDispatcher {
+                type Vtable = <ICoreDispatcher as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <ICoreDispatcher as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for CoreDispatcher {
+                type Target = ICoreDispatcher;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for CoreDispatcher {
+                const NAME: &'static str = "Windows.UI.Core.CoreDispatcher";
+            }
+            unsafe impl Send for CoreDispatcher {}
+            unsafe impl Sync for CoreDispatcher {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct CoreWindow(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                CoreWindow,
+                windows_core::IUnknown,
+                windows_core::IInspectable,
+                ICoreWindow
+            );
+            impl windows_core::RuntimeType for CoreWindow {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, ICoreWindow>();
+            }
+            unsafe impl windows_core::Interface for CoreWindow {
+                type Vtable = <ICoreWindow as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <ICoreWindow as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for CoreWindow {
+                type Target = ICoreWindow;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for CoreWindow {
+                const NAME: &'static str = "Windows.UI.Core.CoreWindow";
+            }
+            windows_core::imp::define_interface!(
+                ICoreDispatcher,
+                ICoreDispatcher_Vtbl,
+                0x60db2fa8_b705_4fde_a7d6_ebbb1891d39e
+            );
+            impl windows_core::RuntimeType for ICoreDispatcher {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(b"Windows.UI.Core.ICoreDispatcher");
+            }
+            impl windows_core::RuntimeName for ICoreDispatcher {
+                const NAME: &'static str = "Windows.UI.Core.ICoreDispatcher";
+            }
+            #[repr(C)]
+            pub struct ICoreDispatcher_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                ICoreWindow,
+                ICoreWindow_Vtbl,
+                0x79b9d5f2_879e_4b89_b798_79e47598030c
+            );
+            impl windows_core::RuntimeType for ICoreWindow {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(b"Windows.UI.Core.ICoreWindow");
+            }
+            windows_core::imp::interface_hierarchy!(
+                ICoreWindow,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeName for ICoreWindow {
+                const NAME: &'static str = "Windows.UI.Core.ICoreWindow";
+            }
+            #[repr(C)]
+            pub struct ICoreWindow_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
         }
     }
 }

@@ -188,6 +188,19 @@ bugs rather than Wine's:
 `XamlCheckProcessRequirements` returns different values between runs (`0xfa9b2008`,
 `0xfa9e2008`) and does not gate the start, so its return is not treated as an HRESULT.
 
+## What a window needs beyond the measurement
+
+Creating a `Window` is where the engine stops being a measuring device and becomes an
+application, and it reaches further than `Start` does:
+
+- `Microsoft.Windows.ApplicationModel.Resources.dll` loads as soon as a window is
+  created, and it imports exactly one function from `bcp47mrm.dll`, which Wine does not
+  have. `crates/bcp47` provides that one function beside the engine; a wrong rejection
+  there would lose a locale, so the shim accepts any non-empty tag.
+- The window path asks for `Microsoft.UI.Composition.Compositor` by name, so the
+  composition classes in the activation manifest must point at a DLL that is actually
+  in the directory: `opencomp.dll`, not only its dispatcher sibling.
+
 ## What the next step is
 
 The dispatcher is still what stands between the call and the callback: on Windows
