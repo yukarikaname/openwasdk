@@ -2,6 +2,7 @@
 //! interface list and the IIDs are what a stub or a tracer has to answer.
 
 mod diff;
+mod iids;
 mod model;
 mod report;
 
@@ -27,6 +28,19 @@ enum Command {
         /// Only this namespace
         #[arg(long)]
         namespace: Option<String>,
+    },
+    /// Scan a PE image for the interface identifiers it loads
+    Iids {
+        image: PathBuf,
+        /// Metadata that names identifiers
+        #[arg(long = "metadata")]
+        metadata: Vec<PathBuf>,
+        /// A file of `guid name` lines, for identifiers no metadata defines
+        #[arg(long)]
+        names: Option<PathBuf>,
+        /// Only the identifiers nothing names
+        #[arg(long)]
+        unknown: bool,
     },
     /// Print the methods of every interface with their signatures
     Methods {
@@ -96,6 +110,18 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::Interfaces { winmd, namespace } => {
             let model = model::load(&winmd)?;
             print!("{}", report::interfaces(&model, namespace.as_deref()));
+        }
+        Command::Iids {
+            image,
+            metadata,
+            names,
+            unknown,
+        } => {
+            let found = iids::image(&image)?;
+            let named = iids::names(&metadata, names.as_deref())?;
+            let report = iids::report(&found, &named, unknown);
+            // The report is long and usually piped into `head`; a closed pipe is not an error.
+            let _ = std::io::Write::write_all(&mut std::io::stdout(), report.as_bytes());
         }
         Command::Methods {
             winmd,

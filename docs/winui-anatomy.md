@@ -145,10 +145,20 @@ There is no `Microsoft.UI.Composition.dll`. The composition implementation is
 
 ## Method
 
-Scripts were throwaway Python: `pefile` for sections and `.pdata` function
-ranges, `capstone` to disassemble, `comptrace interfaces` for the metadata map,
-the `windows` crate sources for Win32 IIDs and Wine's `include/*.idl` for the
-ones neither projects. The identifier scan is
+`comptrace iids` reproduces the identifier count:
+
+```
+comptrace iids Microsoft.ui.xaml.dll \
+    --metadata Microsoft.UI.winmd --metadata Microsoft.UI.Xaml.winmd ... \
+    --names wine-iids.txt
+```
+
+It is a byte scan for `lea r64, [rip+disp]` into `.rdata`, not a disassembler,
+so it needs no capstone. Without the `windows` crate's Win32 names the count of
+named identifiers is 1,554 rather than 1,491 + 71 + 8; the totals agree, which
+is the check that matters. The remaining analysis was throwaway Python: `pefile`
+for sections and `.pdata` function ranges, `capstone` to disassemble, and the
+`windows` crate sources for the Win32 names. The identifier scan is
 heuristic, not exact — a real IID that is loaded as a table entry rather than
 by a `lea` is missed, and a 16-byte constant that happens to satisfy the bits
 is counted. The numbers above are consistent with the parts that can be
