@@ -140,6 +140,12 @@ fn a_window_presents_a_frame() {
     let island_statics: IContentIslandStatics = factory("Microsoft.UI.Content.ContentIsland")
         .cast()
         .expect("statics");
+    // The next call dereferences this pointer as a vtable, so print what it holds: a
+    // misaligned value here means the QueryInterface handed back something that is not an
+    // object, and the fault belongs to the statics object rather than to `Create`.
+    let raw = Interface::as_raw(&island_statics) as usize;
+    let table = unsafe { (raw as *const usize).read_unaligned() };
+    eprintln!("gate_a: island statics {raw:#x} vtable {table:#x}");
     let mut island_raw: *mut c_void = std::ptr::null_mut();
     mark("ContentIsland::Create");
     // Safety: the out pointer is ours and the statics object is alive.
@@ -159,6 +165,9 @@ fn a_window_presents_a_frame() {
         factory("Microsoft.UI.Content.DesktopChildSiteBridge")
             .cast()
             .expect("statics");
+    let raw = Interface::as_raw(&bridge_statics) as usize;
+    let table = unsafe { (raw as *const usize).read_unaligned() };
+    eprintln!("gate_a: bridge statics {raw:#x} vtable {table:#x}");
     let mut raw: *mut c_void = std::ptr::null_mut();
     mark("DesktopChildSiteBridge::Create");
     // Safety: the window outlives the bridge, which is dropped before it.

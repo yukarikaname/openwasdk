@@ -202,3 +202,27 @@ fn create_island(node: NodeRef) -> Result<ContentIsland> {
 pub(crate) fn island_statics() -> Result<IContentIslandStatics> {
     Ok(IslandStatics.into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use windows_core::Interface;
+
+    /// A statics object is reached only through `QueryInterface` and then called through
+    /// its vtable, so the two pointers that has to work on are asserted here: a broken
+    /// object shows up as a fault inside the first `Create`, with nothing to say why.
+    #[test]
+    fn a_statics_object_points_at_a_vtable() {
+        let statics = island_statics().expect("statics");
+        let raw = Interface::as_raw(&statics) as usize;
+        assert_eq!(raw % core::mem::align_of::<usize>(), 0, "object {raw:#x}");
+        // Safety: the pointer is aligned, and reading one word of a live object cannot fault.
+        let table = unsafe { (raw as *const usize).read_unaligned() };
+        assert_ne!(table, 0, "no vtable");
+        assert_eq!(
+            table % core::mem::align_of::<usize>(),
+            0,
+            "vtable {table:#x}"
+        );
+    }
+}
