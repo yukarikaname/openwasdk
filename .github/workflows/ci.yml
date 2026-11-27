@@ -129,18 +129,10 @@ jobs:
           export WINEPREFIX="$PWD/target/wine"
           export WINEDLLOVERRIDES="mscoree,mshtml="
           xvfb-run -a "$wine" wineboot -u > /dev/null 2>&1 || true
-          # The cdylib+lib crate layout puts the test binary under build/.../out, so ask
-          # cargo for the path instead of guessing a directory.
-          test_exe=$(cargo test -p opencomp --target x86_64-pc-windows-gnu --no-run \
-            --message-format=json \
-            | python3 -c 'import json,sys
-for line in sys.stdin:
-    try:
-        message = json.loads(line)
-    except ValueError:
-        continue
-    if message.get("profile", {}).get("test") and message.get("executable"):
-        print(message["executable"])' | tail -1)
+          # The cdylib+lib layout hides the test binary under build/.../out, so read the
+          # path out of the line cargo prints instead of guessing a directory.
+          test_exe=$(cargo test -p opencomp --target x86_64-pc-windows-gnu --no-run 2>&1 \
+            | sed -n 's/.*Executable.*(\(.*\))/\1/p' | tail -1)
           test "$test_exe" || { echo "no test binary"; exit 1; }
           echo "running $test_exe"
           xvfb-run -a "$wine" "$test_exe" --test-threads=1
