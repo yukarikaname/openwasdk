@@ -5,7 +5,7 @@
 //! Colours are held in linear rgba, the same form the renderer uses, and converted at the ABI.
 
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, OnceLock, Weak};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::bindings::Microsoft::UI::Composition::{
     CompositionGetValueStatus, ICompositionObject, ICompositionObject2, ICompositionObject4,
@@ -44,8 +44,15 @@ pub struct PropertySetObject {
 /// One map per object that asked for its property set, keyed by the address of the
 /// object's implementation. `ICompositionObject.Properties` has to be the same store
 /// every time it is read, or a value written through one call is lost to the next.
+///
+/// The table holds the maps, not weak references to them: the handle a client gets
+/// back is destroyed with the call, so a weak entry would die before the next read.
+/// Nothing tells this DLL when an object is gone, so the table is capped instead and
+/// the least recently used map is dropped; that costs the values on an object nobody
+/// has asked about since 256 others did, which is the cheapest honest limit.
 type Shared = Arc<Mutex<HashMap<String, Value>>>;
-type Entry = (usize, Weak<Mutex<HashMap<String, Value>>>);
+type Entry = (usize, Shared);
+const CAPACITY: usize = 256;
 static SETS: OnceLock<Mutex<Vec<Entry>>> = OnceLock::new();
 
 fn sets() -> &'static Mutex<Vec<Entry>> {
@@ -56,18 +63,21 @@ fn sets() -> &'static Mutex<Vec<Entry>> {
 pub fn for_key(key: usize) -> Result<CompositionPropertySet> {
     let shared = {
         let mut table = sets().lock().unwrap();
-        if table.len() >= 64 {
-            table.retain(|(_, values)| values.strong_count() > 0);
-        }
-        let found = table
-            .iter()
-            .find(|(existing, _)| *existing == key)
-            .and_then(|(_, values)| values.upgrade());
+        let found = table.iter().position(|(existing, _)| *existing == key);
         match found {
-            Some(values) => values,
+            Some(at) => {
+                // Move to the back, so the front of the list is the coldest.
+                let entry = table.remove(at);
+                let values = entry.1.clone();
+                table.push(entry);
+                values
+            }
             None => {
+                if table.len() >= CAPACITY {
+                    table.remove(0);
+                }
                 let values: Shared = Arc::new(Mutex::new(HashMap::new()));
-                table.push((key, Arc::downgrade(&values)));
+                table.push((key, values.clone()));
                 values
             }
         }
