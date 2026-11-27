@@ -34,8 +34,9 @@ owns that window's `ContentSite` (one-to-one with the island), and
 `ResizeContentToParentWindow` makes the site track the parent client area.
 
 The root is sized by `RelativeSizeAdjustment` (`IVisual2`,
-`492a7995-0c5c-5993-a283-52e4da3050ee`), which `opencomp` answers but returns
-`E_NOTIMPL` for, so this frame fails today before reaching `Content`.
+`492a7995-0c5c-5993-a283-52e4da3050ee`). `opencomp` keeps the fraction and
+resolves it against the host's size when it builds a frame, so the root fills
+whatever rectangle the host passes to `snapshot_in`.
 
 ## The interfaces
 
@@ -58,7 +59,7 @@ Composition: `ICompositor` `95213c13-c4cb-57de-b267-d21ab901ae38` (23),
 Of the namespace's 51 interfaces and 214 methods, a first frame calls thirteen: the
 five bridge calls, island `Create`, `ActualSize` and `IsConnected`, site-view
 `ActualSize`, `ClientSize`, `RasterizationScale`, `AppWindowId`/`DisplayId`. The
-other 201 can answer `E_NOTIMPL` for milestone 3: the `ContentSite` host half (33,
+other 201 can answer `E_NOTIMPL` for the first frame: the `ContentSite` host half (33,
 only the bridge calls it), `ChildSiteLink`, popup hosting, automation, event args,
 deferrals and `ContentCoordinateConverter` (7).
 
