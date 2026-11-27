@@ -77,13 +77,20 @@ jobs:
           path: target/appsdk
           key: appsdk-${{ env.SDK_VERSION }}
 
+      # The App SDK's classes are registered on a machine only when its runtime is
+      # installed. An unpackaged probe reaches them the same way the Wine job does: through
+      # the activation manifest beside the executable, here with the SDK as shipped.
+      - name: Write the activation manifest
+        run: |
+          cargo run -q -p xwinui -- sdk --out target/appsdk
+          cargo run -q -p xwinui -- activation --sdk target/appsdk --out target/appsdk/xaml-probe.exe.manifest
+
       - name: Probe the official XAML DLL
         shell: bash
         # A measurement, not a gate: the report is the deliverable.
         continue-on-error: true
         timeout-minutes: 5
         run: |
-          cargo run -q -p xwinui -- sdk --out target/appsdk
           cargo build -p xaml-probe
           cp target/debug/xaml-probe.exe target/appsdk/
           cd target/appsdk
