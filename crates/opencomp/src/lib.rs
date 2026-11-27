@@ -395,8 +395,9 @@ mod abi {
         let node = crate::node::resolve(&sprite).unwrap();
         assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 0.25);
 
+        // Stopping leaves the value the animation reached, which is the ABI default.
         object.StopAnimation("Opacity").unwrap();
-        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 1.0);
+        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 0.25);
     }
 
     #[test]

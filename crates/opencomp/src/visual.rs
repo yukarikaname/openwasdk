@@ -1,8 +1,9 @@
 //! `ContainerVisual` and `SpriteVisual`: the two leaves a tree is made of.
 //!
-//! The properties the renderer understands live on the shared node; the rest of `IVisual`
-//! (rotation, transforms, anchors) is accepted by the ABI and ignored, which is all a first frame
-//! needs. A client that sets them gets a consistent tree, just not the transform.
+//! Offset, size, opacity, visibility, clip, anchor point, scale, rotation and centre
+//! point live on the shared node and reach the renderer. The transform matrix,
+//! orientation, border mode, backface and composite mode are accepted and dropped:
+//! a client that sets them gets a consistent tree, just not that part of the picture.
 
 use std::sync::Mutex;
 

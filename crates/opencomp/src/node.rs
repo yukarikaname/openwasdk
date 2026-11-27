@@ -131,15 +131,10 @@ pub fn snapshot(node: &NodeRef) -> Option<CoreVisual> {
 
 /// The same, with `parent` as the size a relative root resolves against.
 pub fn snapshot_in(node: &NodeRef, parent: Vector2) -> Option<CoreVisual> {
-    snapshot_at(node, parent, 1.0, 0)
+    snapshot_at(node, parent, 0)
 }
 
-fn snapshot_at(
-    node: &NodeRef,
-    parent: Vector2,
-    parent_opacity: f32,
-    depth: u32,
-) -> Option<CoreVisual> {
+fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32) -> Option<CoreVisual> {
     let (mut visual, size, children) = {
         let node = node.lock().unwrap();
         if !node.visible {
@@ -154,7 +149,9 @@ fn snapshot_at(
         // moves the drawn rectangle back by half its size.
         offset[0] -= node.anchor.x * size.x;
         offset[1] -= node.anchor.y * size.y;
-        let mut opacity = (parent_opacity * node.opacity).clamp(0.0, 1.0);
+        // Only this node's own opacity: `opencomp-core` multiplies it down the tree, and
+        // storing the product here would apply every ancestor twice.
+        let mut opacity = node.opacity.clamp(0.0, 1.0);
         let mut color = node.color;
         for (property, value) in node.animation_values() {
             match property {
@@ -195,7 +192,7 @@ fn snapshot_at(
         (visual, size, children)
     };
     for child in &children {
-        if let Some(child) = snapshot_at(child, size, visual.opacity, depth + 1) {
+        if let Some(child) = snapshot_at(child, size, depth + 1) {
             visual.children.push(child);
         }
     }
@@ -214,12 +211,40 @@ pub fn start_animation(node: &NodeRef, property: Property, keyframes: Keyframes)
     });
 }
 
-/// Stop an animation and leave the property where it last was.
+/// Stop an animation and leave the property at the value it had reached.
+///
+/// `AnimationStopBehavior.LeaveCurrentValue` is the default the ABI reports, so the
+/// last sampled value is written into the field the snapshot reads.
 pub fn stop_animation(node: &NodeRef, property: Property) {
-    node.lock()
-        .unwrap()
+    let mut node = node.lock().unwrap();
+    let running = node
         .animations
-        .retain(|running| running.property != property);
+        .iter()
+        .position(|running| running.property == property);
+    let Some(running) = running.map(|at| node.animations.remove(at)) else {
+        return;
+    };
+    let time = running.started.elapsed().as_secs_f32();
+    let Some(value) = running.keyframes.sample(time) else {
+        return;
+    };
+    match property {
+        Property::Offset => {
+            node.offset = Vector3 {
+                x: value[0],
+                y: value[1],
+                z: node.offset.z,
+            }
+        }
+        Property::Size => {
+            node.size = Vector2 {
+                x: value[0],
+                y: value[1],
+            }
+        }
+        Property::Opacity => node.opacity = value[0].clamp(0.0, 1.0),
+        Property::Color => node.color = value,
+    }
 }
 
 /// The clip rectangle an `InsetClip` produces inside a visual of `size`.
@@ -304,13 +329,14 @@ mod tests {
     }
 
     #[test]
-    fn child_opacity_is_multiplied_downwards() {
+    fn each_node_carries_only_its_own_opacity() {
+        // The core multiplies down the tree; a product here would apply ancestors twice.
         let parent = node(0.5);
         let child = node(0.5);
         parent.lock().unwrap().children.push(child);
         let visual = snapshot(&parent).unwrap();
         assert_eq!(visual.opacity, 0.5);
-        assert_eq!(visual.children[0].opacity, 0.25);
+        assert_eq!(visual.children[0].opacity, 0.5);
     }
 
     #[test]
@@ -378,8 +404,9 @@ mod tests {
         let visual = snapshot(&root).unwrap();
         assert_eq!(visual.opacity, 0.25);
 
+        // LeaveCurrentValue: the property keeps what the animation reached.
         stop_animation(&root, Property::Opacity);
-        assert_eq!(snapshot(&root).unwrap().opacity, 1.0);
+        assert_eq!(snapshot(&root).unwrap().opacity, 0.25);
     }
 
     #[test]

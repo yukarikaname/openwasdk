@@ -74,7 +74,7 @@ What the DLL answers today, and what it reports `E_NOTIMPL` for:
 | --- | --- |
 | `CreateContainerVisual`, `CreateSpriteVisual`, `CreateColorBrush`, `CreateColorBrushWithColor`, `CreateInsetClip`, `CreateInsetClipWithInsets`, `CreateLinearEasingFunction`, `CreateCubicBezierEasingFunction`, `CreateScalarKeyFrameAnimation`, `CreateVector2KeyFrameAnimation`, `CreateVector3KeyFrameAnimation`, `CreateColorKeyFrameAnimation`, `CreatePropertySet`, `CreateStepEasingFunction`, `CreateStepEasingFunctionWithStepCount`, `CreateAnimationGroup` | implicit animations, surfaces, effects, shadows, lights, `GetCommitBatch`, `RequestCommitAsync` |
 | `IContainerVisual.Children` with insert, remove and count | the rest of `VisualCollection`'s iteration |
-| `IVisual.Offset`, `Size`, `Opacity`, `IsVisible`, `Clip`, `Scale`, `RotationAngle`, `RotationAngleInDegrees`, `CenterPoint`, `AnchorPoint` | transform matrix, border mode, backface |
+| `IVisual.Offset`, `Size`, `Opacity`, `IsVisible`, `Clip`, `Scale`, `RotationAngle`, `RotationAngleInDegrees`, `CenterPoint`, `AnchorPoint` | transform matrix, orientation, border mode, backface, composite mode |
 | `ISpriteVisual.Brush`, `ICompositionColorBrush.Color`, `IInsetClip` insets, easing control points and steps, `ICompositionPropertySet`, `ICompositionAnimationGroup`, `StartAnimation`/`StartAnimationGroup`/`StopAnimation` on visuals, `ICompositionAnimation2.Target` | `RectangleClip` and geometric clips, expression animations, implicit animations, `TryGetAnimationController`, `StopAnimationGroup` |
 | every object answers `ICompositionObject2`/`4`/`5`, visuals also `IVisual2`/`3`/`4`, sprites `ISpriteVisual2`, clips `ICompositionClip2` | the methods behind them |
 

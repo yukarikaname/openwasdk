@@ -1,8 +1,8 @@
 //! Easing functions: the objects a client hands to an animation.
 //!
-//! Nothing samples them yet — `ICompositionObject.StartAnimation` still answers
-//! `E_NOTIMPL` — but a client builds its easing functions before it builds the
-//! animation, and a throw there would stop it earlier than necessary.
+//! A key frame carries its easing function as a curve the animation sampler applies
+//! between that frame and the next. `StartAnimation` resolves the object here, so a
+//! function a client built is the curve its animation actually runs.
 
 use std::sync::Mutex;
 
