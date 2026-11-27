@@ -184,7 +184,7 @@ fn wine_factory() -> *mut c_void {
     #[cfg(windows)]
     let loaded = load_wine_factory();
     #[cfg(not(windows))]
-    let loaded = ptr::null_mut();
+    let loaded: *mut c_void = ptr::null_mut();
     if !loaded.is_null() {
         WINE_FACTORY.store(loaded, Ordering::Release);
     }
