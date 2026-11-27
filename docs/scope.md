@@ -147,7 +147,7 @@ front of the official ones.
 | gate | program | what it proves | state |
 | --- | --- | --- | --- |
 | A | our own composition-only client (`crates/opencomp-client`, asserted by `crates/opencomp/tests/gate_a.rs`) | the DLLs load, the ABI answers, the tree reaches a window | **done**: 16 ms to the first frame on Windows, 2.8 s under Wine, a frame counter asserted on both |
-| B | a WinUI 3 app with no XAML markup: `Window`, `Grid`, one `TextBlock` built from code | XAML boots, D2D draws, Content hosts | the engine loads and its factories answer; `Application.Start` needs a dispatcher, which the SDK's own `CoreMessagingXP.dll` cannot provide under Wine (`docs/gate-b.md`) |
+| B | a WinUI 3 app with no XAML markup: `Window`, `Grid`, one `TextBlock` built from code | XAML boots, D2D draws, Content hosts | **in progress**: under Wine 11 the engine loads, `Application.Start` reaches its callback on our dispatcher, and a `StackPanel` measures 38 px; a visible window is what remains (`docs/gate-b.md`) |
 | C | `microsoft/microsoft-ui-reactor` hello world | the declarative C# path, no application XBF | B + .NET under Wine |
 | D | `microsoft/WinUI-Gallery` | an unmodified application with templates, styles and navigation | C + XBF for the built-in themes |
 

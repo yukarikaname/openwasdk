@@ -3,11 +3,11 @@
 An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
 **build them anywhere, and run existing binaries on Linux under Wine**.
 
-> Status: Gate A. A composition-only client opens a window, builds a visual tree
-> through our `Microsoft.UI.Composition` ABI and gets a frame onto it, on Windows and
-> under Wine; 129 tests pass on Windows, macOS and Wine. No WinUI application runs on
-> it yet -- that is Gate B, which needs the official `Microsoft.ui.xaml.dll` in front
-> of us.
+> Status: Gate A done, Gate B started. A composition-only client presents frames on
+> Windows and under Wine, and Microsoft's own `Microsoft.ui.xaml.dll` now runs on top of
+> our layers: its `Application.Start` reaches our callback under Wine 11 and measures a
+> `StackPanel` at 38 px, the number our ported layout rule predicts. What is missing for
+> Gate B is a visible window, not a working engine.
 >
 > Not affiliated with Microsoft.
 
@@ -57,6 +57,7 @@ the ones that answer `E_NOTIMPL`; denominators from the metadata in
 
 | surface | implemented | of | |
 | --- | ---: | ---: | ---: |
+| XAML runtime classes hosted | 900 | 900 | **100%** (Microsoft's code, and it starts) |
 | Composition ABI methods | 232 | 326 | **71%** |
 | `Microsoft.UI.Dispatching` classes | 5 | 5 | **100%** |
 | FrameworkUdk C exports | 22 | 149 | **15%** |
@@ -81,10 +82,11 @@ added), z-order belongs to the host window manager.
 | XAML runtime classes | 4 | 900 | **0.4%** |
 | Dependency properties | 18 | - | - |
 
-`StackPanel`, `Border`, `Grid` and `TextBlock` are enough to check our layout rules
-against the real engine's numbers; they are not enough to run an application, and they
-do not need to be until milestone 5. Until then the classes come from Microsoft's DLL,
-which is the whole point of Gate B.
+Those four are enough to check our layout rules against the real engine's numbers --
+the first such check says 38 px on both sides -- but they are not enough to run an
+application, and they do not need to be until milestone 5. Until then the 900 classes
+come from Microsoft's DLL, which is what the row above means by "hosted": the engine is
+theirs and the layers beneath it are ours.
 
 The 186 tests run on three hosts: Windows, macOS, and Wine (where the Windows-shaped
 code gets a second runtime).
