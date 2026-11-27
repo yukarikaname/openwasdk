@@ -5,7 +5,7 @@
 //! Colours are held in linear rgba, the same form the renderer uses, and converted at the ABI.
 
 use std::collections::HashMap;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::bindings::Microsoft::UI::Composition::{
     CompositionGetValueStatus, ICompositionObject, ICompositionObject2, ICompositionObject4,
@@ -38,7 +38,41 @@ enum Value {
     ICompositionPropertySet
 )]
 pub struct PropertySetObject {
-    values: Mutex<HashMap<String, Value>>,
+    values: Arc<Mutex<HashMap<String, Value>>>,
+}
+
+/// One map per object that asked for its property set, keyed by the address of the
+/// object's implementation. `ICompositionObject.Properties` has to be the same store
+/// every time it is read, or a value written through one call is lost to the next.
+type Shared = Arc<Mutex<HashMap<String, Value>>>;
+static SETS: OnceLock<Mutex<Vec<(usize, Weak<Mutex<HashMap<String, Value>>>)>>> = OnceLock::new();
+
+fn sets() -> &'static Mutex<Vec<(usize, Weak<Mutex<HashMap<String, Value>>>)>> {
+    SETS.get_or_init(|| Mutex::new(Vec::new()))
+}
+
+/// The property set of the object at `key`, created on first use.
+pub fn for_key(key: usize) -> Result<CompositionPropertySet> {
+    let shared = {
+        let mut table = sets().lock().unwrap();
+        if table.len() >= 64 {
+            table.retain(|(_, values)| values.strong_count() > 0);
+        }
+        let found = table
+            .iter()
+            .find(|(existing, _)| *existing == key)
+            .and_then(|(_, values)| values.upgrade());
+        match found {
+            Some(values) => values,
+            None => {
+                let values: Shared = Arc::new(Mutex::new(HashMap::new()));
+                table.push((key, Arc::downgrade(&values)));
+                values
+            }
+        }
+    };
+    let set: ICompositionPropertySet = PropertySetObject { values: shared }.into();
+    set.cast()
 }
 
 composition_object!(PropertySetObject_Impl);
@@ -239,7 +273,7 @@ impl ICompositionPropertySet_Impl for PropertySetObject_Impl {
 
 pub fn create() -> Result<CompositionPropertySet> {
     let set: ICompositionPropertySet = PropertySetObject {
-        values: Mutex::new(HashMap::new()),
+        values: Arc::new(Mutex::new(HashMap::new())),
     }
     .into();
     set.cast()

@@ -368,6 +368,32 @@ mod abi {
     }
 
     #[test]
+    fn a_property_set_persists_across_reads() {
+        use crate::bindings::Microsoft::UI::Composition::ICompositionObject;
+
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let object: ICompositionObject = sprite.cast().unwrap();
+        object
+            .Properties()
+            .unwrap()
+            .InsertScalar("scale", 1.5)
+            .unwrap();
+
+        let mut value = 0.0f32;
+        let status = object
+            .Properties()
+            .unwrap()
+            .TryGetScalar("scale", &mut value)
+            .unwrap();
+        assert_eq!(
+            status,
+            crate::bindings::Microsoft::UI::Composition::CompositionGetValueStatus::Succeeded
+        );
+        assert_eq!(value, 1.5);
+    }
+
+    #[test]
     fn an_object_only_answers_for_what_it_is() {
         let compositor = compositor();
         let sprite = compositor.CreateSpriteVisual().unwrap();
