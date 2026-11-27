@@ -122,7 +122,7 @@ const CLASSES: &[&str] = &[
 ];
 
 /// What the factory should create for a class name.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub(crate) enum Class {
     Compositor,
     ContentIsland,
