@@ -268,6 +268,16 @@ mod abi {
     }
 
     #[test]
+    fn every_object_can_name_its_compositor() {
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let object: crate::bindings::Microsoft::UI::Composition::ICompositionObject =
+            sprite.cast().unwrap();
+        let named = object.Compositor().unwrap();
+        assert!(named.cast::<ICompositor>().is_ok());
+    }
+
+    #[test]
     fn an_object_only_answers_for_what_it_is() {
         let compositor = compositor();
         let sprite = compositor.CreateSpriteVisual().unwrap();

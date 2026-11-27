@@ -38,8 +38,11 @@ pub(crate) fn not_implemented<T>() -> windows_core::Result<T> {
 macro_rules! composition_object {
     ($impl_type:ident) => {
         impl ICompositionObject_Impl for $impl_type {
+            // The compositor is stateless here, so a client that asks an object for it gets a
+            // working object rather than an exception. It is not the same instance: nothing in
+            // this DLL compares them.
             fn Compositor(&self) -> windows_core::Result<Compositor> {
-                $crate::object::not_implemented()
+                windows_core::Interface::cast(&$crate::compositor::instance()?)
             }
             fn Properties(&self) -> windows_core::Result<CompositionPropertySet> {
                 $crate::object::not_implemented()
