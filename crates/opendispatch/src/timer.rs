@@ -50,9 +50,23 @@ pub(crate) fn fire(slot: &TimerSlot) -> bool {
             state.sender.clone(),
         )
     };
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!(
+            "opendispatch: tick with {} handler(s), sender {}",
+            handlers.len(),
+            sender.is_some()
+        );
+    }
     if let Some(sender) = sender {
         for (_, handler) in &handlers {
-            handler.raise(Interface::as_raw(&sender), std::ptr::null_mut());
+            let hr = handler.raise(Interface::as_raw(&sender), std::ptr::null_mut());
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!(
+                    "opendispatch: tick raised to {} handler(s), hr=0x{:08x}",
+                    handlers.len(),
+                    hr as u32
+                );
+            }
         }
     }
     repeating

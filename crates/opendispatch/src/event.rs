@@ -29,10 +29,15 @@ impl Handler {
         unsafe { invoke_handler(&self.0) };
     }
 
-    pub(crate) fn raise(&self, sender: *mut c_void, args: *mut c_void) {
+    /// Raise the delegate and report what the call answered.
+    ///
+    /// The HRESULT is the only way to tell "the handler chose not to do anything" from
+    /// "the call never reached the handler", and a silently failing event looks exactly
+    /// like an engine that ignored it.
+    pub(crate) fn raise(&self, sender: *mut c_void, args: *mut c_void) -> i32 {
         // Safety: the wrapper is only built from a live event delegate, and the
         // caller passes the sender and args the event carries.
-        unsafe { invoke_event(&self.0, sender, args) };
+        unsafe { invoke_event(&self.0, sender, args) }
     }
 }
 
@@ -63,9 +68,9 @@ unsafe fn invoke_handler(handler: &IUnknown) {
 
 /// `args` may be null when the event has a null object argument, which is what a
 /// timer tick carries.
-unsafe fn invoke_event(handler: &IUnknown, sender: *mut c_void, args: *mut c_void) {
+unsafe fn invoke_event(handler: &IUnknown, sender: *mut c_void, args: *mut c_void) -> i32 {
     let raw = Interface::as_raw(handler);
     // Safety: the vtable is the delegate's, and the fourth slot is `Invoke`.
     let vtbl = unsafe { *(raw as *const *const EventVtbl) };
-    unsafe { ((*vtbl).invoke)(raw, sender, args) };
+    unsafe { ((*vtbl).invoke)(raw, sender, args) }
 }

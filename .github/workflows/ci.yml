@@ -213,18 +213,25 @@ jobs:
           xvfb-run -a "$wine" wineboot -u > /dev/null 2>&1 || true
           # The cdylib+lib layout hides the test binary under build/.../out, so read the
           # path out of the line cargo prints instead of guessing a directory.
-          test_exe=$(cargo test -p opencomp --target x86_64-pc-windows-gnu --no-run 2>&1 \
-            | sed -n 's/.*Executable.*(\(.*\))/\1/p' | tail -1)
-          test "$test_exe" || { echo "no test binary"; exit 1; }
-          echo "running $test_exe"
-          # `timeout` inside `xvfb-run`: wrapping the wrapper leaves wine alive when the
-          # wrapper is killed, and the step then waits for the job timeout anyway.
-          # `OPENCOMP_TRACE` makes the presenter name each graphics stage before it runs,
-          # which is how a stage that never returns is told apart from a slow one.
-          OPENCOMP_TRACE=1 xvfb-run -a timeout -k 5 300 "$wine" "$test_exe" --test-threads=1 --nocapture || code=$?
-          if [ "${code:-0}" = 124 ] || [ "${code:-0}" = 137 ]; then
-            echo "the test run was killed after the timeout; see the log above"
-          fi
+          # Both crates whose tests touch the runtime: the compositor and the
+          # dispatcher. Wine is the second environment they have, and the only one where
+          # a Windows-only test can be watched while it fails.
+          binaries=$(cargo test -p opencomp -p opendispatch --target x86_64-pc-windows-gnu --no-run 2>&1 \
+            | sed -n 's/.*Executable.*(\(.*\))/\1/p')
+          test -n "$binaries" || { echo "no test binary"; exit 1; }
+          code=0
+          for test_exe in $binaries; do
+            echo "running $test_exe"
+            # `timeout` inside `xvfb-run`: wrapping the wrapper leaves wine alive when the
+            # wrapper is killed, and the step then waits for the job timeout anyway.
+            # `OPENCOMP_TRACE` names each stage before it runs, which is how a stage that
+            # never returns is told apart from a slow one.
+            OPENCOMP_TRACE=1 xvfb-run -a timeout -k 5 300 "$wine" "$test_exe" --test-threads=1 --nocapture || code=$?
+            if [ "${code:-0}" = 124 ] || [ "${code:-0}" = 137 ]; then
+              echo "the test run was killed after the timeout; see the log above"
+            fi
+            [ "${code:-0}" = 0 ] || break
+          done
           exit "${code:-0}"
 
       # The client is the shape a real application has: a window, a tree built
