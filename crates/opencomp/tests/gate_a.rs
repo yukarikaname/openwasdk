@@ -24,7 +24,7 @@ use opencomp::bindings::Windows::Graphics::RectInt32;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::WindowsAndMessaging::{
     CW_USEDEFAULT, CreateWindowExW, DestroyWindow, DispatchMessageW, MSG, PM_REMOVE, PeekMessageW,
-    TranslateMessage, WINDOW_EX_STYLE, WS_OVERLAPPEDWINDOW,
+    SW_SHOW, ShowWindow, TranslateMessage, WINDOW_EX_STYLE, WS_OVERLAPPEDWINDOW,
 };
 use windows::core::w;
 use windows_core::{HSTRING, IUnknown, Interface};
@@ -68,10 +68,13 @@ fn compositor() -> ICompositor {
     instance
 }
 
-/// A hidden window of the built-in STATIC class.
+/// A shown window of the built-in STATIC class.
+///
+/// Shown on purpose: a real host shows its window before presenting, and a swapchain
+/// attached to a window that is never mapped is one variable less worth having.
 fn window() -> HWND {
     // Safety: the STATIC class needs no registration.
-    unsafe {
+    let hwnd = unsafe {
         CreateWindowExW(
             WINDOW_EX_STYLE(0),
             w!("STATIC"),
@@ -87,7 +90,9 @@ fn window() -> HWND {
             None,
         )
         .expect("window")
-    }
+    };
+    let _ = unsafe { ShowWindow(hwnd, SW_SHOW) };
+    hwnd
 }
 
 #[test]
