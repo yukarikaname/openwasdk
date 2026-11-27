@@ -158,9 +158,16 @@ const NAMES: &[&str] = &[
 
 #[test]
 fn every_name_the_real_dll_exports_is_defined() {
+    // One entry per file the exports live in, not per module: a source scan cannot see
+    // through `mod`, and a name that moved between files must not look missing.
     let sources = [
         include_str!("../src/lib.rs"),
         include_str!("../src/exports.rs"),
+        include_str!("../src/exports/composition.rs"),
+        include_str!("../src/exports/input.rs"),
+        include_str!("../src/exports/media.rs"),
+        include_str!("../src/exports/text.rs"),
+        include_str!("../src/exports/window.rs"),
         include_str!("../src/extra.rs"),
     ]
     .concat();
