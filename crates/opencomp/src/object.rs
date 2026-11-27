@@ -151,82 +151,116 @@ macro_rules! visual_trait {
                 Ok(())
             }
 
+            // Properties the renderer does not use yet. A setter that throws would abort a
+            // client that only wanted to configure the tree, so these are accepted and dropped;
+            // the getters answer the documented default rather than failing.
             fn AnchorPoint(&self) -> windows_core::Result<Vector2> {
-                $crate::object::not_implemented()
+                Ok(Vector2::default())
             }
             fn SetAnchorPoint(&self, _value: &Vector2) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
             fn BackfaceVisibility(&self) -> windows_core::Result<CompositionBackfaceVisibility> {
-                $crate::object::not_implemented()
+                Ok(CompositionBackfaceVisibility::Inherit)
             }
             fn SetBackfaceVisibility(
                 &self,
                 _value: CompositionBackfaceVisibility,
             ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
             fn BorderMode(&self) -> windows_core::Result<CompositionBorderMode> {
-                $crate::object::not_implemented()
+                Ok(CompositionBorderMode::Inherit)
             }
             fn SetBorderMode(&self, _value: CompositionBorderMode) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
             fn CenterPoint(&self) -> windows_core::Result<Vector3> {
-                $crate::object::not_implemented()
+                Ok(Vector3::default())
             }
             fn SetCenterPoint(&self, _value: &Vector3) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
             fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode> {
-                $crate::object::not_implemented()
+                Ok(CompositionCompositeMode::Inherit)
             }
             fn SetCompositeMode(
                 &self,
                 _value: CompositionCompositeMode,
             ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
             fn Orientation(&self) -> windows_core::Result<Quaternion> {
-                $crate::object::not_implemented()
+                Ok(Quaternion {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 0.0,
+                    w: 1.0,
+                })
             }
             fn SetOrientation(&self, _value: &Quaternion) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
+            fn RotationAngle(&self) -> windows_core::Result<f32> {
+                Ok(0.0)
+            }
+            fn SetRotationAngle(&self, _value: f32) -> windows_core::Result<()> {
+                Ok(())
+            }
+            fn RotationAngleInDegrees(&self) -> windows_core::Result<f32> {
+                Ok(0.0)
+            }
+            fn SetRotationAngleInDegrees(&self, _value: f32) -> windows_core::Result<()> {
+                Ok(())
+            }
+            fn RotationAxis(&self) -> windows_core::Result<Vector3> {
+                Ok(Vector3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: 1.0,
+                })
+            }
+            fn SetRotationAxis(&self, _value: &Vector3) -> windows_core::Result<()> {
+                Ok(())
+            }
+            fn Scale(&self) -> windows_core::Result<Vector3> {
+                Ok(Vector3 {
+                    x: 1.0,
+                    y: 1.0,
+                    z: 1.0,
+                })
+            }
+            fn SetScale(&self, _value: &Vector3) -> windows_core::Result<()> {
+                Ok(())
+            }
+            fn TransformMatrix(&self) -> windows_core::Result<Matrix4x4> {
+                Ok(Matrix4x4 {
+                    m11: 1.0,
+                    m12: 0.0,
+                    m13: 0.0,
+                    m14: 0.0,
+                    m21: 0.0,
+                    m22: 1.0,
+                    m23: 0.0,
+                    m24: 0.0,
+                    m31: 0.0,
+                    m32: 0.0,
+                    m33: 1.0,
+                    m34: 0.0,
+                    m41: 0.0,
+                    m42: 0.0,
+                    m43: 0.0,
+                    m44: 1.0,
+                })
+            }
+            fn SetTransformMatrix(&self, _value: &Matrix4x4) -> windows_core::Result<()> {
+                Ok(())
+            }
+            // The parent link is real state, not a property, and nothing builds it yet.
             fn Parent(
                 &self,
             ) -> windows_core::Result<$crate::bindings::Microsoft::UI::Composition::ContainerVisual>
             {
-                $crate::object::not_implemented()
-            }
-            fn RotationAngle(&self) -> windows_core::Result<f32> {
-                $crate::object::not_implemented()
-            }
-            fn SetRotationAngle(&self, _value: f32) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-            fn RotationAngleInDegrees(&self) -> windows_core::Result<f32> {
-                $crate::object::not_implemented()
-            }
-            fn SetRotationAngleInDegrees(&self, _value: f32) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-            fn RotationAxis(&self) -> windows_core::Result<Vector3> {
-                $crate::object::not_implemented()
-            }
-            fn SetRotationAxis(&self, _value: &Vector3) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-            fn Scale(&self) -> windows_core::Result<Vector3> {
-                $crate::object::not_implemented()
-            }
-            fn SetScale(&self, _value: &Vector3) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-            fn TransformMatrix(&self) -> windows_core::Result<Matrix4x4> {
-                $crate::object::not_implemented()
-            }
-            fn SetTransformMatrix(&self, _value: &Matrix4x4) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
         }
@@ -236,19 +270,31 @@ macro_rules! visual_trait {
                 $crate::object::not_implemented()
             }
             fn SetParentForTransform(&self, _value: Ref<Visual>) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                Ok(())
             }
             fn RelativeOffsetAdjustment(&self) -> windows_core::Result<Vector3> {
-                $crate::object::not_implemented()
+                Ok(self
+                    .node
+                    .lock()
+                    .unwrap()
+                    .relative_offset
+                    .unwrap_or_default())
             }
-            fn SetRelativeOffsetAdjustment(&self, _value: &Vector3) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+            fn SetRelativeOffsetAdjustment(&self, value: &Vector3) -> windows_core::Result<()> {
+                self.node.lock().unwrap().relative_offset = Some(*value);
+                Ok(())
             }
             fn RelativeSizeAdjustment(&self) -> windows_core::Result<Vector2> {
-                $crate::object::not_implemented()
+                Ok(self
+                    .node
+                    .lock()
+                    .unwrap()
+                    .relative_size
+                    .unwrap_or(Vector2 { x: 1.0, y: 1.0 }))
             }
-            fn SetRelativeSizeAdjustment(&self, _value: &Vector2) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+            fn SetRelativeSizeAdjustment(&self, value: &Vector2) -> windows_core::Result<()> {
+                self.node.lock().unwrap().relative_size = Some(*value);
+                Ok(())
             }
         }
 

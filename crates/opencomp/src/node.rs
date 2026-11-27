@@ -26,6 +26,9 @@ pub struct Node {
     pub color: [f32; 4],
     /// Left, top, right, bottom insets of an `InsetClip`, if one is attached.
     pub insets: Option<[f32; 4]>,
+    /// Fraction of the parent's size, from `IVisual2`. A root visual uses this to fill its host.
+    pub relative_size: Option<Vector2>,
+    pub relative_offset: Option<Vector3>,
     pub children: Vec<NodeRef>,
 }
 
@@ -39,6 +42,8 @@ impl Default for Node {
             hit_test_visible: true,
             color: [0.0; 4],
             insets: None,
+            relative_size: None,
+            relative_offset: None,
             children: Vec::new(),
         }
     }
@@ -48,6 +53,67 @@ impl Node {
     pub fn new() -> NodeRef {
         Arc::new(Mutex::new(Self::default()))
     }
+
+    fn resolved_size(&self, parent: Vector2) -> Vector2 {
+        match self.relative_size {
+            Some(relative) => Vector2 {
+                x: parent.x * relative.x,
+                y: parent.y * relative.y,
+            },
+            None => self.size,
+        }
+    }
+}
+
+/// Copy the tree into the renderer's form, resolving relative sizes against nothing.
+pub fn snapshot(node: &NodeRef) -> Option<CoreVisual> {
+    snapshot_in(node, Vector2::default())
+}
+
+/// The same, with `parent` as the size a relative root resolves against.
+pub fn snapshot_in(node: &NodeRef, parent: Vector2) -> Option<CoreVisual> {
+    snapshot_at(node, parent, 1.0, 0)
+}
+
+fn snapshot_at(
+    node: &NodeRef,
+    parent: Vector2,
+    parent_opacity: f32,
+    depth: u32,
+) -> Option<CoreVisual> {
+    let (mut visual, size, children) = {
+        let node = node.lock().unwrap();
+        if !node.visible {
+            return None;
+        }
+        let size = node.resolved_size(parent);
+        let offset = match node.relative_offset {
+            Some(relative) => [parent.x * relative.x, parent.y * relative.y],
+            None => [node.offset.x, node.offset.y],
+        };
+        let visual = CoreVisual {
+            offset,
+            size: [size.x, size.y],
+            color: node.color,
+            opacity: (parent_opacity * node.opacity).clamp(0.0, 1.0),
+            clip: node.insets.map(|insets| clip_of(size, insets)),
+            children: Vec::new(),
+        };
+        // A visual inserted into its own subtree would recurse until the stack runs out; the
+        // bound keeps such a tree renderable instead of fatal.
+        let children = if depth < 64 {
+            node.children.clone()
+        } else {
+            Vec::new()
+        };
+        (visual, size, children)
+    };
+    for child in &children {
+        if let Some(child) = snapshot_at(child, size, visual.opacity, depth + 1) {
+            visual.children.push(child);
+        }
+    }
+    Some(visual)
 }
 
 /// The clip rectangle an `InsetClip` produces inside a visual of `size`.
@@ -58,43 +124,6 @@ fn clip_of(size: Vector2, [left, top, right, bottom]: [f32; 4]) -> (f32, f32, f3
         (size.x - left - right).max(0.0),
         (size.y - top - bottom).max(0.0),
     )
-}
-
-/// Copy the tree into the renderer's form. A node that is not visible yields nothing, so its
-/// subtree disappears with it.
-pub fn snapshot(node: &NodeRef) -> Option<CoreVisual> {
-    snapshot_at(node, 1.0, 0)
-}
-
-fn snapshot_at(node: &NodeRef, parent_opacity: f32, depth: u32) -> Option<CoreVisual> {
-    let (mut visual, children) = {
-        let node = node.lock().unwrap();
-        if !node.visible {
-            return None;
-        }
-        let visual = CoreVisual {
-            offset: [node.offset.x, node.offset.y],
-            size: [node.size.x, node.size.y],
-            color: node.color,
-            opacity: (parent_opacity * node.opacity).clamp(0.0, 1.0),
-            clip: node.insets.map(|insets| clip_of(node.size, insets)),
-            children: Vec::new(),
-        };
-        // A visual inserted into its own subtree would recurse until the stack runs out; the
-        // bound keeps such a tree renderable instead of fatal.
-        let children = if depth < 64 {
-            node.children.clone()
-        } else {
-            Vec::new()
-        };
-        (visual, children)
-    };
-    for child in &children {
-        if let Some(child) = snapshot_at(child, visual.opacity, depth + 1) {
-            visual.children.push(child);
-        }
-    }
-    Some(visual)
 }
 
 /// A weak node filed under the identity of the object that owns it.
@@ -164,6 +193,38 @@ mod tests {
         assert_eq!(visual.offset, [4.0, 8.0]);
         assert_eq!(visual.size, [16.0, 32.0]);
         assert_eq!(visual.color, [1.0, 0.0, 0.0, 1.0]);
+    }
+
+    #[test]
+    fn a_relative_root_fills_the_host() {
+        let root = node(1.0);
+        {
+            let mut root = root.lock().unwrap();
+            root.relative_size = Some(Vector2 { x: 1.0, y: 0.5 });
+            root.relative_offset = Some(Vector3 {
+                x: 0.0,
+                y: 0.5,
+                z: 0.0,
+            });
+        }
+        let visual = snapshot_in(&root, Vector2 { x: 800.0, y: 600.0 }).unwrap();
+        assert_eq!(visual.size, [800.0, 300.0]);
+        assert_eq!(visual.offset, [0.0, 300.0]);
+    }
+
+    #[test]
+    fn a_relative_child_resolves_against_its_parent() {
+        let parent = node(1.0);
+        {
+            let mut parent = parent.lock().unwrap();
+            parent.size = Vector2 { x: 200.0, y: 100.0 };
+        }
+        let child = node(1.0);
+        child.lock().unwrap().relative_size = Some(Vector2 { x: 0.5, y: 0.5 });
+        parent.lock().unwrap().children.push(child);
+
+        let visual = snapshot(&parent).unwrap();
+        assert_eq!(visual.children[0].size, [100.0, 50.0]);
     }
 
     #[test]

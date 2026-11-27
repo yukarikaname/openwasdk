@@ -135,7 +135,8 @@ mod export_tests {
 #[cfg(all(test, windows))]
 mod abi {
     use crate::bindings::Microsoft::UI::Composition::{
-        CompositionBrush, ICompositor, IContainerVisual, ISpriteVisual, IVisual, InsetClip,
+        CompositionBrush, ICompositor, IContainerVisual, ISpriteVisual, IVisual, IVisual2,
+        InsetClip,
     };
     use crate::bindings::Windows::UI::Color;
     use windows_core::Interface;
@@ -206,6 +207,20 @@ mod abi {
         let node = crate::node::resolve(&container).unwrap();
         let tree = crate::node::snapshot(&node).unwrap();
         assert_eq!(tree.clip, Some((10.0, 5.0, 70.0, 40.0)));
+    }
+
+    #[test]
+    fn a_relative_root_fills_the_host() {
+        let compositor = compositor();
+        let root = compositor.CreateContainerVisual().unwrap();
+        let visual: IVisual2 = root.cast().unwrap();
+        visual
+            .SetRelativeSizeAdjustment(Vector2 { x: 1.0, y: 1.0 })
+            .unwrap();
+
+        let node = crate::node::resolve(&root).unwrap();
+        let tree = crate::node::snapshot_in(&node, Vector2 { x: 800.0, y: 600.0 }).unwrap();
+        assert_eq!(tree.size, [800.0, 600.0]);
     }
 
     #[test]
