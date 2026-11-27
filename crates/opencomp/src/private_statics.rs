@@ -69,10 +69,11 @@ unsafe extern "system" fn method(
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!("opencomp: private Compositor statics called with {first:?} {second:?}");
     }
-    // The first argument is null and the second looks like an out pointer; answering with
-    // "nothing" keeps the caller from reading whatever was in its local variable.
-    if !second.is_null() && first.is_null() {
-        unsafe { *(second as *mut *mut c_void) = ptr::null_mut() };
+    // The caller dereferenced the value it got back, so it wants an object. What it then
+    // asks that object for is in the trace; until then it is one of ours, which answers
+    // `IUnknown` and says which interface it was asked for.
+    if !second.is_null() {
+        unsafe { *(second as *mut *mut c_void) = create() };
     }
     S_OK
 }
@@ -92,6 +93,9 @@ unsafe extern "system" fn query_interface(
         return S_OK;
     }
     unsafe { *out = ptr::null_mut() };
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: private statics object asked for {iid:?}");
+    }
     E_NOINTERFACE
 }
 
