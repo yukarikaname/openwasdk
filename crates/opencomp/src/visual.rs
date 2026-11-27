@@ -7,23 +7,44 @@
 use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    CompositionBrush, ContainerVisual, ICompositionColorBrush, ICompositionObject,
-    IContainerVisual, IContainerVisual_Impl, ISpriteVisual, ISpriteVisual_Impl, IVisual,
-    SpriteVisual, VisualCollection,
+    CompositionBrush, CompositionShadow, ContainerVisual, ICompositionColorBrush,
+    ICompositionObject, IContainerVisual, IContainerVisual_Impl, ISpriteVisual, ISpriteVisual_Impl,
+    IVisual, SpriteVisual, VisualCollection,
 };
 use crate::node::{self, Node, NodeRef};
 use crate::object::E_FAIL;
 use crate::object::prelude::*;
-use crate::object::{composition_object, visual_trait};
+use crate::object::{composition_object, not_implemented, visual_trait};
 use windows_core::{Error, Interface, Result};
 
-#[windows_core::implement(ICompositionObject, IContainerVisual, IVisual)]
+#[windows_core::implement(
+    ICompositionObject,
+    ICompositionObject2,
+    ICompositionObject4,
+    ICompositionObject5,
+    IContainerVisual,
+    IVisual,
+    IVisual2,
+    IVisual3,
+    IVisual4
+)]
 pub struct ContainerVisualObject {
     node: NodeRef,
     clip: Mutex<Option<CompositionClip>>,
 }
 
-#[windows_core::implement(ICompositionObject, ISpriteVisual, IVisual)]
+#[windows_core::implement(
+    ICompositionObject,
+    ICompositionObject2,
+    ICompositionObject4,
+    ICompositionObject5,
+    ISpriteVisual,
+    ISpriteVisual2,
+    IVisual,
+    IVisual2,
+    IVisual3,
+    IVisual4
+)]
 pub struct SpriteVisualObject {
     node: NodeRef,
     clip: Mutex<Option<CompositionClip>>,
@@ -38,6 +59,16 @@ visual_trait!(SpriteVisualObject_Impl);
 impl IContainerVisual_Impl for ContainerVisualObject_Impl {
     fn Children(&self) -> Result<VisualCollection> {
         crate::collection::create(self.node.clone())
+    }
+}
+
+impl ISpriteVisual2_Impl for SpriteVisualObject_Impl {
+    fn Shadow(&self) -> Result<CompositionShadow> {
+        not_implemented()
+    }
+
+    fn SetShadow(&self, _value: windows_core::Ref<CompositionShadow>) -> Result<()> {
+        not_implemented()
     }
 }
 

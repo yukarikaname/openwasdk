@@ -8,14 +8,22 @@ use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
     CompositionColorBrush, ICompositionBrush, ICompositionBrush_Impl, ICompositionColorBrush,
-    ICompositionColorBrush_Impl, ICompositionObject,
+    ICompositionColorBrush_Impl, ICompositionObject, ICompositionObject2, ICompositionObject4,
+    ICompositionObject5,
 };
 use crate::bindings::Windows::UI::Color;
 use crate::object::composition_object;
 use crate::object::prelude::*;
 use windows_core::Result;
 
-#[windows_core::implement(ICompositionObject, ICompositionBrush, ICompositionColorBrush)]
+#[windows_core::implement(
+    ICompositionObject,
+    ICompositionObject2,
+    ICompositionObject4,
+    ICompositionObject5,
+    ICompositionBrush,
+    ICompositionColorBrush
+)]
 pub struct ColorBrush {
     color: Mutex<[f32; 4]>,
 }

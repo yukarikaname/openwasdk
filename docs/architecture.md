@@ -76,6 +76,11 @@ What the DLL answers today, and what it reports `E_NOTIMPL` for:
 | `IContainerVisual.Children` with insert, remove and count | the rest of `VisualCollection`'s iteration |
 | `IVisual.Offset`, `Size`, `Opacity`, `IsVisible`, `Clip` | rotation, scale, anchor, centre point, transform matrix |
 | `ISpriteVisual.Brush`, `ICompositionColorBrush.Color`, `IInsetClip` insets | the other clips and all animation methods on `ICompositionObject` |
+| every object answers `ICompositionObject2`/`4`/`5`, visuals also `IVisual2`/`3`/`4`, sprites `ISpriteVisual2`, clips `ICompositionClip2` | the methods behind them |
+
+The follow-on interfaces exist as stubs on purpose: a client asks for them with
+`QueryInterface` before it calls anything, and a failed QI throws, while a method
+that returns `E_NOTIMPL` can be handled.
 
 The renderer lives in `opencomp-core`, which contains no WinRT. That split is
 what makes macOS a first-class host for the compositor: the same visual tree

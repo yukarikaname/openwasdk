@@ -157,13 +157,17 @@ mod tests {
     }
 
     #[test]
-    fn activation_reports_that_no_class_exists_yet() {
+    fn activation_creates_the_compositor() {
         let factory = Factory::create();
         let vtbl = vtbl_of(factory);
         let mut out: *mut c_void = std::ptr::null_mut();
-        let _result = unsafe { (vtbl.activate_instance)(factory, &mut out) };
-        #[cfg(not(windows))]
-        {
+        let result = unsafe { (vtbl.activate_instance)(factory, &mut out) };
+        if cfg!(windows) {
+            assert_eq!(result, S_OK);
+            assert!(!out.is_null());
+        } else {
+            // The class is behind the Windows-only bindings, so off Windows there is nothing to
+            // create and the factory says so.
             assert_eq!(result, E_NOTIMPL);
             assert!(out.is_null());
         }

@@ -22,6 +22,7 @@ pub struct Node {
     pub size: Vector2,
     pub opacity: f32,
     pub visible: bool,
+    pub hit_test_visible: bool,
     pub color: [f32; 4],
     /// Left, top, right, bottom insets of an `InsetClip`, if one is attached.
     pub insets: Option<[f32; 4]>,
@@ -35,6 +36,7 @@ impl Default for Node {
             size: Vector2::default(),
             opacity: 1.0,
             visible: true,
+            hit_test_visible: true,
             color: [0.0; 4],
             insets: None,
             children: Vec::new(),

@@ -7,14 +7,23 @@
 use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    CompositionClip, ICompositionClip, ICompositionClip_Impl, ICompositionObject, IInsetClip,
-    IInsetClip_Impl, InsetClip,
+    CompositionClip, ICompositionClip, ICompositionClip_Impl, ICompositionClip2,
+    ICompositionClip2_Impl, ICompositionObject, ICompositionObject2, ICompositionObject4,
+    ICompositionObject5, IInsetClip, IInsetClip_Impl, InsetClip,
 };
-use crate::object::composition_object;
 use crate::object::prelude::*;
+use crate::object::{composition_object, not_implemented};
 use windows_core::{Interface, Result};
 
-#[windows_core::implement(ICompositionObject, ICompositionClip, IInsetClip)]
+#[windows_core::implement(
+    ICompositionObject,
+    ICompositionObject2,
+    ICompositionObject4,
+    ICompositionObject5,
+    ICompositionClip,
+    ICompositionClip2,
+    IInsetClip
+)]
 pub struct InsetClipObject {
     /// Left, top, right, bottom.
     insets: Mutex<[f32; 4]>,
@@ -23,6 +32,51 @@ pub struct InsetClipObject {
 composition_object!(InsetClipObject_Impl);
 
 impl ICompositionClip_Impl for InsetClipObject_Impl {}
+
+impl ICompositionClip2_Impl for InsetClipObject_Impl {
+    fn AnchorPoint(&self) -> Result<Vector2> {
+        not_implemented()
+    }
+    fn SetAnchorPoint(&self, _value: &Vector2) -> Result<()> {
+        not_implemented()
+    }
+    fn CenterPoint(&self) -> Result<Vector2> {
+        not_implemented()
+    }
+    fn SetCenterPoint(&self, _value: &Vector2) -> Result<()> {
+        not_implemented()
+    }
+    fn Offset(&self) -> Result<Vector2> {
+        not_implemented()
+    }
+    fn SetOffset(&self, _value: &Vector2) -> Result<()> {
+        not_implemented()
+    }
+    fn RotationAngle(&self) -> Result<f32> {
+        not_implemented()
+    }
+    fn SetRotationAngle(&self, _value: f32) -> Result<()> {
+        not_implemented()
+    }
+    fn RotationAngleInDegrees(&self) -> Result<f32> {
+        not_implemented()
+    }
+    fn SetRotationAngleInDegrees(&self, _value: f32) -> Result<()> {
+        not_implemented()
+    }
+    fn Scale(&self) -> Result<Vector2> {
+        not_implemented()
+    }
+    fn SetScale(&self, _value: &Vector2) -> Result<()> {
+        not_implemented()
+    }
+    fn TransformMatrix(&self) -> Result<windows_numerics::Matrix3x2> {
+        not_implemented()
+    }
+    fn SetTransformMatrix(&self, _value: &windows_numerics::Matrix3x2) -> Result<()> {
+        not_implemented()
+    }
+}
 
 impl IInsetClip_Impl for InsetClipObject_Impl {
     fn LeftInset(&self) -> Result<f32> {

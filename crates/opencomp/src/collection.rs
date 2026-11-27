@@ -6,7 +6,8 @@
 use std::sync::Arc;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    ICompositionObject, IVisualCollection, IVisualCollection_Impl, Visual, VisualCollection,
+    ICompositionObject, ICompositionObject2, ICompositionObject4, ICompositionObject5,
+    IVisualCollection, IVisualCollection_Impl, Visual, VisualCollection,
 };
 use crate::node::{self, NodeRef};
 use crate::object::composition_object;
@@ -15,7 +16,13 @@ use windows_core::{Error, HRESULT, Interface, Result};
 
 const E_INVALIDARG: HRESULT = HRESULT(0x8007_0057u32 as i32);
 
-#[windows_core::implement(ICompositionObject, IVisualCollection)]
+#[windows_core::implement(
+    ICompositionObject,
+    ICompositionObject2,
+    ICompositionObject4,
+    ICompositionObject5,
+    IVisualCollection
+)]
 pub struct VisualCollectionObject {
     parent: NodeRef,
 }

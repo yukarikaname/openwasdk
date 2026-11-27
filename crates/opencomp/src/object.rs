@@ -1,18 +1,28 @@
-//! The two trait bodies every composition object shares.
+//! The trait bodies every composition object shares.
 //!
 //! `#[windows_core::implement]` generates one `*_Impl` type per struct, so the same ABI trait has
 //! to be written once per object. These macros keep that from becoming the bulk of the crate.
 //!
-//! A macro body resolves names where it is expanded, so every caller imports [`prelude`].
+//! A macro body resolves names where it is expanded, so every caller imports [`prelude`]. The
+//! follow-on interfaces (`ICompositionObject2`, `IVisual2` and friends) are implemented because a
+//! client asks for them by `QueryInterface` before it calls anything; answering `E_NOTIMPL` from
+//! a method is recoverable, a failed QI is not.
 
 pub(crate) mod prelude {
+    // Exactly what the macros below name. Callers import this instead of repeating the list,
+    // and must not import the same names again: a duplicate import hides the glob and makes the
+    // re-export look unused.
     pub(crate) use crate::bindings::Microsoft::UI::Composition::{
-        CompositionAnimation, CompositionBackfaceVisibility, CompositionBorderMode,
-        CompositionClip, CompositionCompositeMode, CompositionPropertySet, Compositor,
-        ICompositionObject_Impl, IVisual_Impl,
+        AnimationController, CompositionAnimation, CompositionBackfaceVisibility,
+        CompositionBorderMode, CompositionClip, CompositionCompositeMode, CompositionPropertySet,
+        Compositor, ICompositionAnimationBase, ICompositionObject_Impl, ICompositionObject2,
+        ICompositionObject2_Impl, ICompositionObject4, ICompositionObject4_Impl,
+        ICompositionObject5, ICompositionObject5_Impl, ISpriteVisual2, ISpriteVisual2_Impl,
+        IVisual_Impl, IVisual2, IVisual2_Impl, IVisual3, IVisual3_Impl, IVisual4, IVisual4_Impl,
+        ImplicitAnimationCollection, Visual,
     };
     pub(crate) use crate::bindings::Windows::Foundation::Numerics::Quaternion;
-    pub(crate) use windows_core::HSTRING;
+    pub(crate) use windows_core::{HSTRING, Ref};
     pub(crate) use windows_numerics::{Matrix4x4, Vector2, Vector3};
 }
 
@@ -37,11 +47,61 @@ macro_rules! composition_object {
             fn StartAnimation(
                 &self,
                 _property: &HSTRING,
-                _animation: windows_core::Ref<CompositionAnimation>,
+                _animation: Ref<CompositionAnimation>,
             ) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
             fn StopAnimation(&self, _property: &HSTRING) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+        }
+
+        impl ICompositionObject2_Impl for $impl_type {
+            fn Comment(&self) -> windows_core::Result<HSTRING> {
+                $crate::object::not_implemented()
+            }
+            fn SetComment(&self, _value: &HSTRING) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+            fn ImplicitAnimations(&self) -> windows_core::Result<ImplicitAnimationCollection> {
+                $crate::object::not_implemented()
+            }
+            fn SetImplicitAnimations(
+                &self,
+                _value: Ref<ImplicitAnimationCollection>,
+            ) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+            fn StartAnimationGroup(
+                &self,
+                _value: Ref<ICompositionAnimationBase>,
+            ) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+            fn StopAnimationGroup(
+                &self,
+                _value: Ref<ICompositionAnimationBase>,
+            ) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+        }
+
+        impl ICompositionObject4_Impl for $impl_type {
+            fn TryGetAnimationController(
+                &self,
+                _property: &HSTRING,
+            ) -> windows_core::Result<AnimationController> {
+                $crate::object::not_implemented()
+            }
+        }
+
+        impl ICompositionObject5_Impl for $impl_type {
+            fn StartAnimationWithController(
+                &self,
+                _property: &HSTRING,
+                _animation: Ref<CompositionAnimation>,
+                _controller: Ref<AnimationController>,
+            ) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
         }
@@ -79,6 +139,17 @@ macro_rules! visual_trait {
                 self.node.lock().unwrap().opacity = value.clamp(0.0, 1.0);
                 Ok(())
             }
+            fn Clip(&self) -> windows_core::Result<CompositionClip> {
+                match self.clip.lock().unwrap().clone() {
+                    Some(clip) => Ok(clip),
+                    None => Err(Error::from_hresult($crate::object::E_FAIL)),
+                }
+            }
+            fn SetClip(&self, value: Ref<CompositionClip>) -> windows_core::Result<()> {
+                self.node.lock().unwrap().insets = value.as_ref().and_then($crate::clip::insets);
+                *self.clip.lock().unwrap() = value.cloned();
+                Ok(())
+            }
 
             fn AnchorPoint(&self) -> windows_core::Result<Vector2> {
                 $crate::object::not_implemented()
@@ -106,20 +177,6 @@ macro_rules! visual_trait {
             }
             fn SetCenterPoint(&self, _value: &Vector3) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
-            }
-            fn Clip(&self) -> windows_core::Result<CompositionClip> {
-                match self.clip.lock().unwrap().clone() {
-                    Some(clip) => Ok(clip),
-                    None => Err(Error::from_hresult($crate::object::E_FAIL)),
-                }
-            }
-            fn SetClip(
-                &self,
-                value: windows_core::Ref<CompositionClip>,
-            ) -> windows_core::Result<()> {
-                self.node.lock().unwrap().insets = value.as_ref().and_then($crate::clip::insets);
-                *self.clip.lock().unwrap() = value.cloned();
-                Ok(())
             }
             fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode> {
                 $crate::object::not_implemented()
@@ -171,6 +228,47 @@ macro_rules! visual_trait {
             }
             fn SetTransformMatrix(&self, _value: &Matrix4x4) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
+            }
+        }
+
+        impl IVisual2_Impl for $impl_type {
+            fn ParentForTransform(&self) -> windows_core::Result<Visual> {
+                $crate::object::not_implemented()
+            }
+            fn SetParentForTransform(&self, _value: Ref<Visual>) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+            fn RelativeOffsetAdjustment(&self) -> windows_core::Result<Vector3> {
+                $crate::object::not_implemented()
+            }
+            fn SetRelativeOffsetAdjustment(&self, _value: &Vector3) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+            fn RelativeSizeAdjustment(&self) -> windows_core::Result<Vector2> {
+                $crate::object::not_implemented()
+            }
+            fn SetRelativeSizeAdjustment(&self, _value: &Vector2) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+        }
+
+        impl IVisual3_Impl for $impl_type {
+            fn IsHitTestVisible(&self) -> windows_core::Result<bool> {
+                Ok(self.node.lock().unwrap().hit_test_visible)
+            }
+            fn SetIsHitTestVisible(&self, value: bool) -> windows_core::Result<()> {
+                self.node.lock().unwrap().hit_test_visible = value;
+                Ok(())
+            }
+        }
+
+        impl IVisual4_Impl for $impl_type {
+            // A hint the renderer does not act on yet; keeping the value round-trips.
+            fn IsPixelSnappingEnabled(&self) -> windows_core::Result<bool> {
+                Ok(false)
+            }
+            fn SetIsPixelSnappingEnabled(&self, _value: bool) -> windows_core::Result<()> {
+                Ok(())
             }
         }
     };
