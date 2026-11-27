@@ -65,3 +65,15 @@ jobs:
 
       - name: Check the Windows artifact
         run: cargo check --workspace --all-targets --target x86_64-pc-windows-msvc
+
+      # Checking types is not linking. Build the PE once so a missing export or a linker setting
+      # fails here rather than on the machine that tries to load the DLL.
+      - name: Link the Windows DLL
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
+          rustup target add x86_64-pc-windows-gnu
+          cargo build -p opencomp --target x86_64-pc-windows-gnu
+          x86_64-w64-mingw32-nm -D target/x86_64-pc-windows-gnu/debug/opencomp.dll \
+            | grep -E "DllGetActivationFactory|DllCanUnloadNow|DllGetClassObject"
