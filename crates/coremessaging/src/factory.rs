@@ -35,12 +35,12 @@ pub unsafe extern "system" fn DllGetActivationFactory(
         std::mem::transmute_copy::<*mut c_void, windows_core::HSTRING>(&class)
     });
     let asked = name.to_string_lossy();
-    if asked == CONTROLLER {
-        if let Some(get) = server() {
-            let hr = unsafe { get(class, factory) };
-            if hr >= 0 {
-                return hr;
-            }
+    if asked == CONTROLLER
+        && let Some(get) = server()
+    {
+        let hr = unsafe { get(class, factory) };
+        if hr >= 0 {
+            return hr;
         }
     }
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
@@ -57,15 +57,16 @@ fn server() -> Option<unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -
         fn LoadLibraryA(name: *const u8) -> *mut c_void;
         fn GetProcAddress(module: *mut c_void, name: *const u8) -> *mut c_void;
     }
-    let module = unsafe { LoadLibraryA(b"opendispatch.dll\0".as_ptr()) };
+    let module = unsafe { LoadLibraryA(c"opendispatch.dll".as_ptr().cast()) };
     if module.is_null() {
         return None;
     }
-    let entry = unsafe { GetProcAddress(module, b"DllGetActivationFactory\0".as_ptr()) };
+    let entry = unsafe { GetProcAddress(module, c"DllGetActivationFactory".as_ptr().cast()) };
     if entry.is_null() {
         return None;
     }
-    Some(unsafe { std::mem::transmute(entry) })
+    type GetFactory = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
+    Some(unsafe { std::mem::transmute::<*mut c_void, GetFactory>(entry) })
 }
 
 #[cfg(not(windows))]

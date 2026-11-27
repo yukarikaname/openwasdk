@@ -7,7 +7,7 @@ At survey time there were **129 `E_NOTIMPL` bodies**. After the work recorded he
 
 | state | count |
 | --- | --- |
-| `E_NOTIMPL` bodies remaining | 84 |
+| `E_NOTIMPL` bodies remaining | 93 |
 | stub bodies replaced with real code | 45 |
 | methods fully answered | 45 |
 

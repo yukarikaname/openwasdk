@@ -1,0 +1,12 @@
+[package]
+name = "dcompi"
+description = "A dcompi.dll that loads: the one export the manipulation stack imports"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "dcompi"
+crate-type = ["cdylib", "lib"]

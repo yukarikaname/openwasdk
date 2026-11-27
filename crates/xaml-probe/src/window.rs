@@ -33,6 +33,17 @@ pub(crate) fn show(get: GetActivationFactory) {
         "QueryInterface(IWindow)",
     );
 
+    if std::env::var_os("OPENCOMP_XAML_PROBE_EMPTY").is_some() {
+        // A window with no content isolates the engine's own hosting path from the first
+        // `UIElement` a client builds.
+        mark("window activate");
+        window
+            .Activate()
+            .unwrap_or_else(|error| fail("Window.Activate", error.code().0));
+        pump();
+        return;
+    }
+
     mark("window content");
     let grid_factory = activation_factory(get, "Microsoft.UI.Xaml.Controls.Grid");
     let grid_activation: IActivationFactory = cast(&grid_factory, "IActivationFactory");
@@ -74,6 +85,11 @@ pub(crate) fn show(get: GetActivationFactory) {
         Err(error) => eprintln!("xaml-probe: Window.Bounds hr=0x{:08x}", error.code().0),
     }
 
+    pump();
+}
+
+/// Pump the message queue for the window's lifetime, then report the frame count.
+fn pump() {
     mark("window pump");
     let mut message = MSG::default();
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
