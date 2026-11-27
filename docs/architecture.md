@@ -158,6 +158,17 @@ of exactly which controls, properties and layout paths a modern app touches,
 without a parser to write first. Running it also needs a .NET host under Wine,
 which is a second dependency independent of the control set.
 
+## openudk
+
+`Microsoft.Internal.FrameworkUdk.dll` stand-in. It is not optional: the XAML DLL
+links 43 of its exports statically, so a missing file is a load failure before
+any of the code above runs. The crate exports all 149 names; the six `Windowing_*`
+conversions are real (a `WindowId` is the `HWND` reinterpreted), the other 143
+answer `E_NOTIMPL` from bodies that take no arguments, which is what makes one
+stub answer every prototype on x86-64.
+
+The build produces `openudk.dll`; packaging renames it.
+
 ## openhost
 
 The glue that makes the two replacements loadable and runnable:
