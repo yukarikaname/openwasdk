@@ -300,6 +300,21 @@ fn case(module: HMODULE, ui_module: HMODULE, app_factory: Raw) -> Result<Reading
     })
 }
 
+/// Initialize the Windows App SDK runtime, if the bootstrapper is beside the XAML DLL.
+///
+/// `PACKAGE_VERSION` is a union of a `u64` and four `u16`s, and x64 passes it in one
+/// register, so a `u64` keeps the ABI without the struct.
+fn bootstrap_hr(dir: &Path) -> Option<i32> {
+    let path = dir.join("Microsoft.WindowsAppRuntime.Bootstrap.dll");
+    let module = load(&path).ok()?;
+    let function = export(module, "MddBootstrapInitialize")?;
+    let function: unsafe extern "system" fn(u32, *const u16, u64) -> i32 =
+        unsafe { std::mem::transmute(function) };
+    // 2.7 as `major << 16 | minor`, a null version tag, and the lowest version.
+    const MAJOR_MINOR: u32 = 0x0002_0007;
+    Some(unsafe { function(MAJOR_MINOR, std::ptr::null(), 0) })
+}
+
 fn run_case(module: usize, ui_module: usize, app_factory: Raw, out: Option<PathBuf>) {
     let reading = case(module as HMODULE, ui_module as HMODULE, app_factory);
     match reading {
@@ -358,6 +373,18 @@ pub fn run(out: Option<PathBuf>) -> i32 {
             return 2;
         }
     };
+
+    // An unpackaged process has no package identity, and XAML's core refuses to
+    // initialize without the Windows App SDK runtime behind it. The bootstrapper is the
+    // documented answer: `MddBootstrapInitialize(majorMinor, versionTag, minVersion)`.
+    // Its own failure is reported and not treated as fatal, because it is a separate
+    // question from whether XAML then works.
+    if let Some(bootstrap) = bootstrap_hr(path.parent().unwrap_or(Path::new("."))) {
+        eprintln!(
+            "layout-probe: MddBootstrapInitialize hr=0x{:08x}",
+            bootstrap as u32
+        );
+    }
 
     match export(module, "XamlCheckProcessRequirements") {
         Some(function) => {

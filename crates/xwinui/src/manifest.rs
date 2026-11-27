@@ -37,6 +37,22 @@ pub fn write(out: &Path, dll: &str, classes: &[String]) -> Result<(), String> {
         .map_err(|error| format!("write {}: {error}", out.display()))
 }
 
+/// Escape the five predefined XML entities in an attribute value or text.
+pub(crate) fn escape(value: &str) -> String {
+    let mut out = String::with_capacity(value.len());
+    for ch in value.chars() {
+        match ch {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&apos;"),
+            _ => out.push(ch),
+        }
+    }
+    out
+}
+
 /// Render the assembly document. The entries are the fragment Windows and Wine
 /// look for under `<assembly>`; an XML declaration keeps the file loadable on
 /// its own.
@@ -46,22 +62,34 @@ pub fn write(out: &Path, dll: &str, classes: &[String]) -> Result<(), String> {
 /// under `<file>`; in the default `asm.v1` namespace the document parses as an
 /// assembly with no activatable classes. `assemblyIdentity` makes it a complete
 /// assembly rather than a fragment.
-pub fn render(dll: &str, classes: &[&str]) -> String {
+///
+/// Each element of `files` becomes one `<file>`; the caller decides the order
+/// of the files and of the classes inside them.
+pub fn render_files(files: &[(String, Vec<String>)]) -> String {
     let mut text = String::new();
     text.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     text.push_str(
         "<assembly manifestVersion=\"1.0\" xmlns=\"urn:schemas-microsoft-com:asm.v1\">\n",
     );
     text.push_str("  <assemblyIdentity version=\"1.0.0.0\" name=\"OpenWASDK.Client\" />\n");
-    text.push_str(&format!("  <file name=\"{dll}\">\n"));
-    for class in classes {
-        text.push_str(&format!(
-            "    <activatableClass name=\"{class}\" threadingModel=\"both\" xmlns=\"urn:schemas-microsoft-com:winrt.v1\" />\n"
-        ));
+    for (dll, classes) in files {
+        text.push_str(&format!("  <file name=\"{}\">\n", escape(dll)));
+        for class in classes {
+            text.push_str(&format!(
+                "    <activatableClass name=\"{}\" threadingModel=\"both\" xmlns=\"urn:schemas-microsoft-com:winrt.v1\" />\n",
+                escape(class)
+            ));
+        }
+        text.push_str("  </file>\n");
     }
-    text.push_str("  </file>\n");
     text.push_str("</assembly>\n");
     text
+}
+
+/// Render one `<file>` for the given DLL and classes.
+pub fn render(dll: &str, classes: &[&str]) -> String {
+    let classes: Vec<String> = classes.iter().map(|class| (*class).to_string()).collect();
+    render_files(&[(dll.to_string(), classes)])
 }
 
 #[cfg(test)]

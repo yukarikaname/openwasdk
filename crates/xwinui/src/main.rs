@@ -2,6 +2,8 @@
 //! needs: a compiler layout, an activation manifest, a layout audit, and a
 //! `dotnet build` whose XAML compiler runs under Wine.
 
+mod activation;
+mod appx;
 mod build;
 mod check;
 mod layout;
@@ -43,6 +45,18 @@ enum Command {
         /// Class to register; repeat for more. Defaults to the OpenWASDK classes
         #[arg(long = "class")]
         class: Vec<String>,
+    },
+    /// Write the SDK's runtime-class table as an activation manifest
+    Activation {
+        /// Unpacked SDK directory or an MSIX that holds AppxManifest.xml
+        #[arg(long)]
+        sdk: PathBuf,
+        /// Replace a class or class prefix with a DLL; repeat for more
+        #[arg(long = "replace", value_name = "CLASS_OR_PREFIX=DLL")]
+        replace: Vec<String>,
+        /// Manifest file to write
+        #[arg(long)]
+        out: PathBuf,
     },
     /// Report which required metadata files and headers a layout has
     Check {
@@ -118,6 +132,22 @@ fn main() -> ExitCode {
     }
 }
 
+/// Split `CLASS_OR_PREFIX=DLL` rules. An empty side is a usage error, not a
+/// rule that silently matches every class or names no DLL.
+fn parse_replacements(raw: &[String]) -> Result<Vec<(String, String)>, Failure> {
+    let mut rules = Vec::new();
+    for rule in raw {
+        let (pattern, dll) = rule
+            .split_once('=')
+            .ok_or_else(|| format!("--replace {rule}: expected CLASS_OR_PREFIX=DLL"))?;
+        if pattern.is_empty() || dll.is_empty() {
+            return Err(format!("--replace {rule}: expected CLASS_OR_PREFIX=DLL").into());
+        }
+        rules.push((pattern.to_string(), dll.to_string()));
+    }
+    Ok(rules)
+}
+
 fn run(cli: Cli) -> Result<(), Failure> {
     match cli.command {
         Command::Layout { out, cache } => {
@@ -135,6 +165,20 @@ fn run(cli: Cli) -> Result<(), Failure> {
         }
         Command::Manifest { out, dll, class } => {
             manifest::write(&out, &dll, &class).map_err(Failure::from)
+        }
+        Command::Activation { sdk, replace, out } => {
+            let replacements = parse_replacements(&replace)?;
+            let xml = activation::read(&sdk)?;
+            let entries = activation::parse(&xml)?;
+            let rules: Vec<(&str, &str)> = replacements
+                .iter()
+                .map(|(pattern, dll)| (pattern.as_str(), dll.as_str()))
+                .collect();
+            let text = activation::render(&entries, &rules);
+            activation::write(&out, &text)?;
+            let dlls = text.matches("<file name=\"").count();
+            eprintln!("{} classes in {} DLLs", entries.len(), dlls);
+            Ok(())
         }
         Command::Check { layout } => {
             let report = check::report(&layout)?;
