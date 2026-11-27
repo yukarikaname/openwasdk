@@ -14,6 +14,7 @@
 //! next to the application; packaging is where that happens.
 
 mod exports;
+mod extra;
 
 use std::ffi::c_void;
 

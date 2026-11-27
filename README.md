@@ -32,7 +32,7 @@ compiled XAML and the Wine host stay as they are.
 | `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | visuals, brushes, inset clips |
 | `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | draws trees, offscreen or on a swapchain |
 | `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | planned |
-| `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 6 conversions, 50 stubs |
+| `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 6 conversions, 143 stubs |
 | `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | planned |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
 
