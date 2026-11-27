@@ -114,3 +114,59 @@ unsafe extern "system" fn activate_instance(_this: *mut c_void, out: *mut *mut c
         E_NOTIMPL
     }
 }
+
+#[cfg(test)]
+pub(crate) unsafe fn release_for_test(factory: *mut c_void) {
+    unsafe { release(factory) };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use windows_core::GUID;
+
+    fn vtbl_of(factory: *mut c_void) -> &'static FactoryVtbl {
+        unsafe { &**(factory as *const *const FactoryVtbl) }
+    }
+
+    #[test]
+    fn the_factory_answers_the_three_interface_ids() {
+        let factory = Factory::create();
+        let vtbl = vtbl_of(factory);
+        for iid in [IID_IUNKNOWN, IID_IINSPECTABLE, IID_IACTIVATION_FACTORY] {
+            let mut out: *mut c_void = std::ptr::null_mut();
+            let result = unsafe { (vtbl.query_interface)(factory, &iid, &mut out) };
+            assert_eq!(result, S_OK);
+            assert_eq!(out, factory);
+        }
+        for _ in 0..4 {
+            unsafe { (vtbl.release)(factory) };
+        }
+    }
+
+    #[test]
+    fn an_unknown_interface_is_refused() {
+        let factory = Factory::create();
+        let vtbl = vtbl_of(factory);
+        let unknown = GUID::from_u128(0xdead_beef_0000_0000_0000_0000_0000_0000);
+        let mut out: *mut c_void = std::ptr::null_mut();
+        let result = unsafe { (vtbl.query_interface)(factory, &unknown, &mut out) };
+        assert_eq!(result, E_NOINTERFACE);
+        assert!(out.is_null());
+        unsafe { (vtbl.release)(factory) };
+    }
+
+    #[test]
+    fn activation_reports_that_no_class_exists_yet() {
+        let factory = Factory::create();
+        let vtbl = vtbl_of(factory);
+        let mut out: *mut c_void = std::ptr::null_mut();
+        let result = unsafe { (vtbl.activate_instance)(factory, &mut out) };
+        #[cfg(not(windows))]
+        {
+            assert_eq!(result, E_NOTIMPL);
+            assert!(out.is_null());
+        }
+        unsafe { (vtbl.release)(factory) };
+    }
+}

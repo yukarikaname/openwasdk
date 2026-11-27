@@ -46,8 +46,11 @@ pub unsafe extern "system" fn DllGetActivationFactory(
     if class.is_null() || factory.is_null() {
         return E_POINTER;
     }
-    // Borrow, do not own: the caller keeps the HSTRING alive across the call.
-    let name = unsafe { &*(class as *const HSTRING) };
+    // The parameter is the HSTRING handle itself, which is a pointer to the string header. Bit
+    // copy it into an HSTRING and keep it from dropping: the caller owns the reference.
+    let name = std::mem::ManuallyDrop::new(unsafe {
+        std::mem::transmute_copy::<*mut c_void, HSTRING>(&class)
+    });
     if !known(&name.to_string_lossy()) {
         unsafe { *factory = std::ptr::null_mut() };
         return CLASS_E_CLASSNOTAVAILABLE;
@@ -85,5 +88,34 @@ mod tests {
         assert!(known("Microsoft.UI.Composition.Compositor"));
         assert!(!known("Microsoft.UI.Composition.Visual"));
         assert!(!known(""));
+    }
+}
+
+#[cfg(test)]
+mod export_tests {
+    use super::*;
+
+    /// WinRT passes the HSTRING handle by value, which is the pointer inside the HSTRING.
+    fn handle(name: &HSTRING) -> *mut c_void {
+        unsafe { std::mem::transmute_copy(name) }
+    }
+
+    #[test]
+    fn a_known_class_gets_a_factory() {
+        let name = HSTRING::from("Microsoft.UI.Composition.Compositor");
+        let mut factory: *mut c_void = std::ptr::null_mut();
+        let result = unsafe { DllGetActivationFactory(handle(&name), &mut factory) };
+        assert_eq!(result, S_OK);
+        assert!(!factory.is_null());
+        unsafe { crate::factory::release_for_test(factory) };
+    }
+
+    #[test]
+    fn a_class_this_dll_does_not_serve_is_reported_as_missing() {
+        let name = HSTRING::from("Microsoft.UI.Composition.Visual");
+        let mut factory: *mut c_void = std::ptr::null_mut();
+        let result = unsafe { DllGetActivationFactory(handle(&name), &mut factory) };
+        assert_eq!(result, CLASS_E_CLASSNOTAVAILABLE);
+        assert!(factory.is_null());
     }
 }
