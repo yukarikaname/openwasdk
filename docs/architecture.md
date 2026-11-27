@@ -92,6 +92,18 @@ calls into the core.
 the build is portable; until then the official binary can be used, because the
 contract between it and `Internal.dll` is what `openxaml` implements.
 
+### Reactor
+
+`Microsoft.UI.Reactor` is a declarative C# authoring layer over WinUI 3: every
+element it renders is a real WinUI control. It is not a XAML-free runtime, so it
+still needs `Microsoft.UI.Xaml`/`Internal`; what it does not need is the XAML
+compiler or an application XBF, because the tree is built by C# calls.
+
+That makes it the best first target for `openxaml`: a small, open-source corpus
+of exactly which controls, properties and layout paths a modern app touches,
+without a parser to write first. Running it also needs a .NET host under Wine,
+which is a second dependency independent of the control set.
+
 ## openhost
 
 The glue that makes the two replacements loadable and runnable:

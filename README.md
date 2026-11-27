@@ -114,6 +114,9 @@ docs/                  architecture, measured scale, milestones
    through `Microsoft.UI.Content`/`Microsoft.UI.Windowing` and never loads XAML.
    This is the first target that can run end to end, and the smallest one.
 4. `openxaml` — XBF loader and the XAML runtime on top of the same compositor.
+   Reactor (`microsoft/microsoft-ui-reactor`) is the first XAML-runtime target:
+   it builds WinUI controls from C# and loads no application XBF, only the
+   framework's own resources.
 5. `openhost` — run without the Microsoft runtime DLLs.
 6. `xwinui` — cross-compilation, packaging and deployment.
 
