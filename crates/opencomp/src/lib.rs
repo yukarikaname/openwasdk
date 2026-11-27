@@ -110,6 +110,17 @@ pub(crate) enum Class {
     DesktopChildSiteBridge,
 }
 
+impl Class {
+    /// The name combase, a manifest or a host uses for this class.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Class::Compositor => "Microsoft.UI.Composition.Compositor",
+            Class::ContentIsland => "Microsoft.UI.Content.ContentIsland",
+            Class::DesktopChildSiteBridge => "Microsoft.UI.Content.DesktopChildSiteBridge",
+        }
+    }
+}
+
 /// WinRT entry point: return the activation factory for `class`.
 ///
 /// # Safety

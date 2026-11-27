@@ -1,15 +1,15 @@
 //! The activation factory for a WinRT runtime class.
 //!
 //! WinRT asks a DLL for a factory by class name, and the factory creates instances of the class.
-//! This is written by hand instead of through `#[implement]`: the factory is three methods and a
-//! refcount, and the real work — the class itself — will use the generated `*_Impl` traits.
+//! This is written by hand instead of through `#[implement]`: the factory is a vtable and a
+//! refcount, and the real work — the class itself — uses the generated `*_Impl` traits.
 
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use windows_core::GUID;
 #[cfg(windows)]
 use windows_core::Interface;
+use windows_core::{GUID, HSTRING};
 
 use crate::Class;
 
@@ -30,12 +30,20 @@ pub struct Factory {
     class: Class,
 }
 
-/// The vtable of `IActivationFactory`: `IUnknown` followed by `ActivateInstance`.
+/// The vtable of `IActivationFactory`.
+///
+/// The order is the ABI: three `IUnknown` slots, three `IInspectable` slots, then
+/// `ActivateInstance`. The middle three are not optional even though this factory has no
+/// meaningful answer for them — a caller reads the seventh slot by offset, so a four-entry
+/// table hands it whatever happens to follow in `.rdata`, which is a call through garbage.
 #[repr(C)]
 struct FactoryVtbl {
     query_interface: unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32,
     add_ref: unsafe extern "system" fn(*mut c_void) -> u32,
     release: unsafe extern "system" fn(*mut c_void) -> u32,
+    get_iids: unsafe extern "system" fn(*mut c_void, *mut u32, *mut *mut GUID) -> i32,
+    get_runtime_class_name: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32,
+    get_trust_level: unsafe extern "system" fn(*mut c_void, *mut i32) -> i32,
     activate_instance: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32,
 }
 
@@ -43,6 +51,9 @@ static FACTORY_VTBL: FactoryVtbl = FactoryVtbl {
     query_interface,
     add_ref,
     release,
+    get_iids,
+    get_runtime_class_name,
+    get_trust_level,
     activate_instance,
 };
 
@@ -117,6 +128,51 @@ unsafe extern "system" fn query_interface(
     E_NOINTERFACE
 }
 
+/// No interface IDs are reported, which the ABI allows and `windows-core`'s own
+/// `IInspectable` vtable does: the list is for diagnostics, and answering `S_OK` with an
+/// empty array keeps the factory off the COM allocator on every host.
+unsafe extern "system" fn get_iids(
+    _this: *mut c_void,
+    count: *mut u32,
+    values: *mut *mut GUID,
+) -> i32 {
+    if count.is_null() || values.is_null() {
+        return E_POINTER;
+    }
+    unsafe {
+        *count = 0;
+        *values = std::ptr::null_mut();
+    }
+    S_OK
+}
+
+/// The runtime class this factory makes, as an `HSTRING` the caller owns.
+unsafe extern "system" fn get_runtime_class_name(
+    this: *mut c_void,
+    value: *mut *mut c_void,
+) -> i32 {
+    if value.is_null() {
+        return E_POINTER;
+    }
+    let factory = unsafe { &*(this as *const Factory) };
+    // The handle moves into the out parameter; `transmute` consumes the owned string, so
+    // nothing here drops it. This is the same shape `windows-core` uses for its own
+    // `IInspectable` vtables.
+    unsafe {
+        *value = std::mem::transmute::<HSTRING, *mut c_void>(HSTRING::from(factory.class.name()));
+    }
+    S_OK
+}
+
+/// `BaseTrust`, the only level a WinRT component of ours can claim.
+unsafe extern "system" fn get_trust_level(_this: *mut c_void, value: *mut i32) -> i32 {
+    if value.is_null() {
+        return E_POINTER;
+    }
+    unsafe { *value = 0 };
+    S_OK
+}
+
 unsafe extern "system" fn add_ref(this: *mut c_void) -> u32 {
     let factory = unsafe { &*(this as *const Factory) };
     factory.refs.fetch_add(1, Ordering::Relaxed) + 1
@@ -177,9 +233,39 @@ pub(crate) unsafe fn release_for_test(factory: *mut c_void) {
 mod tests {
     use super::*;
     use windows_core::GUID;
+    #[cfg(windows)]
+    use windows_core::Interface;
 
     fn vtbl_of(factory: *mut c_void) -> &'static FactoryVtbl {
         unsafe { &**(factory as *const *const FactoryVtbl) }
+    }
+
+    /// The table is `IUnknown` + `IInspectable` + `ActivateInstance`, and a caller reads
+    /// `ActivateInstance` at index six. A shorter table is not a compile error; it is a
+    /// call through whatever follows in `.rdata`, which is how the gate first crashed.
+    #[test]
+    fn the_vtable_has_the_inspectable_layout() {
+        assert_eq!(
+            std::mem::size_of::<FactoryVtbl>(),
+            7 * std::mem::size_of::<usize>(),
+            "QueryInterface, AddRef, Release, GetIids, GetRuntimeClassName, GetTrustLevel, \
+             ActivateInstance"
+        );
+    }
+
+    /// The same call the runtime makes: cast, then read the seventh slot.
+    #[test]
+    #[cfg(windows)]
+    fn activation_is_reachable_through_the_generic_factory() {
+        let factory = Factory::create(Class::Compositor);
+        let unknown: windows_core::IUnknown = unsafe { windows_core::IUnknown::from_raw(factory) };
+        let activation: windows_core::imp::IGenericFactory =
+            unknown.cast().expect("IActivationFactory");
+        let instance = activation.ActivateInstance::<windows_core::IInspectable>();
+        assert!(
+            instance.is_ok(),
+            "a compositor comes out of the generic factory"
+        );
     }
 
     #[test]
