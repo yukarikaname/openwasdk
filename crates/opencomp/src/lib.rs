@@ -1,4 +1,4 @@
-//! opencomp replaces `Microsoft.UI.Composition.dll` with an ABI-compatible WinRT server.
+//! opencomp takes the place of `dcompi.dll`, the `Microsoft.UI.Composition` server.
 //!
 //! The goal is to run the official `Microsoft.UI.Xaml` binaries without DWM or DirectComposition:
 //! the XAML layer asks this DLL for visuals, surfaces and animations, and this DLL draws them.
@@ -6,6 +6,9 @@
 //! The generated metadata lives in `bindings`: interface definitions with their IIDs and the
 //! `*_Impl` traits a class implements. It is produced by `comptrace generate` and only compiles
 //! for a Windows target (the class helpers call into `windows-core`'s Windows-only factory cache).
+//!
+//! The crate-level allows are for the ABI: method names like `CreateContainerVisual` are fixed by
+//! the metadata, and the generated module has its own spelling conventions.
 
 #![allow(
     non_snake_case,
