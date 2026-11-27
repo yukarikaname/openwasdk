@@ -30,6 +30,7 @@ use opencomp::bindings::Windows::Foundation::IClosable;
 use opencomp::bindings::Windows::Graphics::RectInt32;
 use opencomp::bindings::Windows::UI::Color;
 use windows::Win32::Foundation::HWND;
+use windows::Win32::System::LibraryLoader::{GetModuleHandleW, GetProcAddress};
 use windows::Win32::System::Threading::Sleep;
 use windows::Win32::System::WinRT::{RO_INIT_MULTITHREADED, RoInitialize};
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -90,7 +91,7 @@ pub fn run() -> i32 {
 
     let state: IContentIsland = step("QueryInterface(IContentIsland)", island.cast());
     let size = step("ActualSize", state.ActualSize());
-    let presented = opencomp::frames_presented();
+    let presented = presented_frames();
     if presented == 0 {
         eprintln!(
             "opencomp-client: no frame reached the window; the device or the swapchain failed"
@@ -349,7 +350,7 @@ fn pump_until_presented(frames: u32) {
     // bound is for a graphics stack that will never answer, not for a slow one.
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     let mut ticks = 0;
-    while ticks < frames || opencomp::frames_presented() == 0 {
+    while ticks < frames || presented_frames() == 0 {
         unsafe {
             while PeekMessageW(&mut message, None, 0, 0, PM_REMOVE).as_bool() {
                 let _ = TranslateMessage(&message);
@@ -364,6 +365,30 @@ fn pump_until_presented(frames: u32) {
             break;
         }
     }
+}
+
+/// The frame counter of the engine this client actually used.
+///
+/// The binary links the compositor as a library *and* reaches it through combase, which
+/// loads `opencomp.dll` from beside the executable. Those are two copies of the same
+/// statics, so the linked `frames_presented()` answers zero while the DLL draws the
+/// frames; the exported number comes from the copy that presented them.
+fn presented_frames() -> u64 {
+    if let Ok(module) = unsafe { GetModuleHandleW(w!("opencomp.dll")) } {
+        let entry = unsafe {
+            GetProcAddress(
+                module,
+                windows::core::PCSTR(c"opencomp_frames_presented".as_ptr().cast()),
+            )
+        };
+        if let Some(entry) = entry {
+            // Safety: the export is this crate's own `extern "C"` function, so the
+            // signature is the one compiled into the DLL.
+            let frames: unsafe extern "C" fn() -> u64 = unsafe { std::mem::transmute(entry) };
+            return unsafe { frames() };
+        }
+    }
+    opencomp::frames_presented()
 }
 
 /// The activation factory for `class`: the runtime's object when it knows the

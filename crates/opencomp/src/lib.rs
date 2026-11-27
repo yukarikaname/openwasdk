@@ -64,6 +64,8 @@ mod step_easing;
 #[cfg(windows)]
 pub use d2d::frames_presented;
 #[cfg(windows)]
+pub use d2d::opencomp_frames_presented;
+#[cfg(windows)]
 pub mod surface;
 #[cfg(windows)]
 mod visual;

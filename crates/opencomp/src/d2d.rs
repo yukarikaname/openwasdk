@@ -51,6 +51,16 @@ pub fn frames_presented() -> u64 {
     FRAMES.load(Ordering::Relaxed)
 }
 
+/// The same number, for a host that reaches this DLL through combase.
+///
+/// Such a host links the compositor as a library *and* loads this DLL, which are two
+/// copies of the same statics; reading the linked one would always answer zero while the
+/// DLL did the drawing. The export lets it ask the copy that presented the frames.
+#[unsafe(no_mangle)]
+pub extern "C" fn opencomp_frames_presented() -> u64 {
+    frames_presented()
+}
+
 /// Say which stage is about to run when `OPENCOMP_TRACE` is set.
 ///
 /// A stage that hangs prints nothing after its own line, which is the only way to tell
