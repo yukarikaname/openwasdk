@@ -236,6 +236,38 @@ mod abi {
     }
 
     #[test]
+    fn children_keep_the_order_they_were_inserted_in() {
+        let compositor = compositor();
+        let parent = compositor.CreateContainerVisual().unwrap();
+        let container: IContainerVisual = parent.cast().unwrap();
+        let collection = container.Children().unwrap();
+        let collection: crate::bindings::Microsoft::UI::Composition::IVisualCollection =
+            collection.cast().unwrap();
+        let first = compositor.CreateSpriteVisual().unwrap();
+        let top = compositor.CreateSpriteVisual().unwrap();
+        let between = compositor.CreateSpriteVisual().unwrap();
+
+        collection.InsertAtTop(&first).unwrap();
+        collection.InsertAtTop(&top).unwrap();
+        collection.InsertBelow(&between, &top).unwrap();
+
+        let parent_node = crate::node::resolve(&parent).unwrap();
+        let nodes = [
+            crate::node::resolve(&first).unwrap(),
+            crate::node::resolve(&between).unwrap(),
+            crate::node::resolve(&top).unwrap(),
+        ];
+        let children = parent_node.lock().unwrap().children.clone();
+        assert_eq!(children.len(), 3);
+        for (child, expected) in children.iter().zip(&nodes) {
+            assert!(std::sync::Arc::ptr_eq(child, expected));
+        }
+
+        collection.Remove(&between).unwrap();
+        assert_eq!(collection.Count().unwrap(), 2);
+    }
+
+    #[test]
     fn an_object_only_answers_for_what_it_is() {
         let compositor = compositor();
         let sprite = compositor.CreateSpriteVisual().unwrap();
