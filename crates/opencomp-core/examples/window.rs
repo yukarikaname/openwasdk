@@ -8,7 +8,7 @@
 
 use std::sync::Arc;
 
-use opencomp_core::{Renderer, Visual, srgb};
+use opencomp_core::{Host, Visual, srgb};
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
@@ -38,62 +38,24 @@ struct App {
 }
 
 struct Frame {
-    device: wgpu::Device,
-    queue: wgpu::Queue,
-    surface: wgpu::Surface<'static>,
-    config: wgpu::SurfaceConfiguration,
-    renderer: Renderer,
+    host: Host,
 }
 
 impl Frame {
     fn new(window: Arc<Window>) -> Option<Self> {
         let size = window.inner_size();
-        let (width, height) = (size.width.max(1), size.height.max(1));
         let instance = wgpu::Instance::new(
             wgpu::InstanceDescriptor::new_with_display_handle_from_env(Box::new(window.clone())),
         );
         let surface = instance.create_surface(window).ok()?;
-        let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
-            compatible_surface: Some(&surface),
-            ..Default::default()
-        }))
-        .ok()?;
-        let (device, queue) =
-            pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor::default())).ok()?;
-        let capabilities = surface.get_capabilities(&adapter);
-        let format = capabilities
-            .formats
-            .iter()
-            .copied()
-            .find(wgpu::TextureFormat::is_srgb)
-            .unwrap_or(capabilities.formats[0]);
-        let mut config = surface.get_default_config(&adapter, width, height)?;
-        config.format = format;
-        surface.configure(&device, &config);
-        let renderer = Renderer::with_format(
-            device.clone(),
-            queue.clone(),
-            (width, height),
-            [srgb(0.09), srgb(0.10), srgb(0.12), 1.0],
-            format,
-        );
-        Some(Self {
-            device,
-            queue,
+        let background = [srgb(0.09), srgb(0.10), srgb(0.12), 1.0];
+        let host = Host::new(
+            &instance,
             surface,
-            config,
-            renderer,
-        })
-    }
-
-    fn resize(&mut self, width: u32, height: u32) {
-        if width == 0 || height == 0 {
-            return;
-        }
-        self.config.width = width;
-        self.config.height = height;
-        self.surface.configure(&self.device, &self.config);
-        self.renderer.set_size((width, height));
+            (size.width.max(1), size.height.max(1)),
+            background,
+        )?;
+        Some(Self { host })
     }
 }
 
@@ -106,8 +68,8 @@ impl ApplicationHandler for App {
         );
         self.frame = Frame::new(window.clone());
         if let Some(frame) = &mut self.frame {
-            frame.renderer.set_root(scene());
-            frame.renderer.set_scale(window.scale_factor() as f32);
+            frame.host.set_root(scene());
+            frame.host.set_scale(window.scale_factor() as f32);
         }
         self.window = Some(window);
     }
@@ -116,23 +78,18 @@ impl ApplicationHandler for App {
         let Some(frame) = &mut self.frame else { return };
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::Resized(size) => frame.resize(size.width, size.height),
+            WindowEvent::Resized(size) => frame.host.resize(size.width, size.height),
             WindowEvent::RedrawRequested => {
-                use wgpu::CurrentSurfaceTexture as Acquired;
-                let texture = match frame.surface.get_current_texture() {
-                    Acquired::Success(texture) | Acquired::Suboptimal(texture) => texture,
-                    // Outdated and Lost are handled by the resize arm; the rest skip the frame.
-                    _ => return,
-                };
-                frame.renderer.render_to_surface(&texture);
-                frame.queue.present(texture);
+                if !frame.host.present() {
+                    return;
+                }
                 self.presented += 1;
                 if self.limit.is_some_and(|limit| self.presented >= limit) {
-                    let (width, height) = frame.renderer.size();
+                    let (width, height) = frame.host.size();
                     println!(
                         "presented {} frame(s) at {width}x{height} {:?}",
                         self.presented,
-                        frame.renderer.format()
+                        frame.host.format()
                     );
                     event_loop.exit();
                     return;

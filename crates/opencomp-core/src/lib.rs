@@ -6,12 +6,14 @@
 
 mod animation;
 mod color;
+mod host;
 mod render;
 mod texture;
 mod tree;
 
 pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
+pub use host::Host;
 pub use render::Renderer;
 pub use texture::TextureId;
 pub use tree::{Rect, Visual};
