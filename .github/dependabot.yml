@@ -27,9 +27,8 @@ updates:
       windows:
         patterns: ["windows", "windows-*"]
     ignore:
-      # These two decide the ABI and the preview backend; a major bump is a
-      # project decision, not an update.
-      - dependency-name: windows
-        update-types: ["version-update:semver-major"]
-      - dependency-name: wgpu
+      # Every major bump is a project decision. Within an hour of enabling this
+      # file, Dependabot proposed pollster 1.0 and object 0.41 -- both would need
+      # code changes, and both arrived as "an update".
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
