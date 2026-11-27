@@ -131,6 +131,8 @@ jobs:
           echo "using $wine"
           export WINEPREFIX="$PWD/target/wine"
           export WINEDLLOVERRIDES="mscoree,mshtml="
+          # A panic under Wine without symbols is a dead end; the gnu build carries them.
+          export RUST_BACKTRACE=1
           xvfb-run -a "$wine" wineboot -u > /dev/null 2>&1 || true
           # The cdylib+lib layout hides the test binary under build/.../out, so read the
           # path out of the line cargo prints instead of guessing a directory.
