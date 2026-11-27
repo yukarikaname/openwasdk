@@ -101,6 +101,11 @@ renderer can own (wgpu accepts a raw Win32 window handle), and whatever the
 client drew into composition surfaces, which for XAML means D3D interop. The
 tree we already build is the part that does not need either.
 
+Colour is linear in the core and sRGB at the ABI. A surface in an `*Srgb` format
+stores encoded bytes and blends in linear light, so a brush's `Windows.UI.Color`
+bytes are decoded on the way in (`opencomp_core::srgb`) and encoded on the way
+out; writing 0.5 straight into an sRGB target produces byte 188, not 128.
+
 The renderer lives in `opencomp-core`, which contains no WinRT. That split is
 what makes macOS a first-class host for the compositor: the same visual tree
 renders through Metal on macOS, Vulkan on Linux and D3D12 elsewhere, and its

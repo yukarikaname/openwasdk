@@ -6,14 +6,15 @@
 
 use std::io::Write;
 
-use opencomp_core::{Renderer, Visual};
+use opencomp_core::{Renderer, Visual, srgb};
 
 fn main() -> std::io::Result<()> {
     let path = std::env::args()
         .nth(1)
         .unwrap_or_else(|| "scene.ppm".into());
     let (width, height) = (320, 240);
-    let Some(mut renderer) = Renderer::headless((width, height), [0.05, 0.06, 0.08, 1.0]) else {
+    let background = [srgb(0.09), srgb(0.10), srgb(0.12), 1.0];
+    let Some(mut renderer) = Renderer::headless((width, height), background) else {
         eprintln!("no GPU adapter available");
         return Ok(());
     };
@@ -35,13 +36,13 @@ fn main() -> std::io::Result<()> {
 
 /// A panel with three rows, one of them translucent and one clipped away.
 fn scene() -> Visual {
-    let mut panel = Visual::rect(272.0, 192.0, [0.10, 0.11, 0.14, 1.0])
+    let mut panel = Visual::rect(272.0, 192.0, [srgb(0.16), srgb(0.17), srgb(0.20), 1.0])
         .at(24.0, 24.0)
         .clip_to(0.0, 0.0, 272.0, 192.0);
     let rows = [
-        ([0.29, 0.62, 0.96, 1.0], 0.0),
-        ([0.35, 0.85, 0.55, 0.5], 1.0),
-        ([0.96, 0.45, 0.35, 1.0], 2.0),
+        ([srgb(0.29), srgb(0.62), srgb(0.96), 1.0], 0.0),
+        ([srgb(0.35), srgb(0.85), srgb(0.55), 0.5], 1.0),
+        ([srgb(0.96), srgb(0.45), srgb(0.35), 1.0], 2.0),
     ];
     for (color, index) in rows {
         panel.push(
@@ -51,6 +52,8 @@ fn scene() -> Visual {
         );
     }
     // Past the panel's right edge, so the clip has to cut it.
-    panel.push(Visual::rect(120.0, 24.0, [0.95, 0.85, 0.30, 1.0]).at(220.0, 150.0));
+    panel.push(
+        Visual::rect(120.0, 24.0, [srgb(0.95), srgb(0.85), srgb(0.30), 1.0]).at(220.0, 150.0),
+    );
     panel
 }

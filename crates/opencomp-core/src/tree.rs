@@ -38,7 +38,7 @@ pub struct Visual {
     /// Translation from the parent's origin.
     pub offset: [f32; 2],
     pub size: [f32; 2],
-    /// Straight (unpremultiplied) colour.
+    /// Straight (unpremultiplied) colour in linear light; see [`crate::srgb`].
     pub color: [f32; 4],
     /// Multiplied down the tree, like a group's opacity.
     pub opacity: f32,

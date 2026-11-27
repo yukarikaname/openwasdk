@@ -8,7 +8,7 @@
 
 use std::sync::Arc;
 
-use opencomp_core::{Renderer, Visual};
+use opencomp_core::{Renderer, Visual, srgb};
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop};
@@ -74,7 +74,7 @@ impl Frame {
             device.clone(),
             queue.clone(),
             (width, height),
-            [0.05, 0.06, 0.08, 1.0],
+            [srgb(0.09), srgb(0.10), srgb(0.12), 1.0],
             format,
         );
         Some(Self {
@@ -148,13 +148,13 @@ impl ApplicationHandler for App {
 
 /// The same panel the offscreen example draws.
 fn scene() -> Visual {
-    let mut panel = Visual::rect(272.0, 192.0, [0.10, 0.11, 0.14, 1.0])
+    let mut panel = Visual::rect(272.0, 192.0, [srgb(0.16), srgb(0.17), srgb(0.20), 1.0])
         .at(24.0, 24.0)
         .clip_to(0.0, 0.0, 272.0, 192.0);
     for (index, color) in [
-        [0.29, 0.62, 0.96, 1.0],
-        [0.35, 0.85, 0.55, 0.5],
-        [0.96, 0.45, 0.35, 1.0],
+        [srgb(0.29), srgb(0.62), srgb(0.96), 1.0],
+        [srgb(0.35), srgb(0.85), srgb(0.55), 0.5],
+        [srgb(0.96), srgb(0.45), srgb(0.35), 1.0],
     ]
     .into_iter()
     .enumerate()
