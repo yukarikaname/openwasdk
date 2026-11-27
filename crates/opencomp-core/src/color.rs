@@ -24,6 +24,29 @@ pub fn srgb_from_linear(value: f32) -> f32 {
     }
 }
 
+/// A `Windows.UI.Color`-shaped `[a, r, g, b]` in sRGB to straight linear RGBA.
+pub fn rgba_from_srgb_bytes([a, r, g, b]: [u8; 4]) -> [f32; 4] {
+    [
+        srgb(f32::from(r) / 255.0),
+        srgb(f32::from(g) / 255.0),
+        srgb(f32::from(b) / 255.0),
+        f32::from(a) / 255.0,
+    ]
+}
+
+/// The inverse, for a colour read back out through the ABI.
+pub fn srgb_bytes_from_rgba([r, g, b, a]: [f32; 4]) -> [u8; 4] {
+    fn channel(value: f32) -> u8 {
+        (srgb_from_linear(value) * 255.0).round() as u8
+    }
+    [
+        (a.clamp(0.0, 1.0) * 255.0).round() as u8,
+        channel(r),
+        channel(g),
+        channel(b),
+    ]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -54,6 +77,22 @@ mod tests {
             let value = step as f32 / 20.0;
             assert!(close(srgb_from_linear(srgb(value)), value));
         }
+    }
+
+    #[test]
+    fn a_colour_survives_the_round_trip() {
+        for colour in [[255, 0, 0, 255], [18, 26, 31, 128], [0, 0, 0, 0]] {
+            let linear = rgba_from_srgb_bytes(colour);
+            assert_eq!(srgb_bytes_from_rgba(linear), colour);
+        }
+    }
+
+    #[test]
+    fn the_midpoint_byte_is_not_taken_for_the_midpoint_of_the_light() {
+        // [a, r, g, b]: the colour channels are 128, which is 0.502 sRGB and 0.216 linear.
+        let linear = rgba_from_srgb_bytes([255, 128, 128, 128]);
+        assert!((linear[0] - 0.215_86).abs() < 1e-3);
+        assert!((linear[3] - 1.0).abs() < 1e-4);
     }
 
     #[test]

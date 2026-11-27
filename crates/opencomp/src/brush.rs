@@ -69,25 +69,13 @@ pub fn transparent() -> Result<CompositionBrush> {
     windows_core::Interface::cast(&brush)
 }
 
-/// The colour channels are sRGB bytes and the renderer blends in linear light, so the
-/// three that carry light are decoded; alpha is coverage and stays as it is.
+/// Straight linear rgba, after decoding the colour channels.
 pub fn to_rgba(color: Color) -> [f32; 4] {
-    [
-        opencomp_core::srgb(f32::from(color.r) / 255.0),
-        opencomp_core::srgb(f32::from(color.g) / 255.0),
-        opencomp_core::srgb(f32::from(color.b) / 255.0),
-        f32::from(color.a) / 255.0,
-    ]
+    opencomp_core::rgba_from_srgb_bytes([color.a, color.r, color.g, color.b])
 }
 
+/// The inverse, for `ICompositionColorBrush.Color`.
 pub fn from_rgba(color: [f32; 4]) -> Color {
-    fn channel(value: f32) -> u8 {
-        (opencomp_core::srgb_from_linear(value) * 255.0).round() as u8
-    }
-    Color {
-        a: (color[3].clamp(0.0, 1.0) * 255.0).round() as u8,
-        r: channel(color[0]),
-        g: channel(color[1]),
-        b: channel(color[2]),
-    }
+    let [a, r, g, b] = opencomp_core::srgb_bytes_from_rgba(color);
+    Color { a, r, g, b }
 }

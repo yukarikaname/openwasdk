@@ -8,7 +8,7 @@ mod color;
 mod render;
 mod tree;
 
-pub use color::{srgb, srgb_from_linear};
+pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
 pub use render::Renderer;
 pub use tree::{Rect, Visual};
 
