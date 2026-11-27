@@ -42,13 +42,15 @@ mod content;
 #[cfg(windows)]
 mod easing;
 mod identity;
-mod node;
+pub mod node;
 #[cfg(windows)]
 mod object;
 #[cfg(windows)]
 mod propertyset;
 #[cfg(windows)]
 mod step_easing;
+#[cfg(windows)]
+pub mod surface;
 #[cfg(windows)]
 mod visual;
 

@@ -1,4 +1,162 @@
 pub mod Microsoft {
+    pub mod Graphics {
+        pub mod DirectX {
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct DirectXAlphaMode(pub i32);
+            impl DirectXAlphaMode {
+                pub const Unspecified: Self = Self(0);
+                pub const Premultiplied: Self = Self(1);
+                pub const Straight: Self = Self(2);
+                pub const Ignore: Self = Self(3);
+            }
+            impl windows_core::imp::TypeKind for DirectXAlphaMode {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for DirectXAlphaMode {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.Graphics.DirectX.DirectXAlphaMode;i4)",
+                    );
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct DirectXPixelFormat(pub i32);
+            impl DirectXPixelFormat {
+                pub const Unknown: Self = Self(0);
+                pub const R32G32B32A32Typeless: Self = Self(1);
+                pub const R32G32B32A32Float: Self = Self(2);
+                pub const R32G32B32A32UInt: Self = Self(3);
+                pub const R32G32B32A32Int: Self = Self(4);
+                pub const R32G32B32Typeless: Self = Self(5);
+                pub const R32G32B32Float: Self = Self(6);
+                pub const R32G32B32UInt: Self = Self(7);
+                pub const R32G32B32Int: Self = Self(8);
+                pub const R16G16B16A16Typeless: Self = Self(9);
+                pub const R16G16B16A16Float: Self = Self(10);
+                pub const R16G16B16A16UIntNormalized: Self = Self(11);
+                pub const R16G16B16A16UInt: Self = Self(12);
+                pub const R16G16B16A16IntNormalized: Self = Self(13);
+                pub const R16G16B16A16Int: Self = Self(14);
+                pub const R32G32Typeless: Self = Self(15);
+                pub const R32G32Float: Self = Self(16);
+                pub const R32G32UInt: Self = Self(17);
+                pub const R32G32Int: Self = Self(18);
+                pub const R32G8X24Typeless: Self = Self(19);
+                pub const D32FloatS8X24UInt: Self = Self(20);
+                pub const R32FloatX8X24Typeless: Self = Self(21);
+                pub const X32TypelessG8X24UInt: Self = Self(22);
+                pub const R10G10B10A2Typeless: Self = Self(23);
+                pub const R10G10B10A2UIntNormalized: Self = Self(24);
+                pub const R10G10B10A2UInt: Self = Self(25);
+                pub const R11G11B10Float: Self = Self(26);
+                pub const R8G8B8A8Typeless: Self = Self(27);
+                pub const R8G8B8A8UIntNormalized: Self = Self(28);
+                pub const R8G8B8A8UIntNormalizedSrgb: Self = Self(29);
+                pub const R8G8B8A8UInt: Self = Self(30);
+                pub const R8G8B8A8IntNormalized: Self = Self(31);
+                pub const R8G8B8A8Int: Self = Self(32);
+                pub const R16G16Typeless: Self = Self(33);
+                pub const R16G16Float: Self = Self(34);
+                pub const R16G16UIntNormalized: Self = Self(35);
+                pub const R16G16UInt: Self = Self(36);
+                pub const R16G16IntNormalized: Self = Self(37);
+                pub const R16G16Int: Self = Self(38);
+                pub const R32Typeless: Self = Self(39);
+                pub const D32Float: Self = Self(40);
+                pub const R32Float: Self = Self(41);
+                pub const R32UInt: Self = Self(42);
+                pub const R32Int: Self = Self(43);
+                pub const R24G8Typeless: Self = Self(44);
+                pub const D24UIntNormalizedS8UInt: Self = Self(45);
+                pub const R24UIntNormalizedX8Typeless: Self = Self(46);
+                pub const X24TypelessG8UInt: Self = Self(47);
+                pub const R8G8Typeless: Self = Self(48);
+                pub const R8G8UIntNormalized: Self = Self(49);
+                pub const R8G8UInt: Self = Self(50);
+                pub const R8G8IntNormalized: Self = Self(51);
+                pub const R8G8Int: Self = Self(52);
+                pub const R16Typeless: Self = Self(53);
+                pub const R16Float: Self = Self(54);
+                pub const D16UIntNormalized: Self = Self(55);
+                pub const R16UIntNormalized: Self = Self(56);
+                pub const R16UInt: Self = Self(57);
+                pub const R16IntNormalized: Self = Self(58);
+                pub const R16Int: Self = Self(59);
+                pub const R8Typeless: Self = Self(60);
+                pub const R8UIntNormalized: Self = Self(61);
+                pub const R8UInt: Self = Self(62);
+                pub const R8IntNormalized: Self = Self(63);
+                pub const R8Int: Self = Self(64);
+                pub const A8UIntNormalized: Self = Self(65);
+                pub const R1UIntNormalized: Self = Self(66);
+                pub const R9G9B9E5SharedExponent: Self = Self(67);
+                pub const R8G8B8G8UIntNormalized: Self = Self(68);
+                pub const G8R8G8B8UIntNormalized: Self = Self(69);
+                pub const BC1Typeless: Self = Self(70);
+                pub const BC1UIntNormalized: Self = Self(71);
+                pub const BC1UIntNormalizedSrgb: Self = Self(72);
+                pub const BC2Typeless: Self = Self(73);
+                pub const BC2UIntNormalized: Self = Self(74);
+                pub const BC2UIntNormalizedSrgb: Self = Self(75);
+                pub const BC3Typeless: Self = Self(76);
+                pub const BC3UIntNormalized: Self = Self(77);
+                pub const BC3UIntNormalizedSrgb: Self = Self(78);
+                pub const BC4Typeless: Self = Self(79);
+                pub const BC4UIntNormalized: Self = Self(80);
+                pub const BC4IntNormalized: Self = Self(81);
+                pub const BC5Typeless: Self = Self(82);
+                pub const BC5UIntNormalized: Self = Self(83);
+                pub const BC5IntNormalized: Self = Self(84);
+                pub const B5G6R5UIntNormalized: Self = Self(85);
+                pub const B5G5R5A1UIntNormalized: Self = Self(86);
+                pub const B8G8R8A8UIntNormalized: Self = Self(87);
+                pub const B8G8R8X8UIntNormalized: Self = Self(88);
+                pub const R10G10B10XRBiasA2UIntNormalized: Self = Self(89);
+                pub const B8G8R8A8Typeless: Self = Self(90);
+                pub const B8G8R8A8UIntNormalizedSrgb: Self = Self(91);
+                pub const B8G8R8X8Typeless: Self = Self(92);
+                pub const B8G8R8X8UIntNormalizedSrgb: Self = Self(93);
+                pub const BC6HTypeless: Self = Self(94);
+                pub const BC6H16UnsignedFloat: Self = Self(95);
+                pub const BC6H16Float: Self = Self(96);
+                pub const BC7Typeless: Self = Self(97);
+                pub const BC7UIntNormalized: Self = Self(98);
+                pub const BC7UIntNormalizedSrgb: Self = Self(99);
+                pub const Ayuv: Self = Self(100);
+                pub const Y410: Self = Self(101);
+                pub const Y416: Self = Self(102);
+                pub const NV12: Self = Self(103);
+                pub const P010: Self = Self(104);
+                pub const P016: Self = Self(105);
+                pub const Opaque420: Self = Self(106);
+                pub const Yuy2: Self = Self(107);
+                pub const Y210: Self = Self(108);
+                pub const Y216: Self = Self(109);
+                pub const NV11: Self = Self(110);
+                pub const AI44: Self = Self(111);
+                pub const IA44: Self = Self(112);
+                pub const P8: Self = Self(113);
+                pub const A8P8: Self = Self(114);
+                pub const B4G4R4A4UIntNormalized: Self = Self(115);
+                pub const P208: Self = Self(130);
+                pub const V208: Self = Self(131);
+                pub const V408: Self = Self(132);
+                pub const SamplerFeedbackMinMipOpaque: Self = Self(189);
+                pub const SamplerFeedbackMipRegionUsedOpaque: Self = Self(190);
+                pub const A4B4G4R4: Self = Self(191);
+            }
+            impl windows_core::imp::TypeKind for DirectXPixelFormat {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for DirectXPixelFormat {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.Graphics.DirectX.DirectXPixelFormat;i4)",
+                    );
+            }
+        }
+    }
     pub mod UI {
         #[repr(C)]
         #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -8263,12 +8421,152 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionDrawingSurface",
                     );
             }
+            impl ICompositionDrawingSurface {
+                pub fn AlphaMode(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXAlphaMode>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AlphaMode)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn PixelFormat(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXPixelFormat>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).PixelFormat)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Size(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Foundation::Size>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Size)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionDrawingSurface {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionDrawingSurface";
+            }
+            pub trait ICompositionDrawingSurface_Impl: windows_core::IUnknownImpl {
+                fn AlphaMode(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXAlphaMode>;
+                fn PixelFormat(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXPixelFormat>;
+                fn Size(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Foundation::Size>;
+            }
+            impl ICompositionDrawingSurface_Vtbl {
+                pub const fn new<Identity: ICompositionDrawingSurface_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AlphaMode<
+                        Identity: ICompositionDrawingSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::Graphics::DirectX::DirectXAlphaMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionDrawingSurface_Impl::AlphaMode(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn PixelFormat<
+                        Identity: ICompositionDrawingSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::Graphics::DirectX::DirectXPixelFormat,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionDrawingSurface_Impl::PixelFormat(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Size<
+                        Identity: ICompositionDrawingSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::super::Windows::Foundation::Size,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionDrawingSurface_Impl::Size(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionDrawingSurface,
+                            OFFSET,
+                        >(),
+                        AlphaMode: AlphaMode::<Identity, OFFSET>,
+                        PixelFormat: PixelFormat::<Identity, OFFSET>,
+                        Size: Size::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionDrawingSurface as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionDrawingSurface_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub AlphaMode: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::HRESULT,
+                pub PixelFormat: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::DirectX::DirectXPixelFormat,
+                )
+                    -> windows_core::HRESULT,
+                pub Size: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Foundation::Size,
+                ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionDrawingSurface2,
@@ -8283,12 +8581,289 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionDrawingSurface2",
                     );
             }
+            impl ICompositionDrawingSurface2 {
+                pub fn SizeInt32(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SizeInt32)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Resize(
+                    &self,
+                    sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Resize)(
+                            windows_core::Interface::as_raw(self),
+                            sizepixels,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Scroll(
+                    &self,
+                    offset: super::super::super::Windows::Graphics::PointInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Scroll)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ScrollRect(
+                    &self,
+                    offset: super::super::super::Windows::Graphics::PointInt32,
+                    scrollrect: super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ScrollRect)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                            scrollrect,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ScrollWithClip(
+                    &self,
+                    offset: super::super::super::Windows::Graphics::PointInt32,
+                    cliprect: super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ScrollWithClip)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                            cliprect,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ScrollRectWithClip(
+                    &self,
+                    offset: super::super::super::Windows::Graphics::PointInt32,
+                    cliprect: super::super::super::Windows::Graphics::RectInt32,
+                    scrollrect: super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ScrollRectWithClip)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                            cliprect,
+                            scrollrect,
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionDrawingSurface2 {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionDrawingSurface2";
+            }
+            pub trait ICompositionDrawingSurface2_Impl: windows_core::IUnknownImpl {
+                fn SizeInt32(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>;
+                fn Resize(
+                    &self,
+                    sizePixels: &super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::Result<()>;
+                fn Scroll(
+                    &self,
+                    offset: &super::super::super::Windows::Graphics::PointInt32,
+                ) -> windows_core::Result<()>;
+                fn ScrollRect(
+                    &self,
+                    offset: &super::super::super::Windows::Graphics::PointInt32,
+                    scrollRect: &super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+                fn ScrollWithClip(
+                    &self,
+                    offset: &super::super::super::Windows::Graphics::PointInt32,
+                    clipRect: &super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+                fn ScrollRectWithClip(
+                    &self,
+                    offset: &super::super::super::Windows::Graphics::PointInt32,
+                    clipRect: &super::super::super::Windows::Graphics::RectInt32,
+                    scrollRect: &super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+            }
+            impl ICompositionDrawingSurface2_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionDrawingSurface2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn SizeInt32<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::super::Windows::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionDrawingSurface2_Impl::SizeInt32(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Resize<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::Resize(
+                                this,
+                                core::mem::transmute(&sizepixels),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn Scroll<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::super::Windows::Graphics::PointInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::Scroll(
+                                this,
+                                core::mem::transmute(&offset),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ScrollRect<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::super::Windows::Graphics::PointInt32,
+                        scrollrect: super::super::super::Windows::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::ScrollRect(
+                                this,
+                                core::mem::transmute(&offset),
+                                core::mem::transmute(&scrollrect),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ScrollWithClip<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::super::Windows::Graphics::PointInt32,
+                        cliprect: super::super::super::Windows::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::ScrollWithClip(
+                                this,
+                                core::mem::transmute(&offset),
+                                core::mem::transmute(&cliprect),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ScrollRectWithClip<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::super::Windows::Graphics::PointInt32,
+                        cliprect: super::super::super::Windows::Graphics::RectInt32,
+                        scrollrect: super::super::super::Windows::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::ScrollRectWithClip(
+                                this,
+                                core::mem::transmute(&offset),
+                                core::mem::transmute(&cliprect),
+                                core::mem::transmute(&scrollrect),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionDrawingSurface2,
+                            OFFSET,
+                        >(),
+                        SizeInt32: SizeInt32::<Identity, OFFSET>,
+                        Resize: Resize::<Identity, OFFSET>,
+                        Scroll: Scroll::<Identity, OFFSET>,
+                        ScrollRect: ScrollRect::<Identity, OFFSET>,
+                        ScrollWithClip: ScrollWithClip::<Identity, OFFSET>,
+                        ScrollRectWithClip: ScrollRectWithClip::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionDrawingSurface2 as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionDrawingSurface2_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub SizeInt32: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
+                pub Resize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
+                pub Scroll: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::PointInt32,
+                ) -> windows_core::HRESULT,
+                pub ScrollRect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::PointInt32,
+                    super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::HRESULT,
+                pub ScrollWithClip: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::PointInt32,
+                    super::super::super::Windows::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
+                pub ScrollRectWithClip: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::PointInt32,
+                    super::super::super::Windows::Graphics::RectInt32,
+                    super::super::super::Windows::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionDrawingSurfaceFactory,
@@ -10939,6 +11514,24 @@ pub mod Microsoft {
                     );
             }
             impl ICompositionGraphicsDevice {
+                pub fn CreateDrawingSurface(
+                    &self,
+                    sizepixels: super::super::super::Windows::Foundation::Size,
+                    pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionDrawingSurface> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CreateDrawingSurface)(
+                            windows_core::Interface::as_raw(self),
+                            sizepixels,
+                            pixelformat,
+                            alphamode,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
                 pub fn RenderingDeviceReplaced<F>(
                     &self,
                     handler: F,
@@ -10989,10 +11582,123 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for ICompositionGraphicsDevice {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionGraphicsDevice";
             }
+            pub trait ICompositionGraphicsDevice_Impl: windows_core::IUnknownImpl {
+                fn CreateDrawingSurface(
+                    &self,
+                    sizePixels: &super::super::super::Windows::Foundation::Size,
+                    pixelFormat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphaMode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionDrawingSurface>;
+                fn RenderingDeviceReplaced(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            CompositionGraphicsDevice,
+                            RenderingDeviceReplacedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveRenderingDeviceReplaced(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionGraphicsDevice_Vtbl {
+                pub const fn new<Identity: ICompositionGraphicsDevice_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn CreateDrawingSurface<
+                        Identity: ICompositionGraphicsDevice_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        sizepixels: super::super::super::Windows::Foundation::Size,
+                        pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                        alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionGraphicsDevice_Impl::CreateDrawingSurface(
+                                this,
+                                core::mem::transmute(&sizepixels),
+                                pixelformat,
+                                alphamode,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RenderingDeviceReplaced<
+                        Identity: ICompositionGraphicsDevice_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionGraphicsDevice_Impl::RenderingDeviceReplaced(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveRenderingDeviceReplaced<
+                        Identity: ICompositionGraphicsDevice_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionGraphicsDevice_Impl::RemoveRenderingDeviceReplaced(
+                                this, token,
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionGraphicsDevice,
+                            OFFSET,
+                        >(),
+                        CreateDrawingSurface: CreateDrawingSurface::<Identity, OFFSET>,
+                        RenderingDeviceReplaced: RenderingDeviceReplaced::<Identity, OFFSET>,
+                        RemoveRenderingDeviceReplaced: RemoveRenderingDeviceReplaced::<
+                            Identity,
+                            OFFSET,
+                        >,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionGraphicsDevice as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionGraphicsDevice_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
-                CreateDrawingSurface: usize,
+                pub CreateDrawingSurface: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Foundation::Size,
+                    super::super::Graphics::DirectX::DirectXPixelFormat,
+                    super::super::Graphics::DirectX::DirectXAlphaMode,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
                 pub RenderingDeviceReplaced: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut core::ffi::c_void,
@@ -11015,12 +11721,155 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionGraphicsDevice2",
                     );
             }
+            impl ICompositionGraphicsDevice2 {
+                pub fn CreateDrawingSurface2(
+                    &self,
+                    sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                    pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionDrawingSurface> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CreateDrawingSurface2)(
+                            windows_core::Interface::as_raw(self),
+                            sizepixels,
+                            pixelformat,
+                            alphamode,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn CreateVirtualDrawingSurface(
+                    &self,
+                    sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                    pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionVirtualDrawingSurface> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CreateVirtualDrawingSurface)(
+                            windows_core::Interface::as_raw(self),
+                            sizepixels,
+                            pixelformat,
+                            alphamode,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionGraphicsDevice2 {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionGraphicsDevice2";
+            }
+            pub trait ICompositionGraphicsDevice2_Impl: windows_core::IUnknownImpl {
+                fn CreateDrawingSurface2(
+                    &self,
+                    sizePixels: &super::super::super::Windows::Graphics::SizeInt32,
+                    pixelFormat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphaMode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionDrawingSurface>;
+                fn CreateVirtualDrawingSurface(
+                    &self,
+                    sizePixels: &super::super::super::Windows::Graphics::SizeInt32,
+                    pixelFormat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphaMode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionVirtualDrawingSurface>;
+            }
+            impl ICompositionGraphicsDevice2_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionGraphicsDevice2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CreateDrawingSurface2<
+                        Identity: ICompositionGraphicsDevice2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                        pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                        alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionGraphicsDevice2_Impl::CreateDrawingSurface2(
+                                this,
+                                core::mem::transmute(&sizepixels),
+                                pixelformat,
+                                alphamode,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateVirtualDrawingSurface<
+                        Identity: ICompositionGraphicsDevice2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                        pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                        alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionGraphicsDevice2_Impl::CreateVirtualDrawingSurface(
+                                this,
+                                core::mem::transmute(&sizepixels),
+                                pixelformat,
+                                alphamode,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionGraphicsDevice2,
+                            OFFSET,
+                        >(),
+                        CreateDrawingSurface2: CreateDrawingSurface2::<Identity, OFFSET>,
+                        CreateVirtualDrawingSurface: CreateVirtualDrawingSurface::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionGraphicsDevice2 as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionGraphicsDevice2_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateDrawingSurface2: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::SizeInt32,
+                    super::super::Graphics::DirectX::DirectXPixelFormat,
+                    super::super::Graphics::DirectX::DirectXAlphaMode,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub CreateVirtualDrawingSurface: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::SizeInt32,
+                    super::super::Graphics::DirectX::DirectXPixelFormat,
+                    super::super::Graphics::DirectX::DirectXAlphaMode,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionGraphicsDevice3,
@@ -11036,6 +11885,24 @@ pub mod Microsoft {
                     );
             }
             impl ICompositionGraphicsDevice3 {
+                pub fn CreateMipmapSurface(
+                    &self,
+                    sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                    pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionMipmapSurface> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CreateMipmapSurface)(
+                            windows_core::Interface::as_raw(self),
+                            sizepixels,
+                            pixelformat,
+                            alphamode,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
                 pub fn Trim(&self) -> windows_core::Result<()> {
                     unsafe {
                         (windows_core::Interface::vtable(self).Trim)(
@@ -11048,10 +11915,85 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for ICompositionGraphicsDevice3 {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionGraphicsDevice3";
             }
+            pub trait ICompositionGraphicsDevice3_Impl: windows_core::IUnknownImpl {
+                fn CreateMipmapSurface(
+                    &self,
+                    sizePixels: &super::super::super::Windows::Graphics::SizeInt32,
+                    pixelFormat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphaMode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::Result<CompositionMipmapSurface>;
+                fn Trim(&self) -> windows_core::Result<()>;
+            }
+            impl ICompositionGraphicsDevice3_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionGraphicsDevice3_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CreateMipmapSurface<
+                        Identity: ICompositionGraphicsDevice3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        sizepixels: super::super::super::Windows::Graphics::SizeInt32,
+                        pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                        alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionGraphicsDevice3_Impl::CreateMipmapSurface(
+                                this,
+                                core::mem::transmute(&sizepixels),
+                                pixelformat,
+                                alphamode,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Trim<
+                        Identity: ICompositionGraphicsDevice3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionGraphicsDevice3_Impl::Trim(this).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionGraphicsDevice3,
+                            OFFSET,
+                        >(),
+                        CreateMipmapSurface: CreateMipmapSurface::<Identity, OFFSET>,
+                        Trim: Trim::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionGraphicsDevice3 as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionGraphicsDevice3_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
-                CreateMipmapSurface: usize,
+                pub CreateMipmapSurface: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::SizeInt32,
+                    super::super::Graphics::DirectX::DirectXPixelFormat,
+                    super::super::Graphics::DirectX::DirectXAlphaMode,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
                 pub Trim:
                     unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
             }
@@ -11068,12 +12010,109 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionGraphicsDevice4",
                     );
             }
+            impl ICompositionGraphicsDevice4 {
+                pub fn CaptureAsync<P0>(
+                    &self,
+                    capturevisual: P0,
+                    size: super::super::super::Windows::Graphics::SizeInt32,
+                    pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                    sdrboost: f32,
+                ) -> windows_core::Result<windows_future::IAsyncOperation<ICompositionSurface>>
+                where
+                    P0: windows_core::Param<Visual>,
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CaptureAsync)(
+                            windows_core::Interface::as_raw(self),
+                            capturevisual.param().abi(),
+                            size,
+                            pixelformat,
+                            alphamode,
+                            sdrboost,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionGraphicsDevice4 {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionGraphicsDevice4";
+            }
+            pub trait ICompositionGraphicsDevice4_Impl: windows_core::IUnknownImpl {
+                fn CaptureAsync(
+                    &self,
+                    captureVisual: windows_core::Ref<Visual>,
+                    size: &super::super::super::Windows::Graphics::SizeInt32,
+                    pixelFormat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                    alphaMode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                    sdrBoost: f32,
+                ) -> windows_core::Result<windows_future::IAsyncOperation<ICompositionSurface>>;
+            }
+            impl ICompositionGraphicsDevice4_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionGraphicsDevice4_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CaptureAsync<
+                        Identity: ICompositionGraphicsDevice4_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        capturevisual: *mut core::ffi::c_void,
+                        size: super::super::super::Windows::Graphics::SizeInt32,
+                        pixelformat: super::super::Graphics::DirectX::DirectXPixelFormat,
+                        alphamode: super::super::Graphics::DirectX::DirectXAlphaMode,
+                        sdrboost: f32,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionGraphicsDevice4_Impl::CaptureAsync(
+                                this,
+                                core::mem::transmute_copy(&capturevisual),
+                                core::mem::transmute(&size),
+                                pixelformat,
+                                alphamode,
+                                sdrboost,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionGraphicsDevice4,
+                            OFFSET,
+                        >(),
+                        CaptureAsync: CaptureAsync::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionGraphicsDevice4 as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionGraphicsDevice4_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub CaptureAsync: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::SizeInt32,
+                    super::super::Graphics::DirectX::DirectXPixelFormat,
+                    super::super::Graphics::DirectX::DirectXAlphaMode,
+                    f32,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionLight,
@@ -11941,6 +12980,45 @@ pub mod Microsoft {
                         .map(|| result__)
                     }
                 }
+                pub fn AlphaMode(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXAlphaMode>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AlphaMode)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn PixelFormat(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXPixelFormat>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).PixelFormat)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SizeInt32(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SizeInt32)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
                 pub fn GetDrawingSurfaceForLevel(
                     &self,
                     level: u32,
@@ -11959,6 +13037,141 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for ICompositionMipmapSurface {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionMipmapSurface";
             }
+            pub trait ICompositionMipmapSurface_Impl: windows_core::IUnknownImpl {
+                fn LevelCount(&self) -> windows_core::Result<u32>;
+                fn AlphaMode(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXAlphaMode>;
+                fn PixelFormat(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::DirectX::DirectXPixelFormat>;
+                fn SizeInt32(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>;
+                fn GetDrawingSurfaceForLevel(
+                    &self,
+                    level: u32,
+                ) -> windows_core::Result<CompositionDrawingSurface>;
+            }
+            impl ICompositionMipmapSurface_Vtbl {
+                pub const fn new<Identity: ICompositionMipmapSurface_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn LevelCount<
+                        Identity: ICompositionMipmapSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut u32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionMipmapSurface_Impl::LevelCount(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn AlphaMode<
+                        Identity: ICompositionMipmapSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::Graphics::DirectX::DirectXAlphaMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionMipmapSurface_Impl::AlphaMode(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn PixelFormat<
+                        Identity: ICompositionMipmapSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::Graphics::DirectX::DirectXPixelFormat,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionMipmapSurface_Impl::PixelFormat(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SizeInt32<
+                        Identity: ICompositionMipmapSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::super::Windows::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionMipmapSurface_Impl::SizeInt32(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetDrawingSurfaceForLevel<
+                        Identity: ICompositionMipmapSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        level: u32,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionMipmapSurface_Impl::GetDrawingSurfaceForLevel(
+                                this, level,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionMipmapSurface,
+                            OFFSET,
+                        >(),
+                        LevelCount: LevelCount::<Identity, OFFSET>,
+                        AlphaMode: AlphaMode::<Identity, OFFSET>,
+                        PixelFormat: PixelFormat::<Identity, OFFSET>,
+                        SizeInt32: SizeInt32::<Identity, OFFSET>,
+                        GetDrawingSurfaceForLevel: GetDrawingSurfaceForLevel::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionMipmapSurface as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionMipmapSurface_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -11966,9 +13179,19 @@ pub mod Microsoft {
                     *mut core::ffi::c_void,
                     *mut u32,
                 ) -> windows_core::HRESULT,
-                AlphaMode: usize,
-                PixelFormat: usize,
-                SizeInt32: usize,
+                pub AlphaMode: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::DirectX::DirectXAlphaMode,
+                ) -> windows_core::HRESULT,
+                pub PixelFormat: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::DirectX::DirectXPixelFormat,
+                )
+                    -> windows_core::HRESULT,
+                pub SizeInt32: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
                 pub GetDrawingSurfaceForLevel: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     u32,
@@ -53757,12 +54980,116 @@ pub mod Microsoft {
                         b"Microsoft.UI.Content.IContentCoordinateConverter",
                     );
             }
+            impl IContentCoordinateConverter {
+                pub fn ConvertLocalToScreenWithPoint(
+                    &self,
+                    localpoint: super::super::super::Windows::Foundation::Point,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::PointInt32>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ConvertLocalToScreenWithPoint)(
+                            windows_core::Interface::as_raw(self),
+                            localpoint,
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ConvertLocalToScreenWithPoints(
+                    &self,
+                    localpoints: &[super::super::super::Windows::Foundation::Point],
+                ) -> windows_core::Result<
+                    windows_core::Array<super::super::super::Windows::Graphics::PointInt32>,
+                > {
+                    unsafe {
+                        let mut result__ = core::mem::MaybeUninit::zeroed();
+                        (windows_core::Interface::vtable (self) . ConvertLocalToScreenWithPoints)(windows_core::Interface::as_raw (self) , localpoints . len () . try_into () . unwrap () , localpoints . as_ptr () , windows_core::Array::< super::super::super::Windows::Graphics::PointInt32 >::set_abi_len (core::mem::transmute (& mut result__)) , result__ . as_mut_ptr () as * mut _ as _) . map (|| result__ . assume_init ())
+                    }
+                }
+                pub fn ConvertLocalToScreenWithPointsAndRoundingMode(
+                    &self,
+                    localpoints: &[super::super::super::Windows::Foundation::Point],
+                    roundingmode: ContentCoordinateRoundingMode,
+                ) -> windows_core::Result<
+                    windows_core::Array<super::super::super::Windows::Graphics::PointInt32>,
+                > {
+                    unsafe {
+                        let mut result__ = core::mem::MaybeUninit::zeroed();
+                        (windows_core::Interface::vtable (self) . ConvertLocalToScreenWithPointsAndRoundingMode)(windows_core::Interface::as_raw (self) , localpoints . len () . try_into () . unwrap () , localpoints . as_ptr () , roundingmode , windows_core::Array::< super::super::super::Windows::Graphics::PointInt32 >::set_abi_len (core::mem::transmute (& mut result__)) , result__ . as_mut_ptr () as * mut _ as _) . map (|| result__ . assume_init ())
+                    }
+                }
+                pub fn ConvertScreenToLocalWithPoint(
+                    &self,
+                    screenpoint: super::super::super::Windows::Graphics::PointInt32,
+                ) -> windows_core::Result<super::super::super::Windows::Foundation::Point>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ConvertScreenToLocalWithPoint)(
+                            windows_core::Interface::as_raw(self),
+                            screenpoint,
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ConvertScreenToLocalWithPoints(
+                    &self,
+                    screenpoints: &[super::super::super::Windows::Graphics::PointInt32],
+                ) -> windows_core::Result<
+                    windows_core::Array<super::super::super::Windows::Foundation::Point>,
+                > {
+                    unsafe {
+                        let mut result__ = core::mem::MaybeUninit::zeroed();
+                        (windows_core::Interface::vtable (self) . ConvertScreenToLocalWithPoints)(windows_core::Interface::as_raw (self) , screenpoints . len () . try_into () . unwrap () , screenpoints . as_ptr () , windows_core::Array::< super::super::super::Windows::Foundation::Point >::set_abi_len (core::mem::transmute (& mut result__)) , result__ . as_mut_ptr () as * mut _ as _) . map (|| result__ . assume_init ())
+                    }
+                }
+            }
             impl windows_core::RuntimeName for IContentCoordinateConverter {
                 const NAME: &'static str = "Microsoft.UI.Content.IContentCoordinateConverter";
             }
             #[repr(C)]
             pub struct IContentCoordinateConverter_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub ConvertLocalToScreenWithPoint:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        super::super::super::Windows::Foundation::Point,
+                        *mut super::super::super::Windows::Graphics::PointInt32,
+                    ) -> windows_core::HRESULT,
+                pub ConvertLocalToScreenWithPoints:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        u32,
+                        *const super::super::super::Windows::Foundation::Point,
+                        *mut u32,
+                        *mut *mut super::super::super::Windows::Graphics::PointInt32,
+                    ) -> windows_core::HRESULT,
+                pub ConvertLocalToScreenWithPointsAndRoundingMode:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        u32,
+                        *const super::super::super::Windows::Foundation::Point,
+                        ContentCoordinateRoundingMode,
+                        *mut u32,
+                        *mut *mut super::super::super::Windows::Graphics::PointInt32,
+                    ) -> windows_core::HRESULT,
+                ConvertLocalToScreenWithRect: usize,
+                pub ConvertScreenToLocalWithPoint:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        super::super::super::Windows::Graphics::PointInt32,
+                        *mut super::super::super::Windows::Foundation::Point,
+                    ) -> windows_core::HRESULT,
+                pub ConvertScreenToLocalWithPoints:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        u32,
+                        *const super::super::super::Windows::Graphics::PointInt32,
+                        *mut u32,
+                        *mut *mut super::super::super::Windows::Foundation::Point,
+                    ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 IContentCoordinateConverterFactory,
@@ -57154,6 +58481,31 @@ pub mod Microsoft {
                         .ok()
                     }
                 }
+                pub fn ClientSize(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ClientSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetClientSize(
+                    &self,
+                    value: super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetClientSize)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
                 pub fn CoordinateConverter(
                     &self,
                 ) -> windows_core::Result<ContentCoordinateConverter> {
@@ -57410,6 +58762,556 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for IContentSite {
                 const NAME: &'static str = "Microsoft.UI.Content.IContentSite";
             }
+            pub trait IContentSite_Impl: windows_core::IUnknownImpl {
+                fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn SetActualSize(
+                    &self,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn ClientSize(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>;
+                fn SetClientSize(
+                    &self,
+                    value: &super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::Result<()>;
+                fn CoordinateConverter(&self) -> windows_core::Result<ContentCoordinateConverter>;
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn Environment(&self) -> windows_core::Result<ContentSiteEnvironment>;
+                fn IsConnected(&self) -> windows_core::Result<bool>;
+                fn IsSiteEnabled(&self) -> windows_core::Result<bool>;
+                fn SetIsSiteEnabled(&self, value: bool) -> windows_core::Result<()>;
+                fn IsSiteVisible(&self) -> windows_core::Result<bool>;
+                fn SetIsSiteVisible(&self, value: bool) -> windows_core::Result<()>;
+                fn LayoutDirection(&self) -> windows_core::Result<ContentLayoutDirection>;
+                fn SetLayoutDirection(
+                    &self,
+                    value: ContentLayoutDirection,
+                ) -> windows_core::Result<()>;
+                fn OverrideScale(&self) -> windows_core::Result<f32>;
+                fn SetOverrideScale(&self, value: f32) -> windows_core::Result<()>;
+                fn ParentScale(&self) -> windows_core::Result<f32>;
+                fn SetParentScale(&self, value: f32) -> windows_core::Result<()>;
+                fn RasterizationScale(&self) -> windows_core::Result<f32>;
+                fn RequestedSize(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn ShouldApplyRasterizationScale(&self) -> windows_core::Result<bool>;
+                fn SetShouldApplyRasterizationScale(&self, value: bool)
+                -> windows_core::Result<()>;
+                fn View(&self) -> windows_core::Result<ContentSiteView>;
+                fn GetIslandStateChangeDeferral(&self) -> windows_core::Result<ContentDeferral>;
+                fn RequestedStateChanged(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            ContentSite,
+                            ContentSiteRequestedStateChangedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveRequestedStateChanged(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl IContentSite_Vtbl {
+                pub const fn new<Identity: IContentSite_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn ActualSize<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::ActualSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetActualSize<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetActualSize(this, core::mem::transmute(&value))
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn ClientSize<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::super::Windows::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::ClientSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetClientSize<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: super::super::super::Windows::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetClientSize(this, core::mem::transmute(&value))
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn CoordinateConverter<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::CoordinateConverter(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Environment<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::Environment(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsConnected<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::IsConnected(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsSiteEnabled<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::IsSiteEnabled(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsSiteEnabled<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetIsSiteEnabled(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn IsSiteVisible<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::IsSiteVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsSiteVisible<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetIsSiteVisible(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn LayoutDirection<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentLayoutDirection,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::LayoutDirection(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetLayoutDirection<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: ContentLayoutDirection,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetLayoutDirection(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn OverrideScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::OverrideScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOverrideScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetOverrideScale(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn ParentScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::ParentScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetParentScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetParentScale(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn RasterizationScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::RasterizationScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RequestedSize<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::RequestedSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ShouldApplyRasterizationScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::ShouldApplyRasterizationScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetShouldApplyRasterizationScale<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::SetShouldApplyRasterizationScale(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn View<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::View(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetIslandStateChangeDeferral<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::GetIslandStateChangeDeferral(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RequestedStateChanged<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite_Impl::RequestedStateChanged(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveRequestedStateChanged<
+                        Identity: IContentSite_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite_Impl::RemoveRequestedStateChanged(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSite,
+                            OFFSET,
+                        >(),
+                        ActualSize: ActualSize::<Identity, OFFSET>,
+                        SetActualSize: SetActualSize::<Identity, OFFSET>,
+                        ClientSize: ClientSize::<Identity, OFFSET>,
+                        SetClientSize: SetClientSize::<Identity, OFFSET>,
+                        CoordinateConverter: CoordinateConverter::<Identity, OFFSET>,
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        Environment: Environment::<Identity, OFFSET>,
+                        IsConnected: IsConnected::<Identity, OFFSET>,
+                        IsSiteEnabled: IsSiteEnabled::<Identity, OFFSET>,
+                        SetIsSiteEnabled: SetIsSiteEnabled::<Identity, OFFSET>,
+                        IsSiteVisible: IsSiteVisible::<Identity, OFFSET>,
+                        SetIsSiteVisible: SetIsSiteVisible::<Identity, OFFSET>,
+                        LayoutDirection: LayoutDirection::<Identity, OFFSET>,
+                        SetLayoutDirection: SetLayoutDirection::<Identity, OFFSET>,
+                        OverrideScale: OverrideScale::<Identity, OFFSET>,
+                        SetOverrideScale: SetOverrideScale::<Identity, OFFSET>,
+                        ParentScale: ParentScale::<Identity, OFFSET>,
+                        SetParentScale: SetParentScale::<Identity, OFFSET>,
+                        RasterizationScale: RasterizationScale::<Identity, OFFSET>,
+                        RequestedSize: RequestedSize::<Identity, OFFSET>,
+                        ShouldApplyRasterizationScale: ShouldApplyRasterizationScale::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        SetShouldApplyRasterizationScale: SetShouldApplyRasterizationScale::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        View: View::<Identity, OFFSET>,
+                        GetIslandStateChangeDeferral: GetIslandStateChangeDeferral::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        RequestedStateChanged: RequestedStateChanged::<Identity, OFFSET>,
+                        RemoveRequestedStateChanged: RemoveRequestedStateChanged::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSite as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct IContentSite_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -57422,8 +59324,15 @@ pub mod Microsoft {
                     windows_numerics::Vector2,
                 )
                     -> windows_core::HRESULT,
-                ClientSize: usize,
-                SetClientSize: usize,
+                pub ClientSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
+                pub SetClientSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::SizeInt32,
+                )
+                    -> windows_core::HRESULT,
                 pub CoordinateConverter: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut *mut core::ffi::c_void,
@@ -59806,6 +61715,19 @@ pub mod Microsoft {
                         .map(|| result__)
                     }
                 }
+                pub fn ClientSize(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ClientSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
                 pub fn CoordinateConverter(
                     &self,
                 ) -> windows_core::Result<ContentCoordinateConverter> {
@@ -59934,6 +61856,326 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for IContentSiteView {
                 const NAME: &'static str = "Microsoft.UI.Content.IContentSiteView";
             }
+            pub trait IContentSiteView_Impl: windows_core::IUnknownImpl {
+                fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn ClientSize(
+                    &self,
+                ) -> windows_core::Result<super::super::super::Windows::Graphics::SizeInt32>;
+                fn CoordinateConverter(&self) -> windows_core::Result<ContentCoordinateConverter>;
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn EnvironmentView(&self) -> windows_core::Result<ContentSiteEnvironmentView>;
+                fn IsConnected(&self) -> windows_core::Result<bool>;
+                fn IsSiteEnabled(&self) -> windows_core::Result<bool>;
+                fn IsSiteVisible(&self) -> windows_core::Result<bool>;
+                fn LayoutDirection(&self) -> windows_core::Result<ContentLayoutDirection>;
+                fn OverrideScale(&self) -> windows_core::Result<f32>;
+                fn ParentScale(&self) -> windows_core::Result<f32>;
+                fn RasterizationScale(&self) -> windows_core::Result<f32>;
+                fn RequestedSize(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn ShouldApplyRasterizationScale(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentSiteView_Vtbl {
+                pub const fn new<Identity: IContentSiteView_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn ActualSize<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::ActualSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ClientSize<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::super::Windows::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::ClientSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CoordinateConverter<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::CoordinateConverter(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn EnvironmentView<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::EnvironmentView(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsConnected<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::IsConnected(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsSiteEnabled<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::IsSiteEnabled(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsSiteVisible<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::IsSiteVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LayoutDirection<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentLayoutDirection,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::LayoutDirection(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn OverrideScale<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::OverrideScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ParentScale<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::ParentScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RasterizationScale<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::RasterizationScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RequestedSize<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::RequestedSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ShouldApplyRasterizationScale<
+                        Identity: IContentSiteView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView_Impl::ShouldApplyRasterizationScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteView,
+                            OFFSET,
+                        >(),
+                        ActualSize: ActualSize::<Identity, OFFSET>,
+                        ClientSize: ClientSize::<Identity, OFFSET>,
+                        CoordinateConverter: CoordinateConverter::<Identity, OFFSET>,
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        EnvironmentView: EnvironmentView::<Identity, OFFSET>,
+                        IsConnected: IsConnected::<Identity, OFFSET>,
+                        IsSiteEnabled: IsSiteEnabled::<Identity, OFFSET>,
+                        IsSiteVisible: IsSiteVisible::<Identity, OFFSET>,
+                        LayoutDirection: LayoutDirection::<Identity, OFFSET>,
+                        OverrideScale: OverrideScale::<Identity, OFFSET>,
+                        ParentScale: ParentScale::<Identity, OFFSET>,
+                        RasterizationScale: RasterizationScale::<Identity, OFFSET>,
+                        RequestedSize: RequestedSize::<Identity, OFFSET>,
+                        ShouldApplyRasterizationScale: ShouldApplyRasterizationScale::<
+                            Identity,
+                            OFFSET,
+                        >,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteView as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct IContentSiteView_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
@@ -59941,7 +62183,10 @@ pub mod Microsoft {
                     *mut core::ffi::c_void,
                     *mut windows_numerics::Vector2,
                 ) -> windows_core::HRESULT,
-                ClientSize: usize,
+                pub ClientSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::super::Windows::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
                 pub CoordinateConverter: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut *mut core::ffi::c_void,
@@ -64055,6 +66300,21 @@ pub mod Windows {
                     b"struct(Windows.Foundation.Point;f4;f4)",
                 );
         }
+        #[repr(C)]
+        #[derive(Clone, Copy, Debug, Default, PartialEq)]
+        pub struct Size {
+            pub width: f32,
+            pub height: f32,
+        }
+        impl windows_core::imp::TypeKind for Size {
+            type TypeKind = windows_core::imp::CopyType;
+        }
+        impl windows_core::RuntimeType for Size {
+            const SIGNATURE: windows_core::imp::ConstBuffer =
+                windows_core::imp::ConstBuffer::from_slice(
+                    b"struct(Windows.Foundation.Size;f4;f4)",
+                );
+        }
         #[repr(transparent)]
         #[derive(Clone, Debug, Eq, PartialEq)]
         pub struct TypedEventHandler<TSender, TResult>(
@@ -64408,6 +66668,21 @@ pub mod Windows {
         }
         #[repr(C)]
         #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        pub struct PointInt32 {
+            pub x: i32,
+            pub y: i32,
+        }
+        impl windows_core::imp::TypeKind for PointInt32 {
+            type TypeKind = windows_core::imp::CopyType;
+        }
+        impl windows_core::RuntimeType for PointInt32 {
+            const SIGNATURE: windows_core::imp::ConstBuffer =
+                windows_core::imp::ConstBuffer::from_slice(
+                    b"struct(Windows.Graphics.PointInt32;i4;i4)",
+                );
+        }
+        #[repr(C)]
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
         pub struct RectInt32 {
             pub x: i32,
             pub y: i32,
@@ -64421,6 +66696,21 @@ pub mod Windows {
             const SIGNATURE: windows_core::imp::ConstBuffer =
                 windows_core::imp::ConstBuffer::from_slice(
                     b"struct(Windows.Graphics.RectInt32;i4;i4;i4;i4)",
+                );
+        }
+        #[repr(C)]
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        pub struct SizeInt32 {
+            pub width: i32,
+            pub height: i32,
+        }
+        impl windows_core::imp::TypeKind for SizeInt32 {
+            type TypeKind = windows_core::imp::CopyType;
+        }
+        impl windows_core::RuntimeType for SizeInt32 {
+            const SIGNATURE: windows_core::imp::ConstBuffer =
+                windows_core::imp::ConstBuffer::from_slice(
+                    b"struct(Windows.Graphics.SizeInt32;i4;i4)",
                 );
         }
         pub mod Effects {
@@ -72827,12 +75117,30 @@ pub mod Windows {
                         b"Windows.UI.Composition.ICompositionDrawingSurface",
                     );
             }
+            impl ICompositionDrawingSurface {
+                pub fn Size(&self) -> windows_core::Result<super::super::Foundation::Size> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Size)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionDrawingSurface {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionDrawingSurface";
             }
             #[repr(C)]
             pub struct ICompositionDrawingSurface_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                AlphaMode: usize,
+                PixelFormat: usize,
+                pub Size: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Foundation::Size,
+                ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionDrawingSurface2,
@@ -72847,12 +75155,284 @@ pub mod Windows {
                         b"Windows.UI.Composition.ICompositionDrawingSurface2",
                     );
             }
+            impl ICompositionDrawingSurface2 {
+                pub fn SizeInt32(&self) -> windows_core::Result<super::super::Graphics::SizeInt32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SizeInt32)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Resize(
+                    &self,
+                    sizepixels: super::super::Graphics::SizeInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Resize)(
+                            windows_core::Interface::as_raw(self),
+                            sizepixels,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Scroll(
+                    &self,
+                    offset: super::super::Graphics::PointInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Scroll)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ScrollRect(
+                    &self,
+                    offset: super::super::Graphics::PointInt32,
+                    scrollrect: super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ScrollRect)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                            scrollrect,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ScrollWithClip(
+                    &self,
+                    offset: super::super::Graphics::PointInt32,
+                    cliprect: super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ScrollWithClip)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                            cliprect,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ScrollRectWithClip(
+                    &self,
+                    offset: super::super::Graphics::PointInt32,
+                    cliprect: super::super::Graphics::RectInt32,
+                    scrollrect: super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ScrollRectWithClip)(
+                            windows_core::Interface::as_raw(self),
+                            offset,
+                            cliprect,
+                            scrollrect,
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionDrawingSurface2 {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionDrawingSurface2";
+            }
+            pub trait ICompositionDrawingSurface2_Impl: windows_core::IUnknownImpl {
+                fn SizeInt32(&self) -> windows_core::Result<super::super::Graphics::SizeInt32>;
+                fn Resize(
+                    &self,
+                    sizePixels: &super::super::Graphics::SizeInt32,
+                ) -> windows_core::Result<()>;
+                fn Scroll(
+                    &self,
+                    offset: &super::super::Graphics::PointInt32,
+                ) -> windows_core::Result<()>;
+                fn ScrollRect(
+                    &self,
+                    offset: &super::super::Graphics::PointInt32,
+                    scrollRect: &super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+                fn ScrollWithClip(
+                    &self,
+                    offset: &super::super::Graphics::PointInt32,
+                    clipRect: &super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+                fn ScrollRectWithClip(
+                    &self,
+                    offset: &super::super::Graphics::PointInt32,
+                    clipRect: &super::super::Graphics::RectInt32,
+                    scrollRect: &super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+            }
+            impl ICompositionDrawingSurface2_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionDrawingSurface2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn SizeInt32<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::super::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionDrawingSurface2_Impl::SizeInt32(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Resize<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        sizepixels: super::super::Graphics::SizeInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::Resize(
+                                this,
+                                core::mem::transmute(&sizepixels),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn Scroll<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::Graphics::PointInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::Scroll(
+                                this,
+                                core::mem::transmute(&offset),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ScrollRect<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::Graphics::PointInt32,
+                        scrollrect: super::super::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::ScrollRect(
+                                this,
+                                core::mem::transmute(&offset),
+                                core::mem::transmute(&scrollrect),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ScrollWithClip<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::Graphics::PointInt32,
+                        cliprect: super::super::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::ScrollWithClip(
+                                this,
+                                core::mem::transmute(&offset),
+                                core::mem::transmute(&cliprect),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ScrollRectWithClip<
+                        Identity: ICompositionDrawingSurface2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        offset: super::super::Graphics::PointInt32,
+                        cliprect: super::super::Graphics::RectInt32,
+                        scrollrect: super::super::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionDrawingSurface2_Impl::ScrollRectWithClip(
+                                this,
+                                core::mem::transmute(&offset),
+                                core::mem::transmute(&cliprect),
+                                core::mem::transmute(&scrollrect),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionDrawingSurface2,
+                            OFFSET,
+                        >(),
+                        SizeInt32: SizeInt32::<Identity, OFFSET>,
+                        Resize: Resize::<Identity, OFFSET>,
+                        Scroll: Scroll::<Identity, OFFSET>,
+                        ScrollRect: ScrollRect::<Identity, OFFSET>,
+                        ScrollWithClip: ScrollWithClip::<Identity, OFFSET>,
+                        ScrollRectWithClip: ScrollRectWithClip::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionDrawingSurface2 as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionDrawingSurface2_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub SizeInt32: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
+                pub Resize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
+                pub Scroll: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Graphics::PointInt32,
+                ) -> windows_core::HRESULT,
+                pub ScrollRect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Graphics::PointInt32,
+                    super::super::Graphics::RectInt32,
+                ) -> windows_core::HRESULT,
+                pub ScrollWithClip: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Graphics::PointInt32,
+                    super::super::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
+                pub ScrollRectWithClip: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Graphics::PointInt32,
+                    super::super::Graphics::RectInt32,
+                    super::super::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionDrawingSurfaceFactory,
@@ -76364,6 +78944,16 @@ pub mod Windows {
                         .map(|| result__)
                     }
                 }
+                pub fn SizeInt32(&self) -> windows_core::Result<super::super::Graphics::SizeInt32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SizeInt32)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
                 pub fn GetDrawingSurfaceForLevel(
                     &self,
                     level: u32,
@@ -76391,7 +78981,10 @@ pub mod Windows {
                 ) -> windows_core::HRESULT,
                 AlphaMode: usize,
                 PixelFormat: usize,
-                SizeInt32: usize,
+                pub SizeInt32: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::SizeInt32,
+                ) -> windows_core::HRESULT,
                 pub GetDrawingSurfaceForLevel: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     u32,

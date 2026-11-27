@@ -36,6 +36,8 @@ pub struct Node {
     /// Fraction of the parent's size, from `IVisual2`. A root visual uses this to fill its host.
     pub relative_size: Option<Vector2>,
     pub relative_offset: Option<Vector3>,
+    /// The surface a surface brush attached, named by the id it allocates.
+    pub surface: Option<u32>,
     pub animations: Vec<Running>,
     pub children: Vec<NodeRef>,
 }
@@ -88,6 +90,7 @@ impl Default for Node {
             insets: None,
             relative_size: None,
             relative_offset: None,
+            surface: None,
             animations: Vec::new(),
             children: Vec::new(),
         }
@@ -174,8 +177,8 @@ fn snapshot_at(
             scale: [node.scale.x, node.scale.y],
             rotation: node.rotation,
             center: [node.center.x, node.center.y],
-            // A visual has no surface yet; the composition surface brush will name one.
-            image: None,
+            // A visual has no surface until a surface brush names one.
+            image: node.surface,
             uv: [0.0, 0.0, 1.0, 1.0],
             // Rounded corners are not wired to an ABI property yet; a brush will set them.
             radius: [0.0; 4],

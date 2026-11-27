@@ -87,7 +87,7 @@ module serves a WinRT class.
 cargo run -p comptrace -- generate \
     path/to/Microsoft.UI.winmd path/to/Microsoft.Graphics.winmd \
     path/to/Microsoft.Foundation.winmd path/to/Windows.winmd \
-    --namespace Microsoft.UI.Composition,Windows.UI.Composition,Windows.UI.Color,Windows.Foundation.Numerics,Microsoft.UI.Content,Microsoft.UI.Composition.Visual,Microsoft.UI.Composition.Compositor,Microsoft.UI.WindowId,Microsoft.UI.DisplayId,Microsoft.UI.Dispatching,Windows.Foundation.TypedEventHandler,Windows.Foundation.Collections,Windows.Foundation.IClosable,Windows.Graphics.RectInt32 \
+    --namespace Microsoft.UI.Composition,Windows.UI.Composition,Windows.UI.Color,Windows.Foundation.Numerics,Microsoft.UI.Content,Microsoft.UI.Composition.Visual,Microsoft.UI.Composition.Compositor,Microsoft.UI.WindowId,Microsoft.UI.DisplayId,Microsoft.UI.Dispatching,Windows.Foundation.TypedEventHandler,Windows.Foundation.Collections,Windows.Foundation.IClosable,Windows.Graphics.RectInt32,Windows.Graphics.SizeInt32,Windows.Graphics.PointInt32,Windows.Foundation.Size,Microsoft.Graphics.DirectX.DirectXAlphaMode,Microsoft.Graphics.DirectX.DirectXPixelFormat \
     --minimal \
     --out crates/opencomp/src/bindings.rs
 ```
@@ -124,6 +124,11 @@ EOF
 
 The box and its `VTABLE` become `pub(crate)`, and every use is qualified with the
 crate path so the generated file compiles as one module.
+
+`Windows.Graphics` as a whole is not in the filter: it pulls `Windows.Storage`
+and the whole device stack with it. The four types the drawing surface names are
+listed one by one instead, which is also why `Microsoft.Graphics.DirectX` appears
+twice: the namespace and the two enums.
 
 ## Loading it on Windows
 

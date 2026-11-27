@@ -8,8 +8,8 @@ use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
     CompositionBrush, CompositionShadow, ContainerVisual, ICompositionColorBrush,
-    ICompositionObject, IContainerVisual, IContainerVisual_Impl, ISpriteVisual, ISpriteVisual_Impl,
-    IVisual, SpriteVisual, VisualCollection,
+    ICompositionObject, ICompositionSurfaceBrush, IContainerVisual, IContainerVisual_Impl,
+    ISpriteVisual, ISpriteVisual_Impl, IVisual, SpriteVisual, VisualCollection,
 };
 use crate::node::{self, Node, NodeRef};
 use crate::object::prelude::*;
@@ -80,12 +80,36 @@ impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
     }
 
     fn SetBrush(&self, value: windows_core::Ref<CompositionBrush>) -> Result<()> {
-        let color = value
-            .as_ref()
+        let brush = value.as_ref();
+        let color = brush
             .and_then(|brush| brush.cast::<ICompositionColorBrush>().ok())
             .and_then(|brush| brush.Color().ok())
             .map_or([0.0; 4], crate::brush::to_rgba);
-        self.node.lock().unwrap().color = color;
+        let surface = brush
+            .and_then(|brush| brush.cast::<ICompositionSurfaceBrush>().ok())
+            .and_then(|brush| brush.Surface().ok())
+            .and_then(|surface| crate::surface::describe(&surface));
+        {
+            let mut node = self.node.lock().unwrap();
+            match surface {
+                Some((id, width, height)) => {
+                    // The bitmap is sampled as it is, so the tint has to leave it alone.
+                    node.surface = Some(id);
+                    node.color = [1.0; 4];
+                    // A sprite with no size yet takes the surface's.
+                    if node.size.x <= 0.0 || node.size.y <= 0.0 {
+                        node.size = Vector2 {
+                            x: width as f32,
+                            y: height as f32,
+                        };
+                    }
+                }
+                None => {
+                    node.surface = None;
+                    node.color = color;
+                }
+            }
+        }
         *self.brush.lock().unwrap() = value.cloned();
         Ok(())
     }

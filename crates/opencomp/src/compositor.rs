@@ -136,13 +136,13 @@ impl ICompositor_Impl for Compositor_Impl {
         crate::visual::sprite()
     }
     fn CreateSurfaceBrush(&self) -> windows_core::Result<CompositionSurfaceBrush> {
-        not_implemented()
+        crate::brush::surface_brush()
     }
     fn CreateSurfaceBrushWithSurface(
         &self,
-        _surface: windows_core::Ref<ICompositionSurface>,
+        surface: windows_core::Ref<ICompositionSurface>,
     ) -> windows_core::Result<CompositionSurfaceBrush> {
-        not_implemented()
+        crate::brush::surface_brush_with(surface.cloned())
     }
     fn CreateVector2KeyFrameAnimation(&self) -> windows_core::Result<Vector2KeyFrameAnimation> {
         crate::animation::vector2()
