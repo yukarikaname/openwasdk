@@ -90,6 +90,24 @@ fn create_dispatcher() -> Option<i32> {
 /// The call goes through the generated `IApplicationStatics::Start`, not a hand-written
 /// slot: the delegate ABI is part of the call, and a wrong slot returns `S_OK` without
 /// running anything, which is exactly what the hand-written probe did on both hosts.
+/// `MddBootstrapInitialize(majorMinor, versionTag, minVersion)` from the SDK's
+/// bootstrapper, which lives beside the XAML DLL.
+fn bootstrap() -> i32 {
+    let path = std::env::var_os("XAML_DLL")
+        .map(std::path::PathBuf::from)
+        .map(|path| path.with_file_name("Microsoft.WindowsAppRuntime.Bootstrap.dll"));
+    let Some(module) = path.and_then(|path| crate::windows::load(&path)) else {
+        return 0x8007_007E_u32 as i32; // ERROR_MOD_NOT_FOUND as an HRESULT
+    };
+    let Some(entry) = crate::windows::export(module, "MddBootstrapInitialize") else {
+        return 0x8000_4002_u32 as i32; // E_NOINTERFACE
+    };
+    let function: unsafe extern "system" fn(u32, *const u16, u64) -> i32 =
+        unsafe { std::mem::transmute(entry) };
+    // 2.7 as `major << 16 | minor`, a null version tag, and the lowest version.
+    unsafe { function(0x0002_0007, std::ptr::null(), 0) }
+}
+
 pub(crate) fn run(module: HMODULE) -> i32 {
     // Safety: the apartment is process state and this is the first COM call the probe makes.
     let hr = unsafe { RoInitialize(0) };
@@ -110,6 +128,16 @@ pub(crate) fn run(module: HMODULE) -> i32 {
             hr as u32
         );
         return 1;
+    }
+    // An unpackaged process has no package identity, and `Application.Start` answers
+    // `E_NOTIMPL` without the Windows App SDK runtime behind it. The bootstrapper is the
+    // documented answer; it aborts on Wine 9 because its error path calls a `combase`
+    // stub, so it stays opt-in until the Wine job runs a version that has that function.
+    if std::env::var_os("GATE_B_BOOTSTRAP").is_some() {
+        eprintln!(
+            "xaml-probe: MddBootstrapInitialize hr=0x{:08x}",
+            bootstrap()
+        );
     }
     // Wine carries the process-policy questions XAML asks as stubs that abort on call;
     // the engine's own import slots get our answers before it runs.
