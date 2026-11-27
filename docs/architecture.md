@@ -203,14 +203,31 @@ pump); on a native port it becomes a small PE/WinRT loader of its own.
 
 The build half, independent from the runtime:
 
-1. **SDK** — `xwin` for the Windows SDK and CRT; a WinAppSDK extractor for the
-   NuGet packages and their `.winmd`/projection headers.
-2. **Compile** — `clang-cl` + `lld-link` for C++/WinRT, `dotnet` with
-   `EnableWindowsTargeting` for C#.
+1. **SDK** — the Windows SDK and the MSVC CRT come from `xwin`, which already
+   downloads and lays out both; `xwinui layout` only adds what `xwin` does not
+   know about: the App SDK packages, their `.winmd`, their projection headers and
+   their 31 metadata files. Downloading the SDK ourselves would be a second
+   implementation of a solved problem (and the SDK package is 149 MiB before its
+   import libraries, which live in a separate package).
+2. **Compile** — `clang-cl` plus `lld-link` for C++/WinRT, `dotnet` with
+   `EnableWindowsTargeting` for C#. MSVC's `cl.exe` does not run here and MinGW is
+   not C++ ABI compatible with MSVC, so clang-cl is the only cross-compiler that
+   can link against the official headers. Rust code that only crosses the ABI by
+   C-style vtable — which is all of ours — builds with `x86_64-pc-windows-gnu`
+   and needs none of that.
 3. **Package** — `makemsix` and `osslsigncode`; generated `AppxManifest.xml`
    and a self-signed certificate chain.
 4. **Run** — push to a Windows machine over SSH, or install into a Wine prefix
    running the OpenWASDK runtime; stream the debug output back.
+
+Wine is needed for exactly two steps of a build, both Microsoft *tools* rather
+than compilers: `XamlCompiler.exe` (markup to XBF, a .NET Framework PE) and
+`makemsix`. Code without `.xaml` compiles and links with no Windows runtime at
+all.
+
+Building an application is not required to run one — the milestone binaries are
+released — but a self-built WinUI Gallery is worth having once failures need
+bisecting: symbols, logging, and the freedom to remove pages.
 
 `xwinui` builds and packages; it does not run anything natively. A WinUI 3
 application is a Windows PE that calls `user32`, `d3d11`, `d2d1`, `dwrite` and
