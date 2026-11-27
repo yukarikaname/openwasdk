@@ -89,6 +89,12 @@ impl CornerRadius {
     }
 }
 
+impl From<f32> for CornerRadius {
+    fn from(value: f32) -> Self {
+        Self::all(value)
+    }
+}
+
 /// `HorizontalAlignment`: what happens in the slot the parent handed over.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum HorizontalAlignment {

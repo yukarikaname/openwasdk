@@ -277,6 +277,45 @@ impl Element {
         element
     }
 
+    /// `Border.BorderThickness`; layout subtracts it as chrome.
+    pub fn border_thickness(&self) -> Thickness {
+        match self.get(&property::BORDER_THICKNESS) {
+            Value::Thickness(thickness) => *thickness,
+            _ => Thickness::ZERO,
+        }
+    }
+
+    pub fn set_border_thickness(&mut self, thickness: impl Into<Thickness>) {
+        self.store(
+            &property::BORDER_THICKNESS,
+            Value::Thickness(thickness.into()),
+        );
+    }
+
+    pub fn with_border_thickness(self, thickness: impl Into<Thickness>) -> Self {
+        let mut element = self;
+        element.set_border_thickness(thickness);
+        element
+    }
+
+    /// `Border.CornerRadius`. Layout never reads it; drawing does.
+    pub fn corner_radius(&self) -> CornerRadius {
+        match self.get(&property::CORNER_RADIUS) {
+            Value::CornerRadius(radius) => *radius,
+            _ => CornerRadius::ZERO,
+        }
+    }
+
+    pub fn set_corner_radius(&mut self, radius: impl Into<CornerRadius>) {
+        self.store(&property::CORNER_RADIUS, Value::CornerRadius(radius.into()));
+    }
+
+    pub fn with_corner_radius(self, radius: impl Into<CornerRadius>) -> Self {
+        let mut element = self;
+        element.set_corner_radius(radius);
+        element
+    }
+
     pub fn horizontal_alignment(&self) -> HorizontalAlignment {
         match self.get(&property::HORIZONTAL_ALIGNMENT) {
             Value::HorizontalAlignment(alignment) => *alignment,
