@@ -166,7 +166,7 @@ private interface is counted.
 ## Milestones
 
 The binaries themselves are measured in [`winui-anatomy.md`](winui-anatomy.md):
-73 Composition interfaces are all the XAML engine asks for, and 16 private IIDs
+73 Composition interfaces are all the XAML engine asks for, and 14 private IIDs
 cross the boundary.
 
 | # | Milestone | Exit criterion |

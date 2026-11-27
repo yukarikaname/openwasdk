@@ -61,7 +61,8 @@ Win32 definitions in the `windows` crate.
 | --- | --- |
 | public WinRT, resolved | 1,491 |
 | public Win32 COM, resolved | 71 |
-| unresolved | 2,166 |
+| named by the Wine headers | 8 |
+| unresolved | 2,158 |
 
 The resolved WinRT ones, by namespace:
 
@@ -84,14 +85,13 @@ frame needs `ICompositionObject`, `IVisual`, `IContainerVisual`,
 
 ## The private boundary
 
-Of the 2,166 unresolved identifiers, 16 also appear in `dcompi.dll`. Those are
-the private interfaces that cross the XAML/composition boundary — the ones that
-have no metadata and would have to be matched by hand. Attribution below is the
+Of the 2,158 unresolved identifiers, 14 also appear in `dcompi.dll`. Those are
+the private interfaces that cross the XAML/composition boundary — the ones with
+no metadata, which would have to be matched by hand. Attribution below is the
 nearest source path in `dcompi.dll`'s `.rdata`:
 
 | IID | Refs in XAML | Module |
 | --- | --- | --- |
-| `af86e2e0-b12d-4c6a-9c5a-d7aa65101e90` | 232 | `dcomp/WinRTNested/WinRTExports.cpp` |
 | `7bca64fd-150c-5d50-b56b-9f4f474c5930` | 6 | `dwm-codegen/winrt/proxy/lib/Composition.CompositionObject.cpp` |
 | `b01bee51-063a-5fda-bd72-d76637bb8cb8` | 4 | `WinRTNested/WrtCompositionViewBox.cpp` |
 | `c50898f6-c536-5f47-8583-8b2c2438a13b` | 4 | `WinRTNested/PropertyValueHelper.h` |
@@ -106,13 +106,20 @@ nearest source path in `dcompi.dll`'s `.rdata`:
 | `5dda0f45-a420-4cfd-844a-2cb7ac3d79c2` | 1 | `SceneNode::RuntimeClassInitialize` |
 | `42614e61-b0aa-5e72-9354-2771db20b7a8` | 1 | `dwm-codegen/.../Composition.CompositionObject.cpp` |
 | `c7e65ce2-fad5-5e3b-9c58-186ca8c1dd57` | 1 | `WinRTNested/inproc/WrtCompositori.cpp` |
-| `a4ed5c81-76c9-40bd-8be6-b1d90fb20ae7` | 1 | `Shared Composition D3D Device` |
 
-The first entry dominates: 232 references, exported from `WinRTExports.cpp`,
-which is the in-proc entry point of the whole lifted composition. That is the
-single interface to reverse first.
+None of these entries is large, which is the good news: the largest is six
+references. `7bca64fd` and the four `Composition.CompositionObject.cpp` rows are
+the proxy that carries composition objects to the system compositor, and
+`ecd63a61` is named by its own header, `Composition.Private.SystemVisualProxyVisualPrivate.h`.
+`ffcdc0ea` sits next to `WinRTExports.cpp`, the in-proc entry point.
 
-The remaining 2,150 unresolved identifiers are used only inside
+Two identifiers that looked private are not. `af86e2e0-b12d-4c6a-9c5a-d7aa65101e90`
+is `IInspectable` and accounts for 232 references — that is ordinary `QI` volume,
+not composition. `a4ed5c81-76c9-40bd-8be6-b1d90fb20ae7` is the IID of the
+`AsyncActionCompletedHandler` delegate. Both are named in Wine's `include/*.idl`,
+which is why that file is one of the naming sources: 4,101 IIDs come from it.
+
+The remaining 2,144 unresolved identifiers are used only inside
 `Microsoft.ui.xaml.dll`. Their neighbours include `IDWrite*`, `ID2D1*` and
 XAML's own internal interfaces; they do not constrain `opencomp`.
 
@@ -131,7 +138,8 @@ There is no `Microsoft.UI.Composition.dll`. The composition implementation is
 
 Scripts were throwaway Python: `pefile` for sections and `.pdata` function
 ranges, `capstone` to disassemble, `comptrace interfaces` for the metadata map,
-and the `windows` crate sources for Win32 IIDs. The identifier scan is
+the `windows` crate sources for Win32 IIDs and Wine's `include/*.idl` for the
+ones neither projects. The identifier scan is
 heuristic, not exact — a real IID that is loaded as a table entry rather than
 by a `lea` is missed, and a 16-byte constant that happens to satisfy the bits
 is counted. The numbers above are consistent with the parts that can be
