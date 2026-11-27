@@ -75,5 +75,13 @@ jobs:
           sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
           rustup target add x86_64-pc-windows-gnu
           cargo build -p opencomp --target x86_64-pc-windows-gnu
-          x86_64-w64-mingw32-nm -D target/x86_64-pc-windows-gnu/debug/opencomp.dll \
+          # A linked PE has no COFF symbol table; the names live in the export table.
+          x86_64-w64-mingw32-objdump -p target/x86_64-pc-windows-gnu/debug/opencomp.dll \
             | grep -E "DllGetActivationFactory|DllCanUnloadNow|DllGetClassObject"
+
+      - uses: actions/upload-artifact@v7
+        if: runner.os == 'Linux'
+        with:
+          name: opencomp-windows-gnu
+          path: target/x86_64-pc-windows-gnu/debug/opencomp.dll
+          if-no-files-found: error
