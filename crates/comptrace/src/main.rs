@@ -2,6 +2,7 @@
 //! interface list and the IIDs are what a stub or a tracer has to answer.
 
 mod diff;
+mod generate;
 mod iids;
 mod model;
 mod pe;
@@ -80,6 +81,9 @@ enum Command {
         /// Namespaces or type prefixes to include, comma separated
         #[arg(long, value_delimiter = ',')]
         namespace: Vec<String>,
+        /// File of namespaces, one per line; added to --namespace
+        #[arg(long)]
+        namespace_file: Option<PathBuf>,
         /// Output file
         #[arg(short, long)]
         out: PathBuf,
@@ -89,6 +93,12 @@ enum Command {
         /// Omit class wrappers and forwarders, leaving the ABI and the implementation traits
         #[arg(long)]
         minimal: bool,
+        /// Client view: class wrappers and methods, no --minimal, and every implementation trait
+        #[arg(long)]
+        client: bool,
+        /// Compare the generated code with --out instead of writing it
+        #[arg(long)]
+        check: bool,
     },
     /// Print every attribute on one type
     Attributes { winmd: PathBuf, type_name: String },
@@ -174,28 +184,42 @@ fn run(cli: Cli) -> Result<(), String> {
         Command::Generate {
             winmd,
             namespace,
+            namespace_file,
             out,
             implement,
             minimal,
+            client,
+            check,
         } => {
-            if let Some(parent) = out.parent() {
+            let namespaces = generate::namespaces(&namespace, namespace_file.as_deref())?;
+            if namespaces.is_empty() {
+                return Err("no namespaces: pass --namespace or --namespace-file".to_string());
+            }
+            let target = if check {
+                generate::scratch()
+            } else {
+                out.clone()
+            };
+            if !check && let Some(parent) = target.parent() {
                 std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
             }
-            let mut args = Vec::new();
-            for path in &winmd {
-                args.push("--in".to_string());
-                args.push(path.to_string_lossy().into_owned());
+            let options = generate::Options {
+                inputs: &winmd,
+                namespaces: &namespaces,
+                implement: &implement,
+                out: &target,
+                minimal,
+                client,
+            };
+            windows_bindgen::bindgen(generate::args(&options));
+            if check {
+                let result = generate::compare(&out, &target);
+                let _ = std::fs::remove_file(&target);
+                result?;
+                println!("{} is up to date", out.display());
+            } else {
+                println!("wrote {}", out.display());
             }
-            args.extend(["--out".to_string(), out.to_string_lossy().into_owned()]);
-            args.push("--filter".to_string());
-            args.extend(namespace.clone());
-            args.push("--implement".to_string());
-            args.extend(implement);
-            if minimal {
-                args.push("--minimal".to_string());
-            }
-            windows_bindgen::bindgen(args);
-            println!("wrote {}", out.display());
         }
         Command::Attributes { winmd, type_name } => {
             for attribute in model::attributes(&winmd, &type_name)? {
