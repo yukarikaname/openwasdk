@@ -20,7 +20,9 @@ use crate::xaml_bindings::Microsoft::UI::Xaml::Controls::{
     IButtonStatics, IFrameStatics, IGridStatics, IStackPanelStatics, ITextBlock,
 };
 use crate::xaml_bindings::Microsoft::UI::Xaml::Media::ISolidColorBrush;
-use crate::xaml_bindings::Microsoft::UI::Xaml::{IApplicationStatics, IWindowStatics};
+use crate::xaml_bindings::Microsoft::UI::Xaml::{
+    ApplicationInitializationCallback, IApplicationStatics, IWindowStatics,
+};
 
 const E_FAIL: i32 = 0x8000_4005u32 as i32;
 const E_NOINTERFACE: i32 = 0x8000_4002u32 as i32;
@@ -120,6 +122,61 @@ struct Outcome {
     hr: i32,
 }
 
+/// Gate B's first measurement: hand `Application.Start` a callback and see whether the
+/// engine runs it on the thread it owns. Nothing below that -- a tree, a measure, a
+/// frame -- can happen until this does.
+///
+/// The call goes through the generated `IApplicationStatics::Start`, not a hand-written
+/// slot: the delegate ABI is part of the call, and a wrong slot returns `S_OK` without
+/// running anything, which is exactly what the hand-written probe did on both hosts.
+fn start_gate(module: HMODULE) -> i32 {
+    let Some(get_factory) = export(module, "DllGetActivationFactory") else {
+        eprintln!("xaml-probe: DllGetActivationFactory missing");
+        return 1;
+    };
+    // `HRESULT DllGetActivationFactory(HSTRING, IActivationFactory **)`.
+    let get_factory: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32 =
+        unsafe { std::mem::transmute(get_factory) };
+    let name = HSTRING::from("Microsoft.UI.Xaml.Application");
+    let mut raw: *mut c_void = ptr::null_mut();
+    let hr = unsafe { get_factory(handle(&name), &mut raw) };
+    if hr < 0 || raw.is_null() {
+        eprintln!(
+            "xaml-probe: DllGetActivationFactory(Application) hr=0x{:08x}",
+            hr as u32
+        );
+        return 1;
+    }
+    let factory: IUnknown = unsafe { IUnknown::from_raw(raw) };
+    let Ok(statics) = factory.cast::<IApplicationStatics>() else {
+        eprintln!("xaml-probe: no IApplicationStatics on the factory");
+        return 1;
+    };
+
+    let callback = ApplicationInitializationCallback::new(|_params| {
+        // The engine called us on its own thread with a core behind it. Everything the
+        // gate needs -- a tree, a measure -- starts from here.
+        println!("{{\"kind\":\"start\",\"state\":\"called-back\"}}");
+        std::process::exit(0);
+    });
+    println!("{{\"kind\":\"start\",\"state\":\"calling\"}}");
+
+    // The generated vtable names the slot and the generated delegate carries the ABI;
+    // `--minimal` leaves out only the method wrapper, which is this one line.
+    let hr = unsafe {
+        (Interface::vtable(&statics).Start)(
+            Interface::as_raw(&statics),
+            Interface::as_raw(&callback),
+        )
+    };
+    // A start that returns without calling back never built a core.
+    println!(
+        "{{\"kind\":\"start\",\"state\":\"returned\",\"hr\":\"0x{:08x}\"}}",
+        hr.0 as u32
+    );
+    1
+}
+
 pub fn run() -> i32 {
     let json = std::env::var("OPENCOMP_XAML_PROBE_JSON").is_ok_and(|value| value == "1");
     let Some(path) = std::env::var_os("XAML_DLL") else {
@@ -140,6 +197,10 @@ pub fn run() -> i32 {
         unsafe { function() }
     });
     report_check(json, check_hr);
+
+    if std::env::var_os("OPENCOMP_XAML_PROBE_START").is_some() {
+        return start_gate(module);
+    }
 
     for name in OTHER_EXPORTS {
         report_export(json, name, export(module, name).is_some());
