@@ -295,6 +295,17 @@ a wedged graphics call is a red step with a log rather than a dead runner; and
 `RUST_BACKTRACE=1` is set for the Wine run, because a panic without symbols there
 is a dead end.
 
+`OPENCOMP_TRACE=1` makes the presenter name each graphics stage before it runs, so a
+stage that never returns prints its own name and nothing after it. The first frame
+costs a device, a swapchain and a D2D target before anything is drawn, which is
+16 ms on the Windows runner and 2.8 s under Wine's software rasterizer -- a wait for
+the first frame has to be seconds, not frames.
+
+The client links the compositor as a library *and* loads it as a DLL through combase,
+which is two copies of the same statics. Anything a host wants to read back (the
+frame counter, for one) has to come from the copy that did the work, which is why
+`opencomp_frames_presented` is exported.
+
 ## Milestones
 
 The binaries themselves are measured in [`winui-anatomy.md`](winui-anatomy.md):
