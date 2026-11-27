@@ -253,7 +253,13 @@ macro_rules! visual_trait {
                 }
             }
             fn SetClip(&self, value: Ref<CompositionClip>) -> windows_core::Result<()> {
-                self.node.lock().unwrap().insets = value.as_ref().and_then($crate::clip::insets);
+                let mut node = self.node.lock().unwrap();
+                let shape = value
+                    .as_ref()
+                    .and_then(|clip| $crate::clip::shape(clip, node.size));
+                node.insets = shape.map(|(insets, _)| insets);
+                node.radius = shape.map_or([0.0; 4], |(_, radius)| radius);
+                drop(node);
                 *self.clip.lock().unwrap() = value.cloned();
                 Ok(())
             }

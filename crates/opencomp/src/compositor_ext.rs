@@ -148,7 +148,7 @@ impl comp::ICompositor5_Impl for crate::compositor::Compositor_Impl {
     fn CreateRoundedRectangleGeometry(
         &self,
     ) -> windows_core::Result<comp::CompositionRoundedRectangleGeometry> {
-        not_implemented()
+        crate::geometry::rounded_rectangle()
     }
     fn CreateShapeVisual(&self) -> windows_core::Result<comp::ShapeVisual> {
         not_implemented()
@@ -172,13 +172,13 @@ impl comp::ICompositor5_Impl for crate::compositor::Compositor_Impl {
 
 impl comp::ICompositor6_Impl for crate::compositor::Compositor_Impl {
     fn CreateGeometricClip(&self) -> windows_core::Result<comp::CompositionGeometricClip> {
-        not_implemented()
+        crate::clip::geometric(None)
     }
     fn CreateGeometricClipWithGeometry(
         &self,
-        _geometry: windows_core::Ref<comp::CompositionGeometry>,
+        geometry: windows_core::Ref<comp::CompositionGeometry>,
     ) -> windows_core::Result<comp::CompositionGeometricClip> {
-        not_implemented()
+        crate::clip::geometric(geometry.cloned())
     }
     fn CreateRedirectVisual(&self) -> windows_core::Result<comp::RedirectVisual> {
         not_implemented()

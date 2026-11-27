@@ -33,6 +33,8 @@ pub struct Node {
     pub color: [f32; 4],
     /// Left, top, right, bottom insets of an `InsetClip`, if one is attached.
     pub insets: Option<[f32; 4]>,
+    /// Corner radii clockwise from the top-left, from a rounded geometric clip.
+    pub radius: [f32; 4],
     /// Fraction of the parent's size, from `IVisual2`. A root visual uses this to fill its host.
     pub relative_size: Option<Vector2>,
     pub relative_offset: Option<Vector3>,
@@ -88,6 +90,7 @@ impl Default for Node {
             hit_test_visible: true,
             color: [0.0; 4],
             insets: None,
+            radius: [0.0; 4],
             relative_size: None,
             relative_offset: None,
             surface: None,
@@ -177,8 +180,7 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32) -> Option<CoreVisual
             // A visual has no surface until a surface brush names one.
             image: node.surface,
             uv: [0.0, 0.0, 1.0, 1.0],
-            // Rounded corners are not wired to an ABI property yet; a brush will set them.
-            radius: [0.0; 4],
+            radius: node.radius,
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
         };

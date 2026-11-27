@@ -57,7 +57,7 @@ impl IslandState {
 type SharedIsland = Arc<Mutex<IslandState>>;
 
 /// The node behind an island, for a host that wants to snapshot it.
-pub(crate) fn root_node(island: &ContentIsland) -> Option<NodeRef> {
+pub fn root_node(island: &ContentIsland) -> Option<NodeRef> {
     shared(island).map(|state| state.lock().unwrap().node.clone())
 }
 

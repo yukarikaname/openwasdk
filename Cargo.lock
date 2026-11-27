@@ -1273,12 +1273,15 @@ name = "opencomp"
 version = "0.1.0"
 dependencies = [
  "opencomp-core",
+ "pollster",
+ "wgpu",
  "windows-collections 0.100.0",
  "windows-core 0.100.0",
  "windows-future 0.100.0",
  "windows-numerics 0.100.0",
  "windows-reference",
  "windows-time",
+ "winit",
 ]
 
 [[package]]

@@ -22,9 +22,10 @@ mod animation;
 #[cfg(windows)]
 mod animation_group;
 #[cfg(windows)]
-// Generated from metadata by `comptrace generate`; its lints are the generator's to fix.
+// Generated from metadata by `comptrace generate`; its lints are the generator's to fix. It is
+// public so a host can name the interfaces it activates by name and build a tree through them.
 #[allow(clippy::all)]
-mod bindings;
+pub mod bindings;
 #[cfg(windows)]
 mod brush;
 #[cfg(windows)]
@@ -38,9 +39,11 @@ mod compositor;
 #[cfg(windows)]
 mod compositor_ext;
 #[cfg(windows)]
-mod content;
+pub mod content;
 #[cfg(windows)]
 mod easing;
+#[cfg(windows)]
+mod geometry;
 mod identity;
 pub mod node;
 #[cfg(windows)]
