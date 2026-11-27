@@ -1,24 +1,42 @@
-//! The portable half of the compositor: a visual tree and a wgpu renderer.
+//! The portable half of the compositor: the tree, the animation sampler and the draw list.
 //!
-//! `opencomp` is the Windows ABI shell around this; the core has no WinRT in it, so it builds and
-//! tests on every host. That is what makes a macOS backend possible: the renderer talks to Metal
-//! through wgpu the same way it talks to Vulkan or D3D12 elsewhere.
+//! `opencomp` is the Windows ABI shell around this. Everything here is GPU-agnostic
+//! except the `preview` feature, which adds a wgpu renderer and a host for looking at
+//! a tree on the machine you are sitting in front of. The DLL does not use it: on
+//! Windows the compositor is D3D11, the same device the client hands over.
 
 mod animation;
 mod color;
-mod host;
-mod render;
-mod texture;
+mod texture_id;
 mod tree;
+
+#[cfg(feature = "preview")]
+mod host;
+#[cfg(feature = "preview")]
+mod render;
+#[cfg(feature = "preview")]
+mod texture;
 
 pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
-pub use host::Host;
-pub use render::Renderer;
-pub use texture::TextureId;
-pub use tree::{Rect, Visual};
+pub use texture_id::{TextureId, WHITE};
+pub use tree::{Draw, Rect, Visual};
 
-#[cfg(test)]
+#[cfg(feature = "preview")]
+pub use host::Host;
+#[cfg(feature = "preview")]
+pub use render::Renderer;
+
+impl Visual {
+    /// Flatten this tree into the units a backend draws, in paint order.
+    pub fn draws(&self) -> Vec<Draw> {
+        let mut out = Vec::new();
+        tree::flatten_root(self, &mut out);
+        out
+    }
+}
+
+#[cfg(all(test, feature = "preview"))]
 mod tests {
     use super::*;
 

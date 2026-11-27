@@ -13,8 +13,9 @@
 
 use bytemuck::{Pod, Zeroable};
 
-use crate::texture::{TextureId, Textures, WHITE};
+use crate::texture::Textures;
 use crate::tree::{Draw, Rect, Visual, flatten_root};
+use crate::{TextureId, WHITE};
 
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]

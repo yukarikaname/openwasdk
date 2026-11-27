@@ -10,13 +10,7 @@
 
 use std::collections::HashMap;
 
-/// A caller-chosen handle for an uploaded bitmap.
-///
-/// Zero names the built-in white texture that untextured draws sample, so uploads start at one.
-pub type TextureId = u32;
-
-/// The built-in 1x1 white texture.
-pub const WHITE: TextureId = 0;
+use crate::{TextureId, WHITE};
 
 /// The textures an upload has made, and the layout every draw binds against.
 pub(crate) struct Textures {

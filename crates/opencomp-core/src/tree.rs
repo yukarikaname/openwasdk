@@ -8,7 +8,7 @@
 //! scissor, so a rotated draw is bounded by its own axis-aligned bounds and its clip is not
 //! applied. Translation and scale, which is what a zoom uses, keep exact clipping.
 
-use crate::texture::TextureId;
+use crate::TextureId;
 
 /// A rectangle in canvas pixels: origin, then size.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -233,21 +233,21 @@ fn overlap(rect: Rect, clip: Rect) -> Rect {
 
 /// A rectangle ready to draw, with the tree's transforms, translations and opacities applied.
 #[derive(Clone, Copy, Debug)]
-pub(crate) struct Draw {
+pub struct Draw {
     /// The four corners in canvas units, in the order [`corners`] produces.
-    pub(crate) corners: [[f32; 2]; 4],
+    pub corners: [[f32; 2]; 4],
     /// The axis-aligned bounds of `corners`, already narrowed by the accumulated clip when the
     /// transform is axis aligned.
-    pub(crate) scissor: Rect,
-    pub(crate) color: [f32; 4],
+    pub scissor: Rect,
+    pub color: [f32; 4],
     /// The bitmap to sample; `None` binds the built-in white texture.
-    pub(crate) image: Option<TextureId>,
+    pub image: Option<TextureId>,
     /// The part of the bitmap the quad covers.
-    pub(crate) uv: [f32; 4],
+    pub uv: [f32; 4],
     /// The rectangle in the node's own units, which bounds the shader's rounded-box distance.
-    pub(crate) size: [f32; 2],
+    pub size: [f32; 2],
     /// The four corner radii, in the node's own units and clamped to half the shorter side.
-    pub(crate) radius: [f32; 4],
+    pub radius: [f32; 4],
 }
 
 /// Flatten a root tree, whose parent space is the canvas, into draw order.

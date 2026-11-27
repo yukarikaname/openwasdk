@@ -49,8 +49,6 @@ pub mod node;
 #[cfg(windows)]
 mod object;
 #[cfg(windows)]
-mod present;
-#[cfg(windows)]
 mod propertyset;
 #[cfg(windows)]
 mod step_easing;
