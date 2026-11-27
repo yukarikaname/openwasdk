@@ -37,7 +37,7 @@ compiled XAML and the Wine host stay as they are.
 | `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | element model, layout and a composition tree; no controls yet |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 6 conversions, 143 stubs |
 | `openhost` | App model, `Microsoft.UI.Windowing` hosting, PE host glue | Content hosting and activation live in `opencomp`; the app model is planned |
-| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, activation manifest, `dotnet` build through Wine's XAML compiler; not yet exercised end to end |
+| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, a 1033-class activation manifest generated from the SDK's own MSIX, `dotnet` build through Wine's XAML compiler; not yet exercised end to end |
 
 ## How much of it is implemented
 
@@ -50,6 +50,7 @@ denominators are the metadata counts in [`docs/winui-anatomy.md`](docs/winui-ana
 | Composition ABI methods answered | 197 | 326 | **60%** |
 | FrameworkUdk C exports | 6 | 149 | **4%** |
 | XBF node kinds mapped to an element tree | 30 | 39 | **77%** |
+| App SDK classes with an activation entry | 1033 | 1033 | **100%** (generated, not implemented) |
 | XAML element kinds | 4 | 91 Reactor builds | **4%** |
 | XAML runtime classes | 4 | 900 | **0.4%** |
 | Acceptance gates | A | A-D | **25%** |
