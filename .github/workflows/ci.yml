@@ -24,6 +24,12 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
 
+      # The WinRT half of opencomp only compiles for Windows, so nothing above lints it.
+      - name: Clippy (Windows target)
+        run: |
+          rustup target add x86_64-pc-windows-msvc
+          cargo clippy -p opencomp --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+
       - name: Line limit
         run: |
           bad=0

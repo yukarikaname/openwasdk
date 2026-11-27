@@ -19,7 +19,9 @@
 
 #[cfg(windows)]
 mod animation;
+// Generated from metadata by `comptrace generate`; its lints are the generator's to fix.
 #[cfg(windows)]
+#[allow(clippy::all)]
 mod bindings;
 #[cfg(windows)]
 mod brush;
