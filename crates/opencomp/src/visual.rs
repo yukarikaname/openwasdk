@@ -12,20 +12,21 @@ use crate::bindings::Microsoft::UI::Composition::{
     SpriteVisual, VisualCollection,
 };
 use crate::node::{self, Node, NodeRef};
+use crate::object::E_FAIL;
 use crate::object::prelude::*;
 use crate::object::{composition_object, visual_trait};
-use windows_core::{Error, HRESULT, Interface, Result};
-
-const E_FAIL: HRESULT = HRESULT(0x8000_4005u32 as i32);
+use windows_core::{Error, Interface, Result};
 
 #[windows_core::implement(ICompositionObject, IContainerVisual, IVisual)]
 pub struct ContainerVisualObject {
     node: NodeRef,
+    clip: Mutex<Option<CompositionClip>>,
 }
 
 #[windows_core::implement(ICompositionObject, ISpriteVisual, IVisual)]
 pub struct SpriteVisualObject {
     node: NodeRef,
+    clip: Mutex<Option<CompositionClip>>,
     brush: Mutex<Option<CompositionBrush>>,
 }
 
@@ -63,7 +64,11 @@ impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
 /// A `ContainerVisual` with no children.
 pub fn container() -> Result<ContainerVisual> {
     let node = Node::new();
-    let object: IContainerVisual = ContainerVisualObject { node: node.clone() }.into();
+    let object: IContainerVisual = ContainerVisualObject {
+        node: node.clone(),
+        clip: Mutex::new(None),
+    }
+    .into();
     node::publish(&object, &node);
     object.cast()
 }
@@ -73,6 +78,7 @@ pub fn sprite() -> Result<SpriteVisual> {
     let node = Node::new();
     let object: ISpriteVisual = SpriteVisualObject {
         node: node.clone(),
+        clip: Mutex::new(None),
         brush: Mutex::new(None),
     }
     .into();

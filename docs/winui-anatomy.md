@@ -108,10 +108,19 @@ nearest source path in `dcompi.dll`'s `.rdata`:
 | `c7e65ce2-fad5-5e3b-9c58-186ca8c1dd57` | 1 | `WinRTNested/inproc/WrtCompositori.cpp` |
 
 None of these entries is large, which is the good news: the largest is six
-references. `7bca64fd` and the four `Composition.CompositionObject.cpp` rows are
-the proxy that carries composition objects to the system compositor, and
-`ecd63a61` is named by its own header, `Composition.Private.SystemVisualProxyVisualPrivate.h`.
-`ffcdc0ea` sits next to `WinRTExports.cpp`, the in-proc entry point.
+references. Reading the code that uses each one splits the set in two:
+
+- five are type descriptors, not interfaces. The code that loads them is a thunk
+  of the form `lea rax, [guid]; mov [rdx], kind; mov [rdx+8], rax; ret`, a table
+  entry for a boxed value, which is what `WinRTNested/PropertyValueHelper.h`
+  suggests. `7bca64fd` is one of these.
+- eight are `QueryInterface` targets: `mov rax, [rax]; call __guard_dispatch_icall`,
+  slot 0 of a vtable. `61cf693f` has six such sites and no other use.
+
+The distinction matters because a boxed-value IID is a platform type, not part of
+the boundary being replaced. So the private composition surface is around nine
+interfaces at most, several of which belong to the proxy that talks to the
+system compositor and never appear in a composition-only program.
 
 Two identifiers that looked private are not. `af86e2e0-b12d-4c6a-9c5a-d7aa65101e90`
 is `IInspectable` and accounts for 232 references — that is ordinary `QI` volume,

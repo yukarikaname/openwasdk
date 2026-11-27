@@ -19,6 +19,7 @@ pub(crate) mod prelude {
 use windows_core::{Error, HRESULT};
 
 pub(crate) const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
+pub(crate) const E_FAIL: HRESULT = HRESULT(0x8000_4005u32 as i32);
 
 pub(crate) fn not_implemented<T>() -> windows_core::Result<T> {
     Err(Error::from_hresult(E_NOTIMPL))
@@ -107,13 +108,18 @@ macro_rules! visual_trait {
                 $crate::object::not_implemented()
             }
             fn Clip(&self) -> windows_core::Result<CompositionClip> {
-                $crate::object::not_implemented()
+                match self.clip.lock().unwrap().clone() {
+                    Some(clip) => Ok(clip),
+                    None => Err(Error::from_hresult($crate::object::E_FAIL)),
+                }
             }
             fn SetClip(
                 &self,
-                _value: windows_core::Ref<CompositionClip>,
+                value: windows_core::Ref<CompositionClip>,
             ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                self.node.lock().unwrap().insets = value.as_ref().and_then($crate::clip::insets);
+                *self.clip.lock().unwrap() = value.cloned();
+                Ok(())
             }
             fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode> {
                 $crate::object::not_implemented()

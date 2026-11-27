@@ -23,6 +23,8 @@ pub struct Node {
     pub opacity: f32,
     pub visible: bool,
     pub color: [f32; 4],
+    /// Left, top, right, bottom insets of an `InsetClip`, if one is attached.
+    pub insets: Option<[f32; 4]>,
     pub children: Vec<NodeRef>,
 }
 
@@ -34,6 +36,7 @@ impl Default for Node {
             opacity: 1.0,
             visible: true,
             color: [0.0; 4],
+            insets: None,
             children: Vec::new(),
         }
     }
@@ -43,6 +46,16 @@ impl Node {
     pub fn new() -> NodeRef {
         Arc::new(Mutex::new(Self::default()))
     }
+}
+
+/// The clip rectangle an `InsetClip` produces inside a visual of `size`.
+fn clip_of(size: Vector2, [left, top, right, bottom]: [f32; 4]) -> (f32, f32, f32, f32) {
+    (
+        left,
+        top,
+        (size.x - left - right).max(0.0),
+        (size.y - top - bottom).max(0.0),
+    )
 }
 
 /// Copy the tree into the renderer's form. A node that is not visible yields nothing, so its
@@ -62,7 +75,7 @@ fn snapshot_at(node: &NodeRef, parent_opacity: f32, depth: u32) -> Option<CoreVi
             size: [node.size.x, node.size.y],
             color: node.color,
             opacity: (parent_opacity * node.opacity).clamp(0.0, 1.0),
-            clip: None,
+            clip: node.insets.map(|insets| clip_of(node.size, insets)),
             children: Vec::new(),
         };
         // A visual inserted into its own subtree would recurse until the stack runs out; the
@@ -173,6 +186,30 @@ mod tests {
         parent.lock().unwrap().children.push(child);
         let visual = snapshot(&parent).unwrap();
         assert!(visual.children.is_empty());
+    }
+
+    #[test]
+    fn insets_become_a_clip_inside_the_visual() {
+        let root = node(1.0);
+        {
+            let mut root = root.lock().unwrap();
+            root.size = Vector2 { x: 100.0, y: 50.0 };
+            root.insets = Some([10.0, 5.0, 20.0, 5.0]);
+        }
+        let visual = snapshot(&root).unwrap();
+        assert_eq!(visual.clip, Some((10.0, 5.0, 70.0, 40.0)));
+    }
+
+    #[test]
+    fn insets_larger_than_the_visual_clip_everything() {
+        let root = node(1.0);
+        {
+            let mut root = root.lock().unwrap();
+            root.size = Vector2 { x: 10.0, y: 10.0 };
+            root.insets = Some([20.0, 20.0, 20.0, 20.0]);
+        }
+        let visual = snapshot(&root).unwrap();
+        assert_eq!(visual.clip, Some((20.0, 20.0, 0.0, 0.0)));
     }
 
     #[test]

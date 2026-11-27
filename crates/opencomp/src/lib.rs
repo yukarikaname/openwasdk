@@ -19,6 +19,8 @@ mod bindings;
 #[cfg(windows)]
 mod brush;
 #[cfg(windows)]
+mod clip;
+#[cfg(windows)]
 mod collection;
 #[cfg(windows)]
 mod compositor;

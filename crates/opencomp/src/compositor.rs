@@ -76,7 +76,7 @@ impl ICompositor_Impl for Compositor_Impl {
         not_implemented()
     }
     fn CreateInsetClip(&self) -> windows_core::Result<InsetClip> {
-        not_implemented()
+        crate::clip::create()
     }
     fn CreateInsetClipWithInsets(
         &self,
@@ -85,7 +85,7 @@ impl ICompositor_Impl for Compositor_Impl {
         rightInset: f32,
         bottomInset: f32,
     ) -> windows_core::Result<InsetClip> {
-        not_implemented()
+        crate::clip::create_with([leftInset, topInset, rightInset, bottomInset])
     }
     fn CreateLinearEasingFunction(&self) -> windows_core::Result<LinearEasingFunction> {
         not_implemented()
