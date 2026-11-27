@@ -120,14 +120,15 @@ compiles XAML to XBF at run time, which gives us a corpus to diff against
 
 ## 4. Dependency order
 
-| before | why | state, quoted |
+| before | why | state |
 | --- | --- | --- |
 | `openudk` | the XAML DLL loads only if its 43 C imports resolve | 6 `Windowing_*` real, 143 stubs |
-| Content + window + swapchain | `Window` reaches the screen through `ContentIsland`/`DesktopChildSiteBridge` | "no swapchain is created, no message pump runs, and `ContentSiteView`, events and `RequestSize` answer `E_NOTIMPL`"; "how the island's pixels reach the child HWND" — unknown |
-| renderer primitives | a page is rectangles, rounded rectangles and text | "three primitives: a rectangle, a rounded rectangle and a textured rectangle"; "ellipses, paths, arbitrary geometry: absent"; "anti-aliasing: rounded corners only" |
-| text | a static page's content is text | "text: absent"; XAML itself imports `DWrite.dll` and `d2d1.dll` |
-| surface interop | XAML may hand pixels over as surfaces | bitmaps and CPU surfaces exist; `ICompositionDrawingSurfaceInterop::BeginDraw` (D2D) does not |
-| animations (optional) | visual states animate | implicit animations `E_NOTIMPL`; `StartAnimation` only reaches our own animations |
+| Content + window + swapchain | `Window` reaches the screen through `ContentIsland`/`DesktopChildSiteBridge` | a bridge creates a D3D11 swapchain for the HWND it was given and draws it with D2D at 60 Hz; `frames_presented()` and `tests/gate_a.rs` prove a frame reached the window on Windows and under Wine. How the *shipped* stack gets island pixels into a child HWND (`DCompPrivates_CreateSharedVisual`) is still unknown, and need not be ours |
+| renderer primitives | a page is rectangles, rounded rectangles and text | rectangle, rounded rectangle and textured quad; ellipses, paths and arbitrary geometry: absent; anti-aliasing: rounded corners only |
+| text | a static page's content is text | absent; XAML itself imports `DWrite.dll` and `d2d1.dll`, so the port will call them rather than shape glyphs |
+| surface interop | XAML may hand pixels over as surfaces | bitmaps, CPU surfaces, GPU textures, and `BeginDraw` returns a real D2D context |
+| animations | visual states animate | scalar, vector, colour, step easing and groups reach the node; implicit animations `E_NOTIMPL` |
+| `openxaml` | only needed once we replace the DLL, not to run it | XBF → element tree with a support table that errors by name, dependency properties with inheritance and a dirty flag, measure/arrange for StackPanel, Grid, Border, TextBlock. No controls, templates or text yet |
 
 ## 5. Milestones
 
