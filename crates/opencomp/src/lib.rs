@@ -269,7 +269,7 @@ fn class_of(name: &str) -> Option<Class> {
         "Microsoft.UI.Composition.Compositor" => Some(Class::Compositor),
         "Microsoft.UI.Content.ContentIsland" => Some(Class::ContentIsland),
         "Microsoft.UI.Content.DesktopChildSiteBridge" => Some(Class::DesktopChildSiteBridge),
-        _ => None,
+        _ => Some(Class::Unmodelled),
     }
 }
 
