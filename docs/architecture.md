@@ -56,15 +56,20 @@ The proxy is useful outside this project: it is a WinRT call tracer.
 - Compositor: visual tree (`ContainerVisual`, `SpriteVisual`), brushes and
   surfaces, animations and implicit animations, effects and backdrops, commit
   and transaction semantics, `CompositionTarget`, device loss.
-- Renderer: wgpu (Vulkan/Metal/D3D12) with Skia for text and vector work. The
-  same core runs native on Linux/macOS for tooling and tests.
+- Renderer: **D3D11 and D2D1**, the same APIs the real stack uses and the same
+  device the client hands over. The core (tree, flatten, animation sampling, draw
+  list) is GPU-agnostic; wgpu exists only behind a `preview` feature for looking at
+  a tree on the machine you are on, and the DLL never enables it.
+- Text and vector work are D2D1's, not ours: `Microsoft.ui.xaml.dll` imports
+  `d2d1.dll` and `DWrite.dll` itself.
 - No DWM and no DirectComposition: presentation goes straight to a window. The
   window is always a Win32 one, so the process is a Windows process: under Wine
   on Linux and macOS, or on Windows itself. The only native surfaces are in our
   own preview tooling, which draws a tree with wgpu on the host without running
   any Windows binary.
-- D3D interop: XAML hands over D3D textures through composition surfaces; those
-  must be consumable by the renderer (Wine's d3d11 or a conversion to wgpu).
+- D3D interop: XAML hands over a D3D11 device and draws into surfaces on it; the
+  compositor draws those textures on the same device, with no copy and no
+  cross-API import.
 
 Language: Rust. The ABI shell is a `cdylib` built for
 `x86_64-pc-windows-gnu` (loadable by Wine); the compositor is plain Rust with

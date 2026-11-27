@@ -63,6 +63,11 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
+      # The wgpu preview and its renderer tests are behind a feature, so the run
+      # above skips them.
+      - name: Test the preview renderer
+        run: cargo test -p opencomp-core --features preview
+
       - name: Build the DLL
         run: cargo build -p opencomp
 
@@ -88,6 +93,11 @@ jobs:
 
       - name: Test
         run: cargo test --workspace
+
+      # The wgpu preview and its renderer tests are behind a feature, so the run
+      # above skips them.
+      - name: Test the preview renderer
+        run: cargo test -p opencomp-core --features preview
 
       - name: Check the Windows artifact
         run: cargo check --workspace --all-targets --target x86_64-pc-windows-msvc

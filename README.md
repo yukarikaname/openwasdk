@@ -30,7 +30,7 @@ compiled XAML and the Wine host stay as they are.
 | --- | --- | --- |
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
 | `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | visuals, brushes, clips, animations, property sets |
-| `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | trees with transforms, clip, opacity, bitmaps; offscreen or on a swapchain |
+| `opencomp-core` | Visual tree, draw list and animation sampler; wgpu renderer behind a `preview` feature | trees with transforms, clip, opacity, bitmaps, rounded corners; previews offscreen or on a swapchain |
 | `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | planned |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 6 conversions, 143 stubs |
 | `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | planned |

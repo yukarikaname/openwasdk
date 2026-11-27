@@ -1,8 +1,13 @@
 # Rendering
 
 `opencomp-core` turns a `Visual` tree into pixels. It holds no WinRT: `opencomp` marshals ABI
-calls into the same tree, and one `Renderer` draws it on Metal, Vulkan or D3D12 through wgpu.
-Nothing in the renderer names a window or a backend.
+calls into the same tree.
+
+> This document describes the **preview** renderer — `opencomp-core` with the `preview`
+> feature, which draws a tree with wgpu on the machine you are sitting in front of. The
+> DLL does not use it. On Windows the compositor is D3D11 + D2D1 on the client's own
+> device, because that is what XAML hands over; the tree, the flatten into a draw list
+> and the animation sampler are shared, the GPU backend is not.
 
 ## The shape of a frame
 
