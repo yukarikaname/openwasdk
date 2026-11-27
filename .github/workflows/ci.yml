@@ -106,7 +106,11 @@ jobs:
           cd target/appsdk
           XAML_DLL="$PWD/Microsoft.ui.xaml.dll" ./layout-probe.exe
 
+      # `OPENCOMP_TRACE` makes our DLLs name what they are doing, which is the only
+      # diagnostic a Windows-only test has: the runner has no debugger attached.
       - name: Test
+        env:
+          OPENCOMP_TRACE: 1
         run: cargo test --workspace
 
       # A crash in a test takes the captured output with it, so the gate is rerun with

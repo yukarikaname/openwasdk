@@ -10,6 +10,16 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
+/// Say what the message loop is doing when `OPENCOMP_TRACE` is set.
+///
+/// A timer that never fires looks the same from outside whether it was never armed, the
+/// message never arrived, or the handler map lost the slot; three lines tell them apart.
+fn trace(message: &str) {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opendispatch: {message}");
+    }
+}
+
 use windows::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
 use windows::Win32::System::LibraryLoader::GetModuleHandleW;
 use windows::Win32::UI::WindowsAndMessaging::{
@@ -142,6 +152,7 @@ impl Platform {
             }
             timers.insert(id, slot);
             drop(timers);
+            trace(&format!("timer {id} armed at {milliseconds} ms"));
             // Safety: the window belongs to this thread and `id` is unique.
             let started = unsafe { SetTimer(Some(self.hwnd()), id, milliseconds, None) };
             if started != 0 {
@@ -154,6 +165,7 @@ impl Platform {
     }
 
     pub fn stop_timer(&self, id: usize) {
+        trace(&format!("timer {id} stopped"));
         self.timers.lock().unwrap().remove(&id);
         // Safety: the window is live on this thread.
         unsafe {
@@ -240,6 +252,7 @@ unsafe extern "system" fn wndproc(
                 return LRESULT(0);
             }
             WM_TIMER => {
+                trace(&format!("timer {} fired", wparam.0));
                 platform.fire_timer(wparam.0);
                 return LRESULT(0);
             }
