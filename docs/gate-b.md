@@ -103,7 +103,32 @@ For the record, Wine's `dcomp` is a full stub -- `DCompositionCreateDevice`,
 `...2` and `...3` all return `E_NOTIMPL` -- so the day the compositor is reached, it
 will have to be ours rather than Wine's.
 
+## Wine cannot run the SDK's dispatcher
+
+`Application.Start` needs a dispatcher on the calling thread and does not create one:
+`Microsoft.UI.Dispatching.DispatcherQueueController` is a class in the **App SDK**, and
+the SDK's activation table points it at `CoreMessagingXP.dll`. That DLL exports 28 C
+names (`CoreMsgCreateSession`, `CoreUICall*`, …) and **no** `DllGetActivationFactory`, so
+the class is reached through combase, and loading the DLL to ask is what fails:
+
+```
+wine: Call from ... to unimplemented function ntdll.dll.NtAllocateReserveObject, aborting
+```
+
+Wine does not implement the reserve object that `CoreMessagingXP` allocates at load time,
+so no version bump helps: the whole DLL is unusable there. That is also why
+`Application.Start` blocks on Windows *and* under Wine in different ways -- on Windows it
+waits for a queue the caller was supposed to install, and under Wine the queue cannot be
+installed at all.
+
+This is inside our scope rather than outside it: `Microsoft.UI.Dispatching` is an App SDK
+namespace, so the answer is a replacement DLL for it, the same way `dcompi.dll` is
+answered by `opencomp.dll`.
+
 ## What the next step is
+
+A `Microsoft.UI.Dispatching` replacement, then the callback `Application.Start` is supposed
+to run.
 
 The callback `Application.Start` is supposed to run. The call itself is now right --
 through the generated vtable slot and the generated delegate it blocks in the engine's

@@ -231,17 +231,19 @@ fn start_gate(module: HMODULE) -> i32 {
         );
         return 1;
     }
-    // The dispatcher lives in `Microsoft.UI.dll`, beside the XAML DLL.
-    let ui = std::env::var_os("XAML_DLL")
-        .map(|path| PathBuf::from(path).with_file_name("Microsoft.UI.dll"))
+    // `Microsoft.UI.Dispatching.DispatcherQueueController` is served by
+    // `CoreMessagingXP.dll` -- the SDK's activation table says so, and asking the XAML DLL
+    // or `Microsoft.UI.dll` for it answers `CLASS_E_CLASSNOTAVAILABLE`.
+    let messaging = std::env::var_os("XAML_DLL")
+        .map(|path| PathBuf::from(path).with_file_name("CoreMessagingXP.dll"))
         .and_then(|path| load(&path));
-    match ui.map(create_dispatcher) {
+    match messaging.map(create_dispatcher) {
         Some(Some(hr)) => eprintln!(
             "xaml-probe: DispatcherQueueController.CreateOnCurrentThread hr=0x{:08x}",
             hr as u32
         ),
         Some(None) => eprintln!("xaml-probe: no dispatcher controller"),
-        None => eprintln!("xaml-probe: Microsoft.UI.dll not loadable"),
+        None => eprintln!("xaml-probe: CoreMessagingXP.dll not loadable"),
     }
     let factory: IUnknown = unsafe { IUnknown::from_raw(raw) };
     let Ok(statics) = factory.cast::<IApplicationStatics>() else {
