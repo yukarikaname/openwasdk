@@ -166,7 +166,9 @@ fn start_gate(module: HMODULE) -> i32 {
     let callback = ApplicationInitializationCallback::new(|_params| {
         // The engine called us on its own thread with a core behind it. Everything the
         // gate needs -- a tree, a measure -- starts from here.
-        println!("{{\"kind\":\"start\",\"state\":\"called-back\"}}");
+        // stderr, not stdout: a run that is killed by its timeout loses a buffered
+        // line, and this is the line that decides whether the engine started.
+        eprintln!("xaml-probe: Application.Start called back");
         std::process::exit(0);
     });
     println!("{{\"kind\":\"start\",\"state\":\"calling\"}}");
