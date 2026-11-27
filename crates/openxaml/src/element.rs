@@ -13,6 +13,11 @@
 
 use std::collections::BTreeMap;
 
+pub use crate::value::{
+    CornerRadius, GridLength, HorizontalAlignment, Length, Orientation, Thickness, Value,
+    VerticalAlignment,
+};
+
 /// A property name, exactly as XAML spells it. Attached properties keep their
 /// owner prefix, for example `Grid.Row`.
 pub type PropertyId = &'static str;
@@ -34,128 +39,6 @@ const GRID_ROWS: PropertyId = "Grid.RowDefinitions";
 const GRID_COLUMNS: PropertyId = "Grid.ColumnDefinitions";
 
 const DEFAULT_FONT_SIZE: f32 = 14.0;
-
-/// A length is either automatic (the content decides) or a pixel count.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub enum Length {
-    #[default]
-    Auto,
-    Pixels(f32),
-}
-
-impl From<f32> for Length {
-    fn from(pixels: f32) -> Self {
-        Self::Pixels(pixels)
-    }
-}
-
-/// A distance on all four sides, in pixels. `left`/`top` come first, as in XAML.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct Thickness {
-    pub left: f32,
-    pub top: f32,
-    pub right: f32,
-    pub bottom: f32,
-}
-
-impl Thickness {
-    pub const ZERO: Self = Self::new(0.0, 0.0, 0.0, 0.0);
-
-    pub const fn new(left: f32, top: f32, right: f32, bottom: f32) -> Self {
-        Self {
-            left,
-            top,
-            right,
-            bottom,
-        }
-    }
-
-    /// The same distance on every side, the XAML one-number form.
-    pub const fn all(value: f32) -> Self {
-        Self::new(value, value, value, value)
-    }
-
-    pub const fn horizontal(self) -> f32 {
-        self.left + self.right
-    }
-
-    pub const fn vertical(self) -> f32 {
-        self.top + self.bottom
-    }
-}
-
-impl From<f32> for Thickness {
-    fn from(value: f32) -> Self {
-        Self::all(value)
-    }
-}
-
-/// `HorizontalAlignment`: what happens in the slot the parent handed over.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum HorizontalAlignment {
-    Left,
-    Center,
-    Right,
-    #[default]
-    Stretch,
-}
-
-/// `VerticalAlignment`, the other axis of the same idea.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum VerticalAlignment {
-    Top,
-    Center,
-    Bottom,
-    #[default]
-    Stretch,
-}
-
-/// `Orientation` of a `StackPanel`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum Orientation {
-    Horizontal,
-    #[default]
-    Vertical,
-}
-
-/// One `Grid` row or column. A star carries its weight, not a size.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum GridLength {
-    Auto,
-    Star(f32),
-    Pixels(f32),
-}
-
-impl Default for GridLength {
-    fn default() -> Self {
-        Self::Star(1.0)
-    }
-}
-
-impl GridLength {
-    pub const fn star(weight: f32) -> Self {
-        Self::Star(weight)
-    }
-
-    pub const fn pixels(pixels: f32) -> Self {
-        Self::Pixels(pixels)
-    }
-}
-
-/// A value in the property store. The variants are the property types layout
-/// knows about; anything else stays a name without a typed reader.
-#[derive(Clone, Debug, PartialEq)]
-pub enum Value {
-    Number(f32),
-    Length(Length),
-    Thickness(Thickness),
-    HorizontalAlignment(HorizontalAlignment),
-    VerticalAlignment(VerticalAlignment),
-    Orientation(Orientation),
-    Color([f32; 4]),
-    Text(String),
-    GridDefinitions(Vec<GridLength>),
-}
 
 /// The element types this layer can lay out. The list is closed on purpose:
 /// the port will add variants one at a time, and every layout pass has to make
@@ -197,6 +80,8 @@ pub struct Element {
     kind: Kind,
     properties: BTreeMap<PropertyId, Value>,
     children: Vec<Element>,
+    name: Option<String>,
+    key: Option<String>,
 }
 
 impl Element {
@@ -205,7 +90,27 @@ impl Element {
             kind,
             properties: BTreeMap::new(),
             children: Vec::new(),
+            name: None,
+            key: None,
         }
+    }
+
+    /// The `x:Name` the source gave this element, kept apart from the store.
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
+
+    pub fn set_name(&mut self, name: impl Into<String>) {
+        self.name = Some(name.into());
+    }
+
+    /// The `x:Key` of a dictionary resource, kept apart from the store.
+    pub fn key(&self) -> Option<&str> {
+        self.key.as_deref()
+    }
+
+    pub fn set_key(&mut self, key: impl Into<String>) {
+        self.key = Some(key.into());
     }
 
     pub fn stack_panel(orientation: Orientation) -> Self {

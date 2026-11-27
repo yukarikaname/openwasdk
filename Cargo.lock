@@ -1389,6 +1389,7 @@ name = "openxaml"
 version = "0.1.0"
 dependencies = [
  "opencomp-core",
+ "xbf",
 ]
 
 [[package]]
