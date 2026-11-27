@@ -185,6 +185,9 @@ jobs:
             sudo install -m644 /tmp/winehq.key /etc/apt/keyrings/winehq-archive.key
             sudo curl -sSfL -o /etc/apt/sources.list.d/winehq-noble.sources \
               https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+            # `wine-stable` depends on `wine-stable-i386`, which the repository only
+            # carries for the i386 architecture.
+            sudo dpkg --add-architecture i386
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends winehq-stable xvfb
           else
@@ -308,6 +311,9 @@ jobs:
             sudo install -m644 /tmp/winehq.key /etc/apt/keyrings/winehq-archive.key
             sudo curl -sSfL -o /etc/apt/sources.list.d/winehq-noble.sources \
               https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+            # `wine-stable` depends on `wine-stable-i386`, which the repository only
+            # carries for the i386 architecture.
+            sudo dpkg --add-architecture i386
             sudo apt-get update
             sudo apt-get install -y --no-install-recommends winehq-stable xvfb
           else
