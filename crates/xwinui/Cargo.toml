@@ -1,0 +1,18 @@
+[package]
+name = "xwinui"
+description = "Build a cross-compiler SDK layout from the Windows App SDK NuGet packages"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "xwinui"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde_json = "1"
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+zip = { version = "2", default-features = false, features = ["deflate"] }
