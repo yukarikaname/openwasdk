@@ -145,12 +145,13 @@ held for as long as the animation is attached.
 | expression animations | `CreateExpressionAnimation` and `InsertExpressionKeyFrame` are `E_NOTIMPL`, parameters are dropped |
 | animation groups | implemented for groups this DLL made, through `ICompositionAnimation2.Target`; `StopAnimationGroup` is `E_NOTIMPL` |
 | implicit animations | `CreateImplicitAnimationCollection` and `ICompositionObject2.ImplicitAnimations` are `E_NOTIMPL` |
-| `Target` | `ICompositionAnimation2` is not implemented, so its `QueryInterface` fails; the property name is the whole binding |
+| `Target` | implemented: every key-frame object answers `ICompositionAnimation2`, and a group uses the target to decide which property to start |
 | controllers | `TryGetAnimationController`, `CreateAnimationController`, `StartAnimationWithController` are `E_NOTIMPL`: no pause, seek or playback rate |
 | natural motion | spring, bounce, quaternion, vector4, boolean and path animations are `E_NOTIMPL` |
 | completion | scoped batches are `E_NOTIMPL`; nothing signals that an animation ended |
 | clock | no `CompositionTarget` is served and nothing ticks; frames are whatever the host presents |
 
-Two smaller mismatches: `IterationCount` reads back `1` after `Forever`, because the getter answers
-`max(1)` for a stored `0`, and `SetIterationBehavior(Count)` leaves the stored count alone.
-`GlobalPlaybackRate` answers `1.0` and its setter does nothing.
+Three smaller mismatches: `IterationCount` reads back `1` after `Forever`, because the getter
+answers `max(1)` for a stored `0`; `SetIterationBehavior(Count)` leaves the stored count alone; and
+the compositor's `GlobalPlaybackRate` is stored and read back but does not scale any animation,
+because sampling does not consult it.
