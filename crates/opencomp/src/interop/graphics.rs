@@ -1,11 +1,13 @@
 //! `CompositionGraphicsDevice`: the surface factory over the client's rendering device.
 //!
-//! The client brings its own `ID3D11Device`; this object only holds it, hands it back, and
-//! creates surfaces, which is all the interop interfaces ask of it. Nothing is allocated on
-//! the GPU yet, so a surface is the CPU bitmap `surface` builds.
+//! The client brings its own `ID3D11Device`; this object holds it, hands it back, and creates
+//! surfaces. From that device it builds, once, the Direct2D objects a surface draws with: the
+//! `IDXGIDevice` view, an `ID2D1Device`, and one `ID2D1DeviceContext` all surfaces share.
+//! Every surface created here is therefore a texture as well as a CPU bitmap; a device that
+//! cannot be dressed in Direct2D leaves surfaces on the CPU path.
 
 use std::ffi::c_void;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use crate::bindings::Microsoft::Graphics::DirectX::{DirectXAlphaMode, DirectXPixelFormat};
 use crate::bindings::Microsoft::UI::Composition::{
@@ -18,7 +20,9 @@ use crate::bindings::Windows::Foundation::TypedEventHandler;
 use crate::object::{composition_object, not_implemented};
 use windows_core::{Error, IUnknown, Interface, Ref, Result};
 
-use super::{E_POINTER, ICompositionGraphicsDeviceInterop, ICompositionGraphicsDeviceInterop_Impl};
+use super::{
+    E_POINTER, GpuDevice, ICompositionGraphicsDeviceInterop, ICompositionGraphicsDeviceInterop_Impl,
+};
 
 /// The `RenderingDeviceReplaced` subscriptions.
 ///
@@ -54,6 +58,8 @@ impl Default for Events {
 )]
 pub struct GraphicsDevice {
     device: Mutex<Option<IUnknown>>,
+    /// The Direct2D objects built from `device`; `None` when it is not a D3D11 device.
+    gpu: Mutex<Option<Arc<GpuDevice>>>,
     events: Mutex<Events>,
 }
 
@@ -61,8 +67,10 @@ composition_object!(GraphicsDevice_Impl);
 
 /// A graphics device over `renderingDevice`, as the compositor's interop method returns it.
 pub(super) fn create(renderingDevice: IUnknown) -> ICompositionGraphicsDevice {
+    let gpu = GpuDevice::create(&renderingDevice).map(Arc::new);
     GraphicsDevice {
         device: Mutex::new(Some(renderingDevice)),
+        gpu: Mutex::new(gpu),
         events: Mutex::new(Events::default()),
     }
     .into()
@@ -75,7 +83,9 @@ impl ICompositionGraphicsDevice_Impl for GraphicsDevice_Impl {
         pixelFormat: DirectXPixelFormat,
         alphaMode: DirectXAlphaMode,
     ) -> Result<crate::bindings::Microsoft::UI::Composition::CompositionDrawingSurface> {
-        crate::surface::create_sized(*sizePixels, pixelFormat, alphaMode)
+        // Surfaces share the one context; a surface that keeps it alive keeps the device.
+        let gpu = self.gpu.lock().unwrap().clone();
+        crate::surface::create_sized(*sizePixels, pixelFormat, alphaMode, gpu)
     }
 
     fn RenderingDeviceReplaced(
@@ -113,7 +123,11 @@ impl ICompositionGraphicsDeviceInterop_Impl for GraphicsDevice_Impl {
         let Some(value) = value.cloned() else {
             return Err(Error::from_hresult(E_POINTER));
         };
+        // Surfaces made before this call keep the objects they were created with; rebuilding
+        // the Direct2D half here only decides what later surfaces draw through.
+        let gpu = GpuDevice::create(&value).map(Arc::new);
         *self.device.lock().unwrap() = Some(value);
+        *self.gpu.lock().unwrap() = gpu;
         Ok(())
     }
 }

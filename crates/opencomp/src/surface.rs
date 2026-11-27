@@ -1,20 +1,19 @@
 //! `CompositionDrawingSurface`: the CPU bitmap a surface brush draws.
 //!
 //! A surface owns an RGBA8 buffer, a size, and the pixel format and alpha mode it was created
-//! with. The ABI half is the size, format and alpha mode getters, `Resize`, and the
-//! `ICompositionDrawingSurfaceInterop` the graphics device route needs. That last one cannot
-//! hand out a Direct2D context: drawing through Direct2D needs `D2D1CreateDevice`, a Win32
-//! entry point this DLL does not bind, so `BeginDraw` fails with `E_NOINTERFACE`. The path for
-//! a host that owns the pixels is [`create`], [`surface_update`], [`surface_pixels`] and
-//! [`surface_image`].
+//! with. A surface a graphics device creates also owns a BGRA8 render-target texture over the
+//! client's D3D11 device, and the `ICompositionDrawingSurfaceInterop` half hands its Direct2D
+//! device context to a client; after `EndDraw` the texture is copied back into the buffer, so
+//! the composition path samples the CPU copy whether or not the client drew through Direct2D.
+//! The path for a host that owns the pixels is [`create`], [`surface_update`],
+//! [`surface_pixels`] and [`surface_image`].
 //!
 //! A surface id is also a texture id. Ids come from one global counter starting at one, so zero
 //! stays the renderer's built-in white texture. The DLL does not hold a renderer, so the host
 //! takes the buffer reported by [`surface_image`] and uploads it with `Renderer::upload_rgba`
 //! under that id before presenting.
 
-use std::ffi::c_void;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use crate::bindings::Microsoft::Graphics::DirectX::{DirectXAlphaMode, DirectXPixelFormat};
@@ -25,11 +24,11 @@ use crate::bindings::Microsoft::UI::Composition::{
 };
 use crate::bindings::Windows::Foundation::Size;
 use crate::bindings::Windows::Graphics::SizeInt32;
-use crate::interop::{
-    ICompositionDrawingSurfaceInterop, ICompositionDrawingSurfaceInterop_Impl, PixelSize, Rect,
-};
+use crate::interop::{GpuDevice, ICompositionDrawingSurfaceInterop, Texture};
 use crate::object::{composition_object, not_implemented};
-use windows_core::{Error, GUID, HRESULT, Interface, Result};
+use windows_core::{Error, HRESULT, Interface, Result};
+
+mod draw;
 
 /// The ABI class a host passes back to [`surface_update`] and [`surface_pixels`].
 pub use crate::bindings::Microsoft::UI::Composition::CompositionDrawingSurface;
@@ -38,7 +37,6 @@ pub use crate::bindings::Microsoft::UI::Composition::CompositionDrawingSurface;
 const MAX_DIMENSION: u32 = 16384;
 
 const E_OUTOFMEMORY: HRESULT = HRESULT(0x8007_000eu32 as i32);
-const E_NOINTERFACE: HRESULT = HRESULT(0x8000_4002u32 as i32);
 const E_INVALIDARG: HRESULT = HRESULT(0x8007_0057u32 as i32);
 
 /// The next surface id. Zero is the renderer's white texture, so the counter starts at one.
@@ -112,6 +110,12 @@ struct DrawingSurface {
     // Fixed at creation: the buffer is always RGBA8, whatever the requested byte order.
     format: DirectXPixelFormat,
     alpha: DirectXAlphaMode,
+    /// The Direct2D objects of the device that made this surface; `None` on the CPU path.
+    gpu: Option<Arc<GpuDevice>>,
+    /// The render-target texture over `gpu`'s device, rebuilt by [`resize`].
+    texture: Mutex<Option<Texture>>,
+    /// Whether a `BeginDraw` is open; one session per surface at a time.
+    drawing: AtomicBool,
 }
 
 impl DrawingSurface {
@@ -129,10 +133,22 @@ impl DrawingSurface {
         }
     }
 
+    /// A texture of `width` by `height` over the surface's device, if it has one.
+    fn make_texture(&self, width: u32, height: u32) -> Option<Texture> {
+        self.gpu.as_ref()?.texture(width, height)
+    }
+
     fn resize(&self, width: u32, height: u32) -> bool {
         let Some(buffer) = Buffer::new(width, height) else {
             return false;
         };
+        // A texture is the same size as the buffer it mirrors; the old one is dropped here.
+        let texture = self.make_texture(buffer.width, buffer.height);
+        let Ok(mut current) = self.texture.lock() else {
+            return false;
+        };
+        *current = texture;
+        drop(current);
         match self.pixels.lock() {
             Ok(mut current) => {
                 *current = buffer;
@@ -240,51 +256,6 @@ impl ICompositionDrawingSurface2_Impl for DrawingSurfaceObject_Impl {
     }
 }
 
-// The interop half of a surface. Drawing has to come from a Direct2D device context, and
-// getting one needs `D2D1CreateDevice`, a Win32 entry point this DLL does not bind; the
-// alternatives, an `IDXGISurface` over a GPU texture, need a D3D device this surface does not
-// have. Every IID, the Direct2D one included, is therefore answered with `E_NOINTERFACE`
-// rather than with a stand-in object.
-impl ICompositionDrawingSurfaceInterop_Impl for DrawingSurfaceObject_Impl {
-    fn BeginDraw(&self, _updateRect: *const Rect, _iid: &GUID) -> Result<*mut c_void> {
-        Err(Error::from_hresult(E_NOINTERFACE))
-    }
-
-    // There is no draw session to close: BeginDraw never starts one.
-    fn EndDraw(&self) -> Result<()> {
-        not_implemented()
-    }
-
-    fn Resize(&self, sizePixels: PixelSize) -> Result<()> {
-        let width = sizePixels.cx.max(0) as u32;
-        let height = sizePixels.cy.max(0) as u32;
-        if self.surface.resize(width, height) {
-            Ok(())
-        } else {
-            Err(Error::from_hresult(E_OUTOFMEMORY))
-        }
-    }
-
-    // Scrolling would have to move pixels the host may be filling; it is not part of this path.
-    fn Scroll(
-        &self,
-        _scrollRect: *const Rect,
-        _clipRect: *const Rect,
-        _offsetX: i32,
-        _offsetY: i32,
-    ) -> Result<()> {
-        not_implemented()
-    }
-
-    fn ResumeDraw(&self) -> Result<()> {
-        not_implemented()
-    }
-
-    fn SuspendDraw(&self) -> Result<()> {
-        not_implemented()
-    }
-}
-
 /// A surface of `width` by `height` pixels, zeroed, for a host to fill.
 ///
 /// The host path is the one this crate offers directly; a WinRT client reaches
@@ -295,17 +266,20 @@ pub fn create(width: u32, height: u32) -> Result<CompositionDrawingSurface> {
         height,
         DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb,
         DirectXAlphaMode::Straight,
+        None,
     )
 }
 
 /// A surface the size a graphics device was asked for, in the requested format.
 ///
 /// The buffer is RGBA8 either way, so the two RGBA8 formats are the ones a client may ask
-/// for; anything else fails with `E_INVALIDARG` instead of returning swapped colors.
+/// for; anything else fails with `E_INVALIDARG` instead of returning swapped colors. `gpu`
+/// is the device's Direct2D half, or `None` for the CPU-only path.
 pub(crate) fn create_sized(
     size: Size,
     format: DirectXPixelFormat,
     alpha: DirectXAlphaMode,
+    gpu: Option<Arc<GpuDevice>>,
 ) -> Result<CompositionDrawingSurface> {
     if format != DirectXPixelFormat::R8G8B8A8UIntNormalized
         && format != DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb
@@ -314,7 +288,7 @@ pub(crate) fn create_sized(
     }
     let width = size.width.max(0.0) as u32;
     let height = size.height.max(0.0) as u32;
-    create_with(width, height, format, alpha)
+    create_with(width, height, format, alpha, gpu)
 }
 
 fn create_with(
@@ -322,13 +296,21 @@ fn create_with(
     height: u32,
     format: DirectXPixelFormat,
     alpha: DirectXAlphaMode,
+    gpu: Option<Arc<GpuDevice>>,
 ) -> Result<CompositionDrawingSurface> {
     let buffer = Buffer::new(width, height).ok_or_else(|| Error::from_hresult(E_OUTOFMEMORY))?;
+    // A failed allocation leaves the surface on the CPU path instead of failing creation.
+    let texture = gpu
+        .as_ref()
+        .and_then(|gpu| gpu.texture(buffer.width, buffer.height));
     let surface = Arc::new(DrawingSurface {
         id: next_id(),
         pixels: Mutex::new(buffer),
         format,
         alpha,
+        gpu,
+        texture: Mutex::new(texture),
+        drawing: AtomicBool::new(false),
     });
     let object: ICompositionDrawingSurface = DrawingSurfaceObject {
         surface: surface.clone(),

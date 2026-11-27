@@ -7,15 +7,19 @@
 //!
 //! This is the route a WinUI client takes to draw into one of our surfaces: the compositor
 //! wraps the client's own `ID3D11Device` in a graphics device, the device creates a drawing
-//! surface, and the surface is asked to begin a draw. The first two steps answer;
-//! `BeginDraw` says why it has no Direct2D device context to hand out yet.
+//! surface, and the surface is asked to begin a draw. All three answer: the graphics device
+//! builds the Direct2D objects once, and `BeginDraw` hands the surface's Direct2D device
+//! context to the client.
 
 use std::ffi::c_void;
 
 use crate::bindings::Microsoft::UI::Composition::ICompositionGraphicsDevice;
 use windows_core::{Error, GUID, HRESULT, IUnknown, Interface, Ref, Result};
 
+mod gpu;
 mod graphics;
+
+pub(crate) use gpu::{GpuDevice, Texture};
 
 const E_POINTER: HRESULT = HRESULT(0x8000_4003u32 as i32);
 
