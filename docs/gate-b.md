@@ -285,15 +285,21 @@ that the real CoreMessaging gets past it only to need `NtAlpcConnectPortEx`, whi
 implements. WineExplorer's conclusion after their own implementation is that the chain
 "costs one probe on Windows and one run" per layer, with no known depth.
 
-There is no Windows host in this worktree to probe against, so the next member can be
-answered only by guessing, one run at a time. Two ways out, in order of preference:
+There is no Windows machine in this worktree, but there is one in CI. `OPENCOMP_COREUI=proxy`
+asks the system for the real session on Windows and hands the engine a proxy: every method
+is forwarded to the real object with the same arguments and printed with the HRESULT, and
+the two slots that hand back objects -- the registrar and the item -- are wrapped as well.
+The Windows job uploads that trace as an artifact. That is the specification the Wine-side
+session has to meet, which is the same measurement WineExplorer made by hand.
+
+The other two ways out, neither of them taken:
 
 - Find what makes `WindowsXamlManager` enter the `CoreWindowIntegration` route at all.
   The route exists for a window-system-hosting conversation; a probe that creates its
   window itself and drives its own dispatcher should not need it, and a version or
   feature check answered the other way would skip the whole chain.
-- Continue the walk: answer `{37a94c05}`, log the slot the engine calls, answer the next
-  question. Each layer is a blind guess about semantics we cannot observe on Windows.
+- Continue the walk blind: answer `{37a94c05}`, log the slot the engine calls, answer the
+  next question. Each layer would be a guess about semantics nobody documents.
 
 The measurement is unchanged: it still has not run under Wine. Gate A's frame on Windows
 remains the only end-to-end evidence that the client draws through our compositor.
