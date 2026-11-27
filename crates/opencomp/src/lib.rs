@@ -41,6 +41,8 @@ mod compositor_ext;
 #[cfg(windows)]
 pub mod content;
 #[cfg(windows)]
+mod d2d;
+#[cfg(windows)]
 mod easing;
 #[cfg(windows)]
 mod geometry;
@@ -50,6 +52,8 @@ mod interop;
 pub mod node;
 #[cfg(windows)]
 mod object;
+#[cfg(windows)]
+mod present;
 #[cfg(windows)]
 mod propertyset;
 #[cfg(windows)]

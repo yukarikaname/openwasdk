@@ -222,6 +222,8 @@ struct BridgeState {
     scale: f32,
     resize_policy: ContentSizePolicy,
     island: Option<SharedIsland>,
+    /// The frame loop, started on the first `Show` and stopped by `Hide` or `Close`.
+    presenter: Option<crate::present::Window>,
 }
 
 impl BridgeState {
@@ -233,6 +235,7 @@ impl BridgeState {
             scale: 1.0,
             resize_policy: ContentSizePolicy::None,
             island: None,
+            presenter: None,
         }
     }
 }
@@ -251,6 +254,9 @@ struct Bridge {
 impl IClosable_Impl for Bridge_Impl {
     fn Close(&self) -> Result<()> {
         let mut bridge = self.state.lock().unwrap();
+        if let Some(mut presenter) = bridge.presenter.take() {
+            presenter.stop();
+        }
         if let Some(island) = bridge.island.take() {
             let mut island = island.lock().unwrap();
             island.connected = false;
@@ -332,6 +338,9 @@ impl IDesktopSiteBridge_Impl for Bridge_Impl {
     }
     fn Hide(&self) -> Result<()> {
         let mut bridge = self.state.lock().unwrap();
+        if let Some(mut presenter) = bridge.presenter.take() {
+            presenter.stop();
+        }
         bridge.visible = false;
         if let Some(island) = &bridge.island {
             island.lock().unwrap().site_visible = false;
@@ -341,6 +350,9 @@ impl IDesktopSiteBridge_Impl for Bridge_Impl {
     fn MoveAndResize(&self, rect: &RectInt32) -> Result<()> {
         let mut bridge = self.state.lock().unwrap();
         bridge.rect = *rect;
+        if let Some(presenter) = &bridge.presenter {
+            presenter.resize(rect.width.max(0) as u32, rect.height.max(0) as u32);
+        }
         if let Some(island) = &bridge.island {
             let mut state = island.lock().unwrap();
             state.size = Vector2 {
@@ -365,7 +377,37 @@ impl IDesktopSiteBridge_Impl for Bridge_Impl {
         if let Some(island) = &bridge.island {
             island.lock().unwrap().site_visible = true;
         }
+        if bridge.presenter.is_none() {
+            start_presenting(&mut bridge, self.window);
+        }
         Ok(())
+    }
+}
+
+/// Start the frame loop for a bridge that has an island and a size.
+///
+/// A bridge with neither stays silent: `Show` is not where a client expects an
+/// error, and a missing device is not something the client can repair.
+fn start_presenting(bridge: &mut BridgeState, window: WindowId) {
+    let Some(island) = bridge.island.as_ref() else {
+        return;
+    };
+    let (root, size) = {
+        let island = island.lock().unwrap();
+        (
+            island.node.clone(),
+            (
+                bridge.rect.width.max(0) as u32,
+                bridge.rect.height.max(0) as u32,
+            ),
+        )
+    };
+    if size.0 == 0 || size.1 == 0 || window.value == 0 {
+        return;
+    }
+    match crate::present::Window::start(root, window.value, size) {
+        Some(presenter) => bridge.presenter = Some(presenter),
+        None => eprintln!("opencomp: no device for this window; nothing will be presented"),
     }
 }
 
