@@ -87,16 +87,43 @@ module serves a WinRT class.
 cargo run -p comptrace -- generate \
     path/to/Microsoft.UI.winmd path/to/Microsoft.Graphics.winmd \
     path/to/Microsoft.Foundation.winmd path/to/Windows.winmd \
-    --namespace Microsoft.UI.Composition,Windows.UI.Composition,Windows.UI.Color,Windows.Foundation.Numerics \
+    --namespace Microsoft.UI.Composition,Windows.UI.Composition,Windows.UI.Color,Windows.Foundation.Numerics,Microsoft.UI.Content,Microsoft.UI.Composition.Visual,Microsoft.UI.Composition.Compositor,Microsoft.UI.WindowId,Microsoft.UI.DisplayId,Microsoft.UI.Dispatching,Windows.Foundation.TypedEventHandler,Windows.Foundation.Collections,Windows.Foundation.IClosable,Windows.Graphics.RectInt32 \
     --minimal \
     --out crates/opencomp/src/bindings.rs
 ```
 
-`--minimal` omits the client-side class wrappers; the runtime needs the
-interfaces and the `*_Impl` traits only. `Windows.Foundation.Numerics` has to be
-in the filter: without it the generator maps vectors to `windows-numerics`, which
-has no `Quaternion`, so `IVisual.Orientation` is skipped and every `_Impl` trait
-that requires `IVisual` disappears with it.
+`--minimal` omits the client-side class wrappers, except for classes named
+explicitly in the filter: `Microsoft.UI.Composition.Visual` and `Compositor` are
+there because the Content staging uses those exact projections, and the
+`Microsoft.UI.Content` classes come with the namespace. `Windows.Foundation.Numerics`
+has to be in the filter: without it the generator maps vectors to
+`windows-numerics`, which has no `Quaternion`, so `IVisual.Orientation` is skipped
+and every `_Impl` trait that requires `IVisual` disappears with it. Do not add
+`Windows.Foundation` itself: the generator then emits references to
+`Windows.Storage`, `Windows.Devices` and `Windows.Security` types that the filter
+does not provide, and the module no longer compiles.
+
+windows-bindgen 0.100 emits the `TypedEventHandler` delegate box private and
+refers to it unqualified from the middle namespaces. After generating, run:
+
+```sh
+python3 - <<'EOF'
+p = "crates/opencomp/src/bindings.rs"
+s = open(p).read()
+s = s.replace("&TypedEventHandlerBox::<",
+              "&crate::bindings::Windows::Foundation::TypedEventHandlerBox::<")
+s = s.replace("& TypedEventHandlerBox::<",
+              "& crate::bindings::Windows::Foundation::TypedEventHandlerBox::<")
+s = s.replace("        struct TypedEventHandlerBox<",
+              "        pub(crate) struct TypedEventHandlerBox<")
+s = s.replace("            const VTABLE: TypedEventHandler_Vtbl<TSender, TResult> =",
+              "            pub(crate) const VTABLE: TypedEventHandler_Vtbl<TSender, TResult> =")
+open(p, "w").write(s)
+EOF
+```
+
+The box and its `VTABLE` become `pub(crate)`, and every use is qualified with the
+crate path so the generated file compiles as one module.
 
 ## Loading it on Windows
 

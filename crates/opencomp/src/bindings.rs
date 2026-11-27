@@ -1,5 +1,17 @@
 pub mod Microsoft {
     pub mod UI {
+        #[repr(C)]
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        pub struct DisplayId {
+            pub value: u64,
+        }
+        impl windows_core::imp::TypeKind for DisplayId {
+            type TypeKind = windows_core::imp::CopyType;
+        }
+        impl windows_core::RuntimeType for DisplayId {
+            const SIGNATURE: windows_core::imp::ConstBuffer =
+                windows_core::imp::ConstBuffer::from_slice(b"struct(Microsoft.UI.DisplayId;u8)");
+        }
         windows_core::imp::define_interface!(
             IClosableNotifier,
             IClosableNotifier_Vtbl,
@@ -44,6 +56,18 @@ pub mod Microsoft {
             FrameworkClosed: usize,
             pub RemoveFrameworkClosed:
                 unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+        }
+        #[repr(C)]
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        pub struct WindowId {
+            pub value: u64,
+        }
+        impl windows_core::imp::TypeKind for WindowId {
+            type TypeKind = windows_core::imp::CopyType;
+        }
+        impl windows_core::RuntimeType for WindowId {
+            const SIGNATURE: windows_core::imp::ConstBuffer =
+                windows_core::imp::ConstBuffer::from_slice(b"struct(Microsoft.UI.WindowId;u8)");
         }
         pub mod Composition {
             #[repr(transparent)]
@@ -6840,9 +6864,161 @@ pub mod Microsoft {
                         .map(|| result__)
                     }
                 }
+                pub fn Changed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<CompositionCapabilities>,
+                            windows_core::Ref<windows_core::IInspectable>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        CompositionCapabilities,
+                        windows_core::IInspectable,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                CompositionCapabilities,
+                                windows_core::IInspectable,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                CompositionCapabilities,
+                                windows_core::IInspectable,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Changed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveChanged,
+                        ))
+                    }
+                }
             }
             impl windows_core::RuntimeName for ICompositionCapabilities {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionCapabilities";
+            }
+            pub trait ICompositionCapabilities_Impl: windows_core::IUnknownImpl {
+                fn AreEffectsSupported(&self) -> windows_core::Result<bool>;
+                fn AreEffectsFast(&self) -> windows_core::Result<bool>;
+                fn Changed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            CompositionCapabilities,
+                            windows_core::IInspectable,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveChanged(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionCapabilities_Vtbl {
+                pub const fn new<Identity: ICompositionCapabilities_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AreEffectsSupported<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCapabilities_Impl::AreEffectsSupported(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn AreEffectsFast<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCapabilities_Impl::AreEffectsFast(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Changed<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCapabilities_Impl::Changed(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveChanged<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionCapabilities_Impl::RemoveChanged(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionCapabilities,
+                            OFFSET,
+                        >(),
+                        AreEffectsSupported: AreEffectsSupported::<Identity, OFFSET>,
+                        AreEffectsFast: AreEffectsFast::<Identity, OFFSET>,
+                        Changed: Changed::<Identity, OFFSET>,
+                        RemoveChanged: RemoveChanged::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionCapabilities as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionCapabilities_Vtbl {
@@ -6857,7 +7033,11 @@ pub mod Microsoft {
                     *mut bool,
                 )
                     -> windows_core::HRESULT,
-                Changed: usize,
+                pub Changed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
                 pub RemoveChanged:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -7820,9 +8000,161 @@ pub mod Microsoft {
                         .map(|| result__)
                     }
                 }
+                pub fn Completed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<CompositionBatchCompletedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        CompositionBatchCompletedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Completed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveCompleted,
+                        ))
+                    }
+                }
             }
             impl windows_core::RuntimeName for ICompositionCommitBatch {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionCommitBatch";
+            }
+            pub trait ICompositionCommitBatch_Impl: windows_core::IUnknownImpl {
+                fn IsActive(&self) -> windows_core::Result<bool>;
+                fn IsEnded(&self) -> windows_core::Result<bool>;
+                fn Completed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            CompositionBatchCompletedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveCompleted(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionCommitBatch_Vtbl {
+                pub const fn new<Identity: ICompositionCommitBatch_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn IsActive<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCommitBatch_Impl::IsActive(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsEnded<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCommitBatch_Impl::IsEnded(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Completed<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCommitBatch_Impl::Completed(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveCompleted<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionCommitBatch_Impl::RemoveCompleted(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionCommitBatch,
+                            OFFSET,
+                        >(),
+                        IsActive: IsActive::<Identity, OFFSET>,
+                        IsEnded: IsEnded::<Identity, OFFSET>,
+                        Completed: Completed::<Identity, OFFSET>,
+                        RemoveCompleted: RemoveCompleted::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionCommitBatch as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionCommitBatch_Vtbl {
@@ -7835,7 +8167,11 @@ pub mod Microsoft {
                     *mut core::ffi::c_void,
                     *mut bool,
                 ) -> windows_core::HRESULT,
-                Completed: usize,
+                pub Completed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
                 pub RemoveCompleted:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -10602,6 +10938,54 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionGraphicsDevice",
                     );
             }
+            impl ICompositionGraphicsDevice {
+                pub fn RenderingDeviceReplaced<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<CompositionGraphicsDevice>,
+                            windows_core::Ref<RenderingDeviceReplacedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        CompositionGraphicsDevice,
+                        RenderingDeviceReplacedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                CompositionGraphicsDevice,
+                                RenderingDeviceReplacedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                CompositionGraphicsDevice,
+                                RenderingDeviceReplacedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .RenderingDeviceReplaced)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveRenderingDeviceReplaced,
+                        ))
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionGraphicsDevice {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionGraphicsDevice";
             }
@@ -10609,7 +10993,12 @@ pub mod Microsoft {
             pub struct ICompositionGraphicsDevice_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
                 CreateDrawingSurface: usize,
-                RenderingDeviceReplaced: usize,
+                pub RenderingDeviceReplaced: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
                 pub RemoveRenderingDeviceReplaced:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -12886,12 +13275,72 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionObject3",
                     );
             }
+            impl ICompositionObject3 {
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionObject3 {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionObject3";
+            }
+            pub trait ICompositionObject3_Impl: windows_core::IUnknownImpl {
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+            }
+            impl ICompositionObject3_Vtbl {
+                pub const fn new<Identity: ICompositionObject3_Impl, const OFFSET: isize>() -> Self
+                {
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: ICompositionObject3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionObject3_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionObject3,
+                            OFFSET,
+                        >(),
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionObject3 as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionObject3_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionObject4,
@@ -16430,9 +16879,203 @@ pub mod Microsoft {
                         .ok()
                     }
                 }
+                pub fn Completed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<CompositionBatchCompletedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        CompositionBatchCompletedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Completed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveCompleted,
+                        ))
+                    }
+                }
             }
             impl windows_core::RuntimeName for ICompositionScopedBatch {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositionScopedBatch";
+            }
+            pub trait ICompositionScopedBatch_Impl: windows_core::IUnknownImpl {
+                fn IsActive(&self) -> windows_core::Result<bool>;
+                fn IsEnded(&self) -> windows_core::Result<bool>;
+                fn End(&self) -> windows_core::Result<()>;
+                fn Resume(&self) -> windows_core::Result<()>;
+                fn Suspend(&self) -> windows_core::Result<()>;
+                fn Completed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            CompositionBatchCompletedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveCompleted(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionScopedBatch_Vtbl {
+                pub const fn new<Identity: ICompositionScopedBatch_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn IsActive<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionScopedBatch_Impl::IsActive(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsEnded<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionScopedBatch_Impl::IsEnded(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn End<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::End(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Resume<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::Resume(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Suspend<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::Suspend(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Completed<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionScopedBatch_Impl::Completed(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveCompleted<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::RemoveCompleted(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionScopedBatch,
+                            OFFSET,
+                        >(),
+                        IsActive: IsActive::<Identity, OFFSET>,
+                        IsEnded: IsEnded::<Identity, OFFSET>,
+                        End: End::<Identity, OFFSET>,
+                        Resume: Resume::<Identity, OFFSET>,
+                        Suspend: Suspend::<Identity, OFFSET>,
+                        Completed: Completed::<Identity, OFFSET>,
+                        RemoveCompleted: RemoveCompleted::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionScopedBatch as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionScopedBatch_Vtbl {
@@ -16450,7 +17093,11 @@ pub mod Microsoft {
                     unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
                 pub Suspend:
                     unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
-                Completed: usize,
+                pub Completed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
                 pub RemoveCompleted:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -19555,13 +20202,78 @@ pub mod Microsoft {
                         b"Microsoft.UI.Composition.ICompositionVirtualDrawingSurface",
                     );
             }
+            impl ICompositionVirtualDrawingSurface {
+                pub fn Trim(
+                    &self,
+                    rects: &[super::super::super::Windows::Graphics::RectInt32],
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Trim)(
+                            windows_core::Interface::as_raw(self),
+                            rects.len().try_into().unwrap(),
+                            rects.as_ptr(),
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionVirtualDrawingSurface {
                 const NAME: &'static str =
                     "Microsoft.UI.Composition.ICompositionVirtualDrawingSurface";
             }
+            pub trait ICompositionVirtualDrawingSurface_Impl: windows_core::IUnknownImpl {
+                fn Trim(
+                    &self,
+                    rects: &[super::super::super::Windows::Graphics::RectInt32],
+                ) -> windows_core::Result<()>;
+            }
+            impl ICompositionVirtualDrawingSurface_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionVirtualDrawingSurface_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn Trim<
+                        Identity: ICompositionVirtualDrawingSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        rects_array_size: u32,
+                        rects: *const super::super::super::Windows::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionVirtualDrawingSurface_Impl::Trim(
+                                this,
+                                core::slice::from_raw_parts(
+                                    core::mem::transmute_copy(&rects),
+                                    rects_array_size as usize,
+                                ),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionVirtualDrawingSurface,
+                            OFFSET,
+                        >(),
+                        Trim: Trim::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionVirtualDrawingSurface as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionVirtualDrawingSurface_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub Trim: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    u32,
+                    *const super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionVirtualDrawingSurfaceFactory,
@@ -22924,6 +23636,18 @@ pub mod Microsoft {
                     );
             }
             impl ICompositor7 {
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
                 pub fn CreateAnimationPropertyInfo(
                     &self,
                 ) -> windows_core::Result<AnimationPropertyInfo> {
@@ -22999,10 +23723,188 @@ pub mod Microsoft {
             impl windows_core::RuntimeName for ICompositor7 {
                 const NAME: &'static str = "Microsoft.UI.Composition.ICompositor7";
             }
+            pub trait ICompositor7_Impl: windows_core::IUnknownImpl {
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn CreateAnimationPropertyInfo(
+                    &self,
+                ) -> windows_core::Result<AnimationPropertyInfo>;
+                fn CreateRectangleClip(&self) -> windows_core::Result<RectangleClip>;
+                fn CreateRectangleClipWithSides(
+                    &self,
+                    left: f32,
+                    top: f32,
+                    right: f32,
+                    bottom: f32,
+                ) -> windows_core::Result<RectangleClip>;
+                fn CreateRectangleClipWithSidesAndRadius(
+                    &self,
+                    left: f32,
+                    top: f32,
+                    right: f32,
+                    bottom: f32,
+                    topLeftRadius: &windows_numerics::Vector2,
+                    topRightRadius: &windows_numerics::Vector2,
+                    bottomRightRadius: &windows_numerics::Vector2,
+                    bottomLeftRadius: &windows_numerics::Vector2,
+                ) -> windows_core::Result<RectangleClip>;
+            }
+            impl ICompositor7_Vtbl {
+                pub const fn new<Identity: ICompositor7_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: ICompositor7_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositor7_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateAnimationPropertyInfo<
+                        Identity: ICompositor7_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositor7_Impl::CreateAnimationPropertyInfo(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateRectangleClip<
+                        Identity: ICompositor7_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositor7_Impl::CreateRectangleClip(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateRectangleClipWithSides<
+                        Identity: ICompositor7_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        left: f32,
+                        top: f32,
+                        right: f32,
+                        bottom: f32,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositor7_Impl::CreateRectangleClipWithSides(
+                                this, left, top, right, bottom,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateRectangleClipWithSidesAndRadius<
+                        Identity: ICompositor7_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        left: f32,
+                        top: f32,
+                        right: f32,
+                        bottom: f32,
+                        topleftradius: windows_numerics::Vector2,
+                        toprightradius: windows_numerics::Vector2,
+                        bottomrightradius: windows_numerics::Vector2,
+                        bottomleftradius: windows_numerics::Vector2,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositor7_Impl::CreateRectangleClipWithSidesAndRadius(
+                                this,
+                                left,
+                                top,
+                                right,
+                                bottom,
+                                core::mem::transmute(&topleftradius),
+                                core::mem::transmute(&toprightradius),
+                                core::mem::transmute(&bottomrightradius),
+                                core::mem::transmute(&bottomleftradius),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositor7,
+                            OFFSET,
+                        >(),
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        CreateAnimationPropertyInfo: CreateAnimationPropertyInfo::<Identity, OFFSET>,
+                        CreateRectangleClip: CreateRectangleClip::<Identity, OFFSET>,
+                        CreateRectangleClipWithSides: CreateRectangleClipWithSides::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        CreateRectangleClipWithSidesAndRadius:
+                            CreateRectangleClipWithSidesAndRadius::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositor7 as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositor7_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
-                DispatcherQueue: usize,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
                 pub CreateAnimationPropertyInfo: unsafe extern "system" fn(
                     *mut core::ffi::c_void,
                     *mut *mut core::ffi::c_void,
@@ -35927,10 +36829,166 @@ pub mod Microsoft {
                             .and_then(|| windows_core::imp::Type::from_abi(result__))
                         }
                     }
+                    pub fn CommitNeeded<F>(
+                        &self,
+                        handler: F,
+                    ) -> windows_core::Result<windows_core::EventRevoker>
+                    where
+                        F: Fn(
+                                windows_core::Ref<CompositorController>,
+                                windows_core::Ref<windows_core::IInspectable>,
+                            ) + 'static,
+                    {
+                        let handler : super::super::super::super::Windows::Foundation::TypedEventHandler < CompositorController , windows_core::IInspectable > = { let com = windows_core::imp::DelegateBox::< super::super::super::super::Windows::Foundation::TypedEventHandler < CompositorController , windows_core::IInspectable > , F >::new (& crate::bindings::Windows::Foundation::TypedEventHandlerBox::< CompositorController , windows_core::IInspectable , F >::VTABLE , handler) ; unsafe { core::mem::transmute (windows_core::imp::box_new (com)) } } ;
+                        unsafe {
+                            let mut result__ = core::mem::zeroed();
+                            let token__ = (windows_core::Interface::vtable(self).CommitNeeded)(
+                                windows_core::Interface::as_raw(self),
+                                windows_core::Interface::as_raw(&handler),
+                                &mut result__,
+                            )
+                            .map(|| result__)?;
+                            Ok(windows_core::EventRevoker::new(
+                                self.clone(),
+                                token__,
+                                windows_core::Interface::vtable(self).RemoveCommitNeeded,
+                            ))
+                        }
+                    }
                 }
                 impl windows_core::RuntimeName for ICompositorController {
                     const NAME: &'static str =
                         "Microsoft.UI.Composition.Core.ICompositorController";
+                }
+                pub trait ICompositorController_Impl: windows_core::IUnknownImpl {
+                    fn Compositor(&self) -> windows_core::Result<super::Compositor>;
+                    fn Commit(&self) -> windows_core::Result<()>;
+                    fn EnsurePreviousCommitCompletedAsync(
+                        &self,
+                    ) -> windows_core::Result<windows_future::IAsyncAction>;
+                    fn CommitNeeded(
+                        &self,
+                        handler: windows_core::Ref<
+                            super::super::super::super::Windows::Foundation::TypedEventHandler<
+                                CompositorController,
+                                windows_core::IInspectable,
+                            >,
+                        >,
+                    ) -> windows_core::Result<i64>;
+                    fn RemoveCommitNeeded(&self, token: i64) -> windows_core::Result<()>;
+                }
+                impl ICompositorController_Vtbl {
+                    pub const fn new<Identity: ICompositorController_Impl, const OFFSET: isize>()
+                    -> Self {
+                        unsafe extern "system" fn Compositor<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut *mut core::ffi::c_void,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ICompositorController_Impl::Compositor(this) {
+                                    Ok(ok__) => {
+                                        result__.write(core::mem::transmute_copy(&ok__));
+                                        core::mem::forget(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn Commit<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ICompositorController_Impl::Commit(this).into()
+                            }
+                        }
+                        unsafe extern "system" fn EnsurePreviousCommitCompletedAsync<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut *mut core::ffi::c_void,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ICompositorController_Impl::EnsurePreviousCommitCompletedAsync(
+                                    this,
+                                ) {
+                                    Ok(ok__) => {
+                                        result__.write(core::mem::transmute_copy(&ok__));
+                                        core::mem::forget(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn CommitNeeded<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            handler: *mut core::ffi::c_void,
+                            result__: *mut i64,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ICompositorController_Impl::CommitNeeded(
+                                    this,
+                                    core::mem::transmute_copy(&handler),
+                                ) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn RemoveCommitNeeded<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            token: i64,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ICompositorController_Impl::RemoveCommitNeeded(this, token).into()
+                            }
+                        }
+                        Self {
+                            base__: windows_core::IInspectable_Vtbl::new::<
+                                Identity,
+                                ICompositorController,
+                                OFFSET,
+                            >(),
+                            Compositor: Compositor::<Identity, OFFSET>,
+                            Commit: Commit::<Identity, OFFSET>,
+                            EnsurePreviousCommitCompletedAsync: EnsurePreviousCommitCompletedAsync::<
+                                Identity,
+                                OFFSET,
+                            >,
+                            CommitNeeded: CommitNeeded::<Identity, OFFSET>,
+                            RemoveCommitNeeded: RemoveCommitNeeded::<Identity, OFFSET>,
+                        }
+                    }
+                    pub fn matches(iid: &windows_core::GUID) -> bool {
+                        iid == &<ICompositorController as windows_core::Interface>::IID
+                    }
                 }
                 #[repr(C)]
                 pub struct ICompositorController_Vtbl {
@@ -35947,7 +37005,12 @@ pub mod Microsoft {
                             *mut core::ffi::c_void,
                             *mut *mut core::ffi::c_void,
                         ) -> windows_core::HRESULT,
-                    CommitNeeded: usize,
+                    pub CommitNeeded: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    )
+                        -> windows_core::HRESULT,
                     pub RemoveCommitNeeded: unsafe extern "system" fn(
                         *mut core::ffi::c_void,
                         i64,
@@ -50890,6 +51953,20 @@ pub mod Microsoft {
                     ISystemBackdropController,
                     super::super::super::super::Windows::Foundation::IClosable
                 );
+                impl ISystemBackdropController {
+                    pub fn SetTargetWithWindowId < P1 , > (& self , windowid : super::super::WindowId , desktopwindowtarget : P1 ,) -> windows_core::Result < bool > where P1 : windows_core::Param < super::super::super::super::Windows::UI::Composition::CompositionTarget > ,{
+                        unsafe {
+                            let mut result__ = core::mem::zeroed();
+                            (windows_core::Interface::vtable(self).SetTargetWithWindowId)(
+                                windows_core::Interface::as_raw(self),
+                                windowid,
+                                desktopwindowtarget.param().abi(),
+                                &mut result__,
+                            )
+                            .map(|| result__)
+                        }
+                    }
+                }
                 impl windows_core::RuntimeName for ISystemBackdropController {
                     const NAME: &'static str =
                         "Microsoft.UI.Composition.SystemBackdrops.ISystemBackdropController";
@@ -50897,6 +51974,13 @@ pub mod Microsoft {
                 #[repr(C)]
                 pub struct ISystemBackdropController_Vtbl {
                     pub base__: windows_core::IInspectable_Vtbl,
+                    pub SetTargetWithWindowId: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        super::super::WindowId,
+                        *mut core::ffi::c_void,
+                        *mut bool,
+                    )
+                        -> windows_core::HRESULT,
                 }
                 windows_core::imp::define_interface!(
                     ISystemBackdropControllerWithTargets,
@@ -50986,6 +52070,32 @@ pub mod Microsoft {
                             .ok()
                         }
                     }
+                    pub fn StateChanged<F>(
+                        &self,
+                        handler: F,
+                    ) -> windows_core::Result<windows_core::EventRevoker>
+                    where
+                        F: Fn(
+                                windows_core::Ref<Self>,
+                                windows_core::Ref<windows_core::IInspectable>,
+                            ) + 'static,
+                    {
+                        let handler : super::super::super::super::Windows::Foundation::TypedEventHandler < Self , windows_core::IInspectable > = { let com = windows_core::imp::DelegateBox::< super::super::super::super::Windows::Foundation::TypedEventHandler < Self , windows_core::IInspectable > , F >::new (& crate::bindings::Windows::Foundation::TypedEventHandlerBox::< Self , windows_core::IInspectable , F >::VTABLE , handler) ; unsafe { core::mem::transmute (windows_core::imp::box_new (com)) } } ;
+                        unsafe {
+                            let mut result__ = core::mem::zeroed();
+                            let token__ = (windows_core::Interface::vtable(self).StateChanged)(
+                                windows_core::Interface::as_raw(self),
+                                windows_core::Interface::as_raw(&handler),
+                                &mut result__,
+                            )
+                            .map(|| result__)?;
+                            Ok(windows_core::EventRevoker::new(
+                                self.clone(),
+                                token__,
+                                windows_core::Interface::vtable(self).RemoveStateChanged,
+                            ))
+                        }
+                    }
                 }
                 impl windows_core::RuntimeName for ISystemBackdropControllerWithTargets {
                     const NAME: &'static str = "Microsoft.UI.Composition.SystemBackdrops.ISystemBackdropControllerWithTargets";
@@ -51017,7 +52127,12 @@ pub mod Microsoft {
                             *mut core::ffi::c_void,
                             *mut core::ffi::c_void,
                         ) -> windows_core::HRESULT,
-                    StateChanged: usize,
+                    pub StateChanged: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    )
+                        -> windows_core::HRESULT,
                     pub RemoveStateChanged: unsafe extern "system" fn(
                         *mut core::ffi::c_void,
                         i64,
@@ -51162,6 +52277,11708 @@ pub mod Microsoft {
                 }
             }
         }
+        pub mod Content {
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ChildSiteLink(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ChildSiteLink,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                ChildSiteLink,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier,
+                IContentSiteAutomation,
+                IContentSiteInput,
+                IContentSiteLink
+            );
+            impl ChildSiteLink {
+                pub fn Create<P0, P1>(parent: P0, placementvisual: P1) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                    P1: windows_core::Param<super::Composition::ContainerVisual>,
+                {
+                    Self::IChildSiteLinkStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).Create)(
+                            windows_core::Interface::as_raw(this),
+                            parent.param().abi(),
+                            placementvisual.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn CreateForSystemVisual<P0, P1>(
+                    parent: P0,
+                    placementvisual: P1,
+                ) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                    P1: windows_core::Param<
+                            super::super::super::Windows::UI::Composition::ContainerVisual,
+                        >,
+                {
+                    Self::IChildSiteLinkStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateForSystemVisual)(
+                            windows_core::Interface::as_raw(this),
+                            parent.param().abi(),
+                            placementvisual.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IChildSiteLinkStatics<
+                    R,
+                    F: FnOnce(&IChildSiteLinkStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        ChildSiteLink,
+                        IChildSiteLinkStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for ChildSiteLink {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IChildSiteLink>();
+            }
+            unsafe impl windows_core::Interface for ChildSiteLink {
+                type Vtable = <IChildSiteLink as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IChildSiteLink as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ChildSiteLink {
+                type Target = IChildSiteLink;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ChildSiteLink {
+                const NAME: &'static str = "Microsoft.UI.Content.ChildSiteLink";
+            }
+            unsafe impl Send for ChildSiteLink {}
+            unsafe impl Sync for ChildSiteLink {}
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct ContentAutomationOptions(pub i32);
+            impl ContentAutomationOptions {
+                pub const None: Self = Self(0);
+                pub const FrameworkBased: Self = Self(1);
+                pub const FragmentBased: Self = Self(2);
+            }
+            impl windows_core::imp::TypeKind for ContentAutomationOptions {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for ContentAutomationOptions {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Content.ContentAutomationOptions;i4)",
+                    );
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentCoordinateConverter(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentCoordinateConverter,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl ContentCoordinateConverter {
+                pub fn CreateForWindowId(windowid: super::WindowId) -> windows_core::Result<Self> {
+                    Self::IContentCoordinateConverterStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateForWindowId)(
+                            windows_core::Interface::as_raw(this),
+                            windowid,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IContentCoordinateConverterStatics<
+                    R,
+                    F: FnOnce(&IContentCoordinateConverterStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        ContentCoordinateConverter,
+                        IContentCoordinateConverterStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for ContentCoordinateConverter {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentCoordinateConverter>(
+                    );
+            }
+            unsafe impl windows_core::Interface for ContentCoordinateConverter {
+                type Vtable = <IContentCoordinateConverter as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentCoordinateConverter as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentCoordinateConverter {
+                type Target = IContentCoordinateConverter;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentCoordinateConverter {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentCoordinateConverter";
+            }
+            unsafe impl Send for ContentCoordinateConverter {}
+            unsafe impl Sync for ContentCoordinateConverter {}
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct ContentCoordinateRoundingMode(pub i32);
+            impl ContentCoordinateRoundingMode {
+                pub const Auto: Self = Self(0);
+                pub const Floor: Self = Self(1);
+                pub const Round: Self = Self(2);
+                pub const Ceiling: Self = Self(3);
+            }
+            impl windows_core::imp::TypeKind for ContentCoordinateRoundingMode {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for ContentCoordinateRoundingMode {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Content.ContentCoordinateRoundingMode;i4)",
+                    );
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentDeferral(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentDeferral,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentDeferral {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentDeferral>();
+            }
+            unsafe impl windows_core::Interface for ContentDeferral {
+                type Vtable = <IContentDeferral as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IContentDeferral as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentDeferral {
+                type Target = IContentDeferral;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentDeferral {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentDeferral";
+            }
+            unsafe impl Send for ContentDeferral {}
+            unsafe impl Sync for ContentDeferral {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentEnvironmentSettingChangedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentEnvironmentSettingChangedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentEnvironmentSettingChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IContentEnvironmentSettingChangedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for ContentEnvironmentSettingChangedEventArgs {
+                type Vtable =
+                    <IContentEnvironmentSettingChangedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentEnvironmentSettingChangedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentEnvironmentSettingChangedEventArgs {
+                type Target = IContentEnvironmentSettingChangedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentEnvironmentSettingChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.ContentEnvironmentSettingChangedEventArgs";
+            }
+            unsafe impl Send for ContentEnvironmentSettingChangedEventArgs {}
+            unsafe impl Sync for ContentEnvironmentSettingChangedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentEnvironmentStateChangedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentEnvironmentStateChangedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentEnvironmentStateChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IContentEnvironmentStateChangedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for ContentEnvironmentStateChangedEventArgs {
+                type Vtable =
+                    <IContentEnvironmentStateChangedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentEnvironmentStateChangedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentEnvironmentStateChangedEventArgs {
+                type Target = IContentEnvironmentStateChangedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentEnvironmentStateChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.ContentEnvironmentStateChangedEventArgs";
+            }
+            unsafe impl Send for ContentEnvironmentStateChangedEventArgs {}
+            unsafe impl Sync for ContentEnvironmentStateChangedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentIsland(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentIsland,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                ContentIsland,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier,
+                super::Composition::ICompositionSupportsSystemBackdrop
+            );
+            impl ContentIsland {
+                pub fn Create<P0>(root: P0) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::Composition::Visual>,
+                {
+                    Self::IContentIslandStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).Create)(
+                            windows_core::Interface::as_raw(this),
+                            root.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn FindAllForCompositor<P0>(
+                    compositor: P0,
+                ) -> windows_core::Result<windows_core::Array<Self>>
+                where
+                    P0: windows_core::Param<super::Composition::Compositor>,
+                {
+                    Self::IContentIslandStatics(|this| unsafe {
+                        let mut result__ = core::mem::MaybeUninit::zeroed();
+                        (windows_core::Interface::vtable(this).FindAllForCompositor)(
+                            windows_core::Interface::as_raw(this),
+                            compositor.param().abi(),
+                            windows_core::Array::<Self>::set_abi_len(core::mem::transmute(
+                                &mut result__,
+                            )),
+                            result__.as_mut_ptr() as *mut _ as _,
+                        )
+                        .map(|| result__.assume_init())
+                    })
+                }
+                pub fn FindAllForCurrentThread() -> windows_core::Result<windows_core::Array<Self>>
+                {
+                    Self::IContentIslandStatics(|this| unsafe {
+                        let mut result__ = core::mem::MaybeUninit::zeroed();
+                        (windows_core::Interface::vtable(this).FindAllForCurrentThread)(
+                            windows_core::Interface::as_raw(this),
+                            windows_core::Array::<Self>::set_abi_len(core::mem::transmute(
+                                &mut result__,
+                            )),
+                            result__.as_mut_ptr() as *mut _ as _,
+                        )
+                        .map(|| result__.assume_init())
+                    })
+                }
+                pub fn GetByVisual<P0>(child: P0) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::Composition::Visual>,
+                {
+                    Self::IContentIslandStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).GetByVisual)(
+                            windows_core::Interface::as_raw(this),
+                            child.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn GetFromId(id: u64) -> windows_core::Result<Self> {
+                    Self::IContentIslandStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).GetFromId)(
+                            windows_core::Interface::as_raw(this),
+                            id,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn CreateForSystemVisual<P0, P1>(
+                    queue: P0,
+                    root: P1,
+                ) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::Dispatching::DispatcherQueue>,
+                    P1: windows_core::Param<super::super::super::Windows::UI::Composition::Visual>,
+                {
+                    Self::IContentIslandStatics2(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateForSystemVisual)(
+                            windows_core::Interface::as_raw(this),
+                            queue.param().abi(),
+                            root.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn FindAllForSystemCompositor<P0>(
+                    compositor: P0,
+                ) -> windows_core::Result<windows_core::Array<Self>>
+                where
+                    P0: windows_core::Param<
+                            super::super::super::Windows::UI::Composition::Compositor,
+                        >,
+                {
+                    Self::IContentIslandStatics2(|this| unsafe {
+                        let mut result__ = core::mem::MaybeUninit::zeroed();
+                        (windows_core::Interface::vtable(this).FindAllForSystemCompositor)(
+                            windows_core::Interface::as_raw(this),
+                            compositor.param().abi(),
+                            windows_core::Array::<Self>::set_abi_len(core::mem::transmute(
+                                &mut result__,
+                            )),
+                            result__.as_mut_ptr() as *mut _ as _,
+                        )
+                        .map(|| result__.assume_init())
+                    })
+                }
+                pub fn GetBySystemVisual<P0>(child: P0) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::super::super::Windows::UI::Composition::Visual>,
+                {
+                    Self::IContentIslandStatics2(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).GetBySystemVisual)(
+                            windows_core::Interface::as_raw(this),
+                            child.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IContentIslandStatics<
+                    R,
+                    F: FnOnce(&IContentIslandStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        ContentIsland,
+                        IContentIslandStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+                fn IContentIslandStatics2<
+                    R,
+                    F: FnOnce(&IContentIslandStatics2) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        ContentIsland,
+                        IContentIslandStatics2,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for ContentIsland {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentIsland>();
+            }
+            unsafe impl windows_core::Interface for ContentIsland {
+                type Vtable = <IContentIsland as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IContentIsland as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentIsland {
+                type Target = IContentIsland;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentIsland {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentIsland";
+            }
+            unsafe impl Send for ContentIsland {}
+            unsafe impl Sync for ContentIsland {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentIslandAutomationProviderRequestedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentIslandAutomationProviderRequestedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentIslandAutomationProviderRequestedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IContentIslandAutomationProviderRequestedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for ContentIslandAutomationProviderRequestedEventArgs {
+                type Vtable = < IContentIslandAutomationProviderRequestedEventArgs as windows_core::Interface >::Vtable ;
+                const IID : windows_core::GUID = < IContentIslandAutomationProviderRequestedEventArgs as windows_core::Interface >::IID ;
+            }
+            impl core::ops::Deref for ContentIslandAutomationProviderRequestedEventArgs {
+                type Target = IContentIslandAutomationProviderRequestedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentIslandAutomationProviderRequestedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.ContentIslandAutomationProviderRequestedEventArgs";
+            }
+            unsafe impl Send for ContentIslandAutomationProviderRequestedEventArgs {}
+            unsafe impl Sync for ContentIslandAutomationProviderRequestedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentIslandEnvironment(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentIslandEnvironment,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentIslandEnvironment {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentIslandEnvironment>();
+            }
+            unsafe impl windows_core::Interface for ContentIslandEnvironment {
+                type Vtable = <IContentIslandEnvironment as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentIslandEnvironment as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentIslandEnvironment {
+                type Target = IContentIslandEnvironment;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentIslandEnvironment {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentIslandEnvironment";
+            }
+            unsafe impl Send for ContentIslandEnvironment {}
+            unsafe impl Sync for ContentIslandEnvironment {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentIslandStateChangedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentIslandStateChangedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentIslandStateChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IContentIslandStateChangedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for ContentIslandStateChangedEventArgs {
+                type Vtable =
+                    <IContentIslandStateChangedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentIslandStateChangedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentIslandStateChangedEventArgs {
+                type Target = IContentIslandStateChangedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentIslandStateChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.ContentIslandStateChangedEventArgs";
+            }
+            unsafe impl Send for ContentIslandStateChangedEventArgs {}
+            unsafe impl Sync for ContentIslandStateChangedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct ContentLayoutDirection(pub i32);
+            impl ContentLayoutDirection {
+                pub const LeftToRight: Self = Self(0);
+                pub const RightToLeft: Self = Self(1);
+            }
+            impl windows_core::imp::TypeKind for ContentLayoutDirection {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for ContentLayoutDirection {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Content.ContentLayoutDirection;i4)",
+                    );
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentSite(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentSite,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                ContentSite,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier
+            );
+            impl windows_core::RuntimeType for ContentSite {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentSite>();
+            }
+            unsafe impl windows_core::Interface for ContentSite {
+                type Vtable = <IContentSite as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IContentSite as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentSite {
+                type Target = IContentSite;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentSite {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentSite";
+            }
+            unsafe impl Send for ContentSite {}
+            unsafe impl Sync for ContentSite {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentSiteAutomationProviderRequestedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentSiteAutomationProviderRequestedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentSiteAutomationProviderRequestedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IContentSiteAutomationProviderRequestedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for ContentSiteAutomationProviderRequestedEventArgs {
+                type Vtable = < IContentSiteAutomationProviderRequestedEventArgs as windows_core::Interface >::Vtable ;
+                const IID : windows_core::GUID = < IContentSiteAutomationProviderRequestedEventArgs as windows_core::Interface >::IID ;
+            }
+            impl core::ops::Deref for ContentSiteAutomationProviderRequestedEventArgs {
+                type Target = IContentSiteAutomationProviderRequestedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentSiteAutomationProviderRequestedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.ContentSiteAutomationProviderRequestedEventArgs";
+            }
+            unsafe impl Send for ContentSiteAutomationProviderRequestedEventArgs {}
+            unsafe impl Sync for ContentSiteAutomationProviderRequestedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentSiteEnvironment(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentSiteEnvironment,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentSiteEnvironment {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentSiteEnvironment>();
+            }
+            unsafe impl windows_core::Interface for ContentSiteEnvironment {
+                type Vtable = <IContentSiteEnvironment as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentSiteEnvironment as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentSiteEnvironment {
+                type Target = IContentSiteEnvironment;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentSiteEnvironment {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentSiteEnvironment";
+            }
+            unsafe impl Send for ContentSiteEnvironment {}
+            unsafe impl Sync for ContentSiteEnvironment {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentSiteEnvironmentView(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentSiteEnvironmentView,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentSiteEnvironmentView {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentSiteEnvironmentView>(
+                    );
+            }
+            unsafe impl windows_core::Interface for ContentSiteEnvironmentView {
+                type Vtable = <IContentSiteEnvironmentView as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentSiteEnvironmentView as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentSiteEnvironmentView {
+                type Target = IContentSiteEnvironmentView;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentSiteEnvironmentView {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentSiteEnvironmentView";
+            }
+            unsafe impl Send for ContentSiteEnvironmentView {}
+            unsafe impl Sync for ContentSiteEnvironmentView {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentSiteRequestedStateChangedEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentSiteRequestedStateChangedEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentSiteRequestedStateChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IContentSiteRequestedStateChangedEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for ContentSiteRequestedStateChangedEventArgs {
+                type Vtable =
+                    <IContentSiteRequestedStateChangedEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IContentSiteRequestedStateChangedEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentSiteRequestedStateChangedEventArgs {
+                type Target = IContentSiteRequestedStateChangedEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentSiteRequestedStateChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.ContentSiteRequestedStateChangedEventArgs";
+            }
+            unsafe impl Send for ContentSiteRequestedStateChangedEventArgs {}
+            unsafe impl Sync for ContentSiteRequestedStateChangedEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ContentSiteView(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ContentSiteView,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for ContentSiteView {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IContentSiteView>();
+            }
+            unsafe impl windows_core::Interface for ContentSiteView {
+                type Vtable = <IContentSiteView as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IContentSiteView as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ContentSiteView {
+                type Target = IContentSiteView;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ContentSiteView {
+                const NAME: &'static str = "Microsoft.UI.Content.ContentSiteView";
+            }
+            unsafe impl Send for ContentSiteView {}
+            unsafe impl Sync for ContentSiteView {}
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct ContentSizePolicy(pub i32);
+            impl ContentSizePolicy {
+                pub const None: Self = Self(0);
+                pub const ResizeContentToParentWindow: Self = Self(1);
+                pub const ResizeParentWindowToContent: Self = Self(2);
+            }
+            impl windows_core::imp::TypeKind for ContentSizePolicy {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for ContentSizePolicy {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Content.ContentSizePolicy;i4)",
+                    );
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DesktopAttachedSiteBridge(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DesktopAttachedSiteBridge,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                DesktopAttachedSiteBridge,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier,
+                IContentSiteBridge,
+                IContentSiteInput
+            );
+            impl DesktopAttachedSiteBridge {
+                pub fn CreateFromWindowId<P0>(
+                    queue: P0,
+                    windowid: super::WindowId,
+                ) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::Dispatching::DispatcherQueue>,
+                {
+                    Self::IDesktopAttachedSiteBridgeStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateFromWindowId)(
+                            windows_core::Interface::as_raw(this),
+                            queue.param().abi(),
+                            windowid,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IDesktopAttachedSiteBridgeStatics<
+                    R,
+                    F: FnOnce(&IDesktopAttachedSiteBridgeStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DesktopAttachedSiteBridge,
+                        IDesktopAttachedSiteBridgeStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for DesktopAttachedSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDesktopAttachedSiteBridge>();
+            }
+            unsafe impl windows_core::Interface for DesktopAttachedSiteBridge {
+                type Vtable = <IDesktopAttachedSiteBridge as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDesktopAttachedSiteBridge as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DesktopAttachedSiteBridge {
+                type Target = IDesktopAttachedSiteBridge;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DesktopAttachedSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.DesktopAttachedSiteBridge";
+            }
+            unsafe impl Send for DesktopAttachedSiteBridge {}
+            unsafe impl Sync for DesktopAttachedSiteBridge {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DesktopChildSiteBridge(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DesktopChildSiteBridge,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                DesktopChildSiteBridge,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier,
+                IContentSiteBridge,
+                DesktopSiteBridge
+            );
+            impl DesktopChildSiteBridge {
+                pub fn Create<P0>(
+                    compositor: P0,
+                    parentwindowid: super::WindowId,
+                ) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::Composition::Compositor>,
+                {
+                    Self::IDesktopChildSiteBridgeStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).Create)(
+                            windows_core::Interface::as_raw(this),
+                            compositor.param().abi(),
+                            parentwindowid,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn CreateWithDispatcherQueue<P0>(
+                    queue: P0,
+                    parentwindowid: super::WindowId,
+                ) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<super::Dispatching::DispatcherQueue>,
+                {
+                    Self::IDesktopChildSiteBridgeStatics2(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateWithDispatcherQueue)(
+                            windows_core::Interface::as_raw(this),
+                            queue.param().abi(),
+                            parentwindowid,
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IDesktopChildSiteBridgeStatics<
+                    R,
+                    F: FnOnce(&IDesktopChildSiteBridgeStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DesktopChildSiteBridge,
+                        IDesktopChildSiteBridgeStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+                fn IDesktopChildSiteBridgeStatics2<
+                    R,
+                    F: FnOnce(&IDesktopChildSiteBridgeStatics2) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DesktopChildSiteBridge,
+                        IDesktopChildSiteBridgeStatics2,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for DesktopChildSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDesktopChildSiteBridge>();
+            }
+            unsafe impl windows_core::Interface for DesktopChildSiteBridge {
+                type Vtable = <IDesktopChildSiteBridge as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDesktopChildSiteBridge as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DesktopChildSiteBridge {
+                type Target = IDesktopChildSiteBridge;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DesktopChildSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.DesktopChildSiteBridge";
+            }
+            unsafe impl Send for DesktopChildSiteBridge {}
+            unsafe impl Sync for DesktopChildSiteBridge {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DesktopPopupSiteBridge(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DesktopPopupSiteBridge,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                DesktopPopupSiteBridge,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier,
+                IContentSiteAutomation,
+                IContentSiteBridge,
+                IContentSiteLink
+            );
+            impl DesktopPopupSiteBridge {
+                pub fn Create<P0>(parent: P0) -> windows_core::Result<Self>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                {
+                    Self::IDesktopPopupSiteBridgeStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).Create)(
+                            windows_core::Interface::as_raw(this),
+                            parent.param().abi(),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IDesktopPopupSiteBridgeStatics<
+                    R,
+                    F: FnOnce(&IDesktopPopupSiteBridgeStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DesktopPopupSiteBridge,
+                        IDesktopPopupSiteBridgeStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for DesktopPopupSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDesktopPopupSiteBridge>();
+            }
+            unsafe impl windows_core::Interface for DesktopPopupSiteBridge {
+                type Vtable = <IDesktopPopupSiteBridge as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDesktopPopupSiteBridge as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DesktopPopupSiteBridge {
+                type Target = IDesktopPopupSiteBridge;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DesktopPopupSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.DesktopPopupSiteBridge";
+            }
+            unsafe impl Send for DesktopPopupSiteBridge {}
+            unsafe impl Sync for DesktopPopupSiteBridge {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DesktopSiteBridge(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DesktopSiteBridge,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                DesktopSiteBridge,
+                super::super::super::Windows::Foundation::IClosable,
+                super::IClosableNotifier,
+                IContentSiteBridge
+            );
+            impl DesktopSiteBridge {
+                pub fn IsSupported() -> windows_core::Result<bool> {
+                    Self::IDesktopSiteBridgeStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).IsSupported)(
+                            windows_core::Interface::as_raw(this),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    })
+                }
+                fn IDesktopSiteBridgeStatics<
+                    R,
+                    F: FnOnce(&IDesktopSiteBridgeStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DesktopSiteBridge,
+                        IDesktopSiteBridgeStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for DesktopSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDesktopSiteBridge>();
+            }
+            unsafe impl windows_core::Interface for DesktopSiteBridge {
+                type Vtable = <IDesktopSiteBridge as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDesktopSiteBridge as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DesktopSiteBridge {
+                type Target = IDesktopSiteBridge;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DesktopSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.DesktopSiteBridge";
+            }
+            unsafe impl Send for DesktopSiteBridge {}
+            unsafe impl Sync for DesktopSiteBridge {}
+            windows_core::imp::define_interface!(
+                IChildSiteLink,
+                IChildSiteLink_Vtbl,
+                0xb5a64814_608b_5fb7_a7cb_eb628fd588cd
+            );
+            impl windows_core::RuntimeType for IChildSiteLink {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IChildSiteLink",
+                    );
+            }
+            impl IChildSiteLink {
+                pub fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ActualSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetActualSize(
+                    &self,
+                    value: windows_numerics::Vector2,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetActualSize)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToParentTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetLocalToParentTransformMatrix(
+                    &self,
+                    value: windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetLocalToParentTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn SiteView(&self) -> windows_core::Result<ContentSiteView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SiteView)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Connect<P0>(&self, content: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Connect)(
+                            windows_core::Interface::as_raw(self),
+                            content.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IChildSiteLink {
+                const NAME: &'static str = "Microsoft.UI.Content.IChildSiteLink";
+            }
+            pub trait IChildSiteLink_Impl: windows_core::IUnknownImpl {
+                fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn SetActualSize(
+                    &self,
+                    value: &windows_numerics::Vector2,
+                ) -> windows_core::Result<()>;
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn SetLocalToParentTransformMatrix(
+                    &self,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+                fn SiteView(&self) -> windows_core::Result<ContentSiteView>;
+                fn Connect(
+                    &self,
+                    content: windows_core::Ref<ContentIsland>,
+                ) -> windows_core::Result<()>;
+            }
+            impl IChildSiteLink_Vtbl {
+                pub const fn new<Identity: IChildSiteLink_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn ActualSize<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IChildSiteLink_Impl::ActualSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetActualSize<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IChildSiteLink_Impl::SetActualSize(this, core::mem::transmute(&value))
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IChildSiteLink_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LocalToParentTransformMatrix<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IChildSiteLink_Impl::LocalToParentTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetLocalToParentTransformMatrix<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IChildSiteLink_Impl::SetLocalToParentTransformMatrix(
+                                this,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn SiteView<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IChildSiteLink_Impl::SiteView(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Connect<
+                        Identity: IChildSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        content: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IChildSiteLink_Impl::Connect(this, core::mem::transmute_copy(&content))
+                                .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IChildSiteLink,
+                            OFFSET,
+                        >(),
+                        ActualSize: ActualSize::<Identity, OFFSET>,
+                        SetActualSize: SetActualSize::<Identity, OFFSET>,
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        LocalToParentTransformMatrix: LocalToParentTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        SetLocalToParentTransformMatrix: SetLocalToParentTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        SiteView: SiteView::<Identity, OFFSET>,
+                        Connect: Connect::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IChildSiteLink as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IChildSiteLink_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ActualSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_numerics::Vector2,
+                ) -> windows_core::HRESULT,
+                pub SetActualSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    windows_numerics::Vector2,
+                )
+                    -> windows_core::HRESULT,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub LocalToParentTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub SetLocalToParentTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub SiteView: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub Connect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IChildSiteLinkStatics,
+                IChildSiteLinkStatics_Vtbl,
+                0x28edc98a_4f94_50b1_8a87_9e7169ebf4b7
+            );
+            impl windows_core::RuntimeType for IChildSiteLinkStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IChildSiteLinkStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IChildSiteLinkStatics {
+                const NAME: &'static str = "Microsoft.UI.Content.IChildSiteLinkStatics";
+            }
+            pub trait IChildSiteLinkStatics_Impl: windows_core::IUnknownImpl {
+                fn Create(
+                    &self,
+                    parent: windows_core::Ref<ContentIsland>,
+                    placementVisual: windows_core::Ref<super::Composition::ContainerVisual>,
+                ) -> windows_core::Result<ChildSiteLink>;
+                fn CreateForSystemVisual(
+                    &self,
+                    parent: windows_core::Ref<ContentIsland>,
+                    placementVisual: windows_core::Ref<
+                        super::super::super::Windows::UI::Composition::ContainerVisual,
+                    >,
+                ) -> windows_core::Result<ChildSiteLink>;
+            }
+            impl IChildSiteLinkStatics_Vtbl {
+                pub const fn new<Identity: IChildSiteLinkStatics_Impl, const OFFSET: isize>() -> Self
+                {
+                    unsafe extern "system" fn Create<
+                        Identity: IChildSiteLinkStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        parent: *mut core::ffi::c_void,
+                        placementvisual: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IChildSiteLinkStatics_Impl::Create(
+                                this,
+                                core::mem::transmute_copy(&parent),
+                                core::mem::transmute_copy(&placementvisual),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateForSystemVisual<
+                        Identity: IChildSiteLinkStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        parent: *mut core::ffi::c_void,
+                        placementvisual: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IChildSiteLinkStatics_Impl::CreateForSystemVisual(
+                                this,
+                                core::mem::transmute_copy(&parent),
+                                core::mem::transmute_copy(&placementvisual),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IChildSiteLinkStatics,
+                            OFFSET,
+                        >(),
+                        Create: Create::<Identity, OFFSET>,
+                        CreateForSystemVisual: CreateForSystemVisual::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IChildSiteLinkStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IChildSiteLinkStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Create: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub CreateForSystemVisual: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentCoordinateConverter,
+                IContentCoordinateConverter_Vtbl,
+                0x10a11230_5eb4_5840_a346_570f4a49040f
+            );
+            impl windows_core::RuntimeType for IContentCoordinateConverter {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentCoordinateConverter",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentCoordinateConverter {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentCoordinateConverter";
+            }
+            #[repr(C)]
+            pub struct IContentCoordinateConverter_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentCoordinateConverterFactory,
+                IContentCoordinateConverterFactory_Vtbl,
+                0xa4b216ee_0e26_56bd_9209_a75cf9d80f27
+            );
+            impl windows_core::RuntimeType for IContentCoordinateConverterFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentCoordinateConverterFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentCoordinateConverterFactory {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentCoordinateConverterFactory";
+            }
+            pub trait IContentCoordinateConverterFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentCoordinateConverterFactory_Vtbl {
+                pub const fn new<
+                    Identity: IContentCoordinateConverterFactory_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentCoordinateConverterFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentCoordinateConverterFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentCoordinateConverterFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentCoordinateConverterStatics,
+                IContentCoordinateConverterStatics_Vtbl,
+                0xf56374ce_b6df_5b42_a58f_4e3bb039e3a9
+            );
+            impl windows_core::RuntimeType for IContentCoordinateConverterStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentCoordinateConverterStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentCoordinateConverterStatics {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentCoordinateConverterStatics";
+            }
+            pub trait IContentCoordinateConverterStatics_Impl: windows_core::IUnknownImpl {
+                fn CreateForWindowId(
+                    &self,
+                    windowId: &super::WindowId,
+                ) -> windows_core::Result<ContentCoordinateConverter>;
+            }
+            impl IContentCoordinateConverterStatics_Vtbl {
+                pub const fn new<
+                    Identity: IContentCoordinateConverterStatics_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CreateForWindowId<
+                        Identity: IContentCoordinateConverterStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        windowid: super::WindowId,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentCoordinateConverterStatics_Impl::CreateForWindowId(
+                                this,
+                                core::mem::transmute(&windowid),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentCoordinateConverterStatics,
+                            OFFSET,
+                        >(),
+                        CreateForWindowId: CreateForWindowId::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentCoordinateConverterStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentCoordinateConverterStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateForWindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentDeferral,
+                IContentDeferral_Vtbl,
+                0x470529f5_cd93_599b_968e_f8a689bc3a07
+            );
+            impl windows_core::RuntimeType for IContentDeferral {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentDeferral",
+                    );
+            }
+            impl IContentDeferral {
+                pub fn Complete(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Complete)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentDeferral {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentDeferral";
+            }
+            pub trait IContentDeferral_Impl: windows_core::IUnknownImpl {
+                fn Complete(&self) -> windows_core::Result<()>;
+            }
+            impl IContentDeferral_Vtbl {
+                pub const fn new<Identity: IContentDeferral_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn Complete<
+                        Identity: IContentDeferral_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentDeferral_Impl::Complete(this).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentDeferral,
+                            OFFSET,
+                        >(),
+                        Complete: Complete::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentDeferral as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentDeferral_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Complete:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentEnvironmentSettingChangedEventArgs,
+                IContentEnvironmentSettingChangedEventArgs_Vtbl,
+                0x76478051_fc80_5eec_a3f3_62606abe06b7
+            );
+            impl windows_core::RuntimeType for IContentEnvironmentSettingChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentEnvironmentSettingChangedEventArgs",
+                    );
+            }
+            impl IContentEnvironmentSettingChangedEventArgs {
+                pub fn SettingName(&self) -> windows_core::Result<String> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SettingName)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| {
+                            let hstring: windows_core::HSTRING = core::mem::transmute(result__);
+                            hstring.to_string_lossy()
+                        })
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentEnvironmentSettingChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentEnvironmentSettingChangedEventArgs";
+            }
+            pub trait IContentEnvironmentSettingChangedEventArgs_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn SettingName(&self) -> windows_core::Result<windows_core::HSTRING>;
+            }
+            impl IContentEnvironmentSettingChangedEventArgs_Vtbl {
+                pub const fn new<
+                    Identity: IContentEnvironmentSettingChangedEventArgs_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn SettingName<
+                        Identity: IContentEnvironmentSettingChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentEnvironmentSettingChangedEventArgs_Impl::SettingName(this)
+                            {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentEnvironmentSettingChangedEventArgs,
+                            OFFSET,
+                        >(),
+                        SettingName: SettingName::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == & < IContentEnvironmentSettingChangedEventArgs as windows_core::Interface >::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentEnvironmentSettingChangedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub SettingName: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentEnvironmentStateChangedEventArgs,
+                IContentEnvironmentStateChangedEventArgs_Vtbl,
+                0x8970fa4f_10ba_5f67_970b_8c72bc009b67
+            );
+            impl windows_core::RuntimeType for IContentEnvironmentStateChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentEnvironmentStateChangedEventArgs",
+                    );
+            }
+            impl IContentEnvironmentStateChangedEventArgs {
+                pub fn DidAppWindowIdChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidAppWindowIdChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DidDisplayIdChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidDisplayIdChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentEnvironmentStateChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentEnvironmentStateChangedEventArgs";
+            }
+            pub trait IContentEnvironmentStateChangedEventArgs_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn DidAppWindowIdChange(&self) -> windows_core::Result<bool>;
+                fn DidDisplayIdChange(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentEnvironmentStateChangedEventArgs_Vtbl {
+                pub const fn new<
+                    Identity: IContentEnvironmentStateChangedEventArgs_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn DidAppWindowIdChange<
+                        Identity: IContentEnvironmentStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentEnvironmentStateChangedEventArgs_Impl::DidAppWindowIdChange (this ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn DidDisplayIdChange<
+                        Identity: IContentEnvironmentStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentEnvironmentStateChangedEventArgs_Impl::DidDisplayIdChange(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentEnvironmentStateChangedEventArgs,
+                            OFFSET,
+                        >(),
+                        DidAppWindowIdChange: DidAppWindowIdChange::<Identity, OFFSET>,
+                        DidDisplayIdChange: DidDisplayIdChange::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == & < IContentEnvironmentStateChangedEventArgs as windows_core::Interface >::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentEnvironmentStateChangedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DidAppWindowIdChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub DidDisplayIdChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentEnvironmentStateChangedEventArgs2,
+                IContentEnvironmentStateChangedEventArgs2_Vtbl,
+                0xcec0497d_76c7_544b_bf6e_816c9b16c99f
+            );
+            impl windows_core::RuntimeType for IContentEnvironmentStateChangedEventArgs2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentEnvironmentStateChangedEventArgs2",
+                    );
+            }
+            impl IContentEnvironmentStateChangedEventArgs2 {
+                pub fn DidDisplayScaleChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidDisplayScaleChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentEnvironmentStateChangedEventArgs2 {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentEnvironmentStateChangedEventArgs2";
+            }
+            pub trait IContentEnvironmentStateChangedEventArgs2_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn DidDisplayScaleChange(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentEnvironmentStateChangedEventArgs2_Vtbl {
+                pub const fn new<
+                    Identity: IContentEnvironmentStateChangedEventArgs2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn DidDisplayScaleChange<
+                        Identity: IContentEnvironmentStateChangedEventArgs2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentEnvironmentStateChangedEventArgs2_Impl::DidDisplayScaleChange (this ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentEnvironmentStateChangedEventArgs2,
+                            OFFSET,
+                        >(),
+                        DidDisplayScaleChange: DidDisplayScaleChange::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == & < IContentEnvironmentStateChangedEventArgs2 as windows_core::Interface >::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentEnvironmentStateChangedEventArgs2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DidDisplayScaleChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIsland,
+                IContentIsland_Vtbl,
+                0x5b2504ba_361c_50aa_bd6e_4122c6d93889
+            );
+            impl windows_core::RuntimeType for IContentIsland {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIsland",
+                    );
+            }
+            impl IContentIsland {
+                pub fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ActualSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn AppData(&self) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AppData)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn SetAppData<P0>(&self, value: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<windows_core::IInspectable>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAppData)(
+                            windows_core::Interface::as_raw(self),
+                            value.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn CoordinateConverter(
+                    &self,
+                ) -> windows_core::Result<ContentCoordinateConverter> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CoordinateConverter)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn CustomProperties(
+                    &self,
+                ) -> windows_core::Result<
+                    super::super::super::Windows::Foundation::Collections::IPropertySet,
+                > {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CustomProperties)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Environment(&self) -> windows_core::Result<ContentIslandEnvironment> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Environment)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Id(&self) -> windows_core::Result<u64> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Id)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsConnected(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsConnected)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsHitTestVisibleWhenTransparent(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsHitTestVisibleWhenTransparent)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetIsHitTestVisibleWhenTransparent(
+                    &self,
+                    value: bool,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetIsHitTestVisibleWhenTransparent)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn IsIslandEnabled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsIslandEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetIsIslandEnabled(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetIsIslandEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn IsIslandVisible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsIslandVisible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetIsIslandVisible(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetIsIslandVisible)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn IsSiteEnabled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsSiteEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsSiteVisible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsSiteVisible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn LayoutDirection(&self) -> windows_core::Result<ContentLayoutDirection> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LayoutDirection)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn RasterizationScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).RasterizationScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn GetAutomationHostProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).GetAutomationHostProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn GetStateChangeDeferral(&self) -> windows_core::Result<ContentDeferral> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).GetStateChangeDeferral)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn RequestSize(
+                    &self,
+                    size: windows_numerics::Vector2,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).RequestSize)(
+                            windows_core::Interface::as_raw(self),
+                            size,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn AutomationProviderRequested<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<ContentIsland>,
+                            windows_core::Ref<ContentIslandAutomationProviderRequestedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        ContentIsland,
+                        ContentIslandAutomationProviderRequestedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                ContentIsland,
+                                ContentIslandAutomationProviderRequestedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                ContentIsland,
+                                ContentIslandAutomationProviderRequestedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .AutomationProviderRequested)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveAutomationProviderRequested,
+                        ))
+                    }
+                }
+                pub fn StateChanged<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<ContentIsland>,
+                            windows_core::Ref<ContentIslandStateChangedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        ContentIsland,
+                        ContentIslandStateChangedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                ContentIsland,
+                                ContentIslandStateChangedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                ContentIsland,
+                                ContentIslandStateChangedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).StateChanged)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveStateChanged,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIsland {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIsland";
+            }
+            pub trait IContentIsland_Impl: windows_core::IUnknownImpl {
+                fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2>;
+                fn AppData(&self) -> windows_core::Result<windows_core::IInspectable>;
+                fn SetAppData(
+                    &self,
+                    value: windows_core::Ref<windows_core::IInspectable>,
+                ) -> windows_core::Result<()>;
+                fn CoordinateConverter(&self) -> windows_core::Result<ContentCoordinateConverter>;
+                fn CustomProperties(
+                    &self,
+                ) -> windows_core::Result<
+                    super::super::super::Windows::Foundation::Collections::IPropertySet,
+                >;
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn Environment(&self) -> windows_core::Result<ContentIslandEnvironment>;
+                fn Id(&self) -> windows_core::Result<u64>;
+                fn IsConnected(&self) -> windows_core::Result<bool>;
+                fn IsHitTestVisibleWhenTransparent(&self) -> windows_core::Result<bool>;
+                fn SetIsHitTestVisibleWhenTransparent(
+                    &self,
+                    value: bool,
+                ) -> windows_core::Result<()>;
+                fn IsIslandEnabled(&self) -> windows_core::Result<bool>;
+                fn SetIsIslandEnabled(&self, value: bool) -> windows_core::Result<()>;
+                fn IsIslandVisible(&self) -> windows_core::Result<bool>;
+                fn SetIsIslandVisible(&self, value: bool) -> windows_core::Result<()>;
+                fn IsSiteEnabled(&self) -> windows_core::Result<bool>;
+                fn IsSiteVisible(&self) -> windows_core::Result<bool>;
+                fn LayoutDirection(&self) -> windows_core::Result<ContentLayoutDirection>;
+                fn RasterizationScale(&self) -> windows_core::Result<f32>;
+                fn GetAutomationHostProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable>;
+                fn GetStateChangeDeferral(&self) -> windows_core::Result<ContentDeferral>;
+                fn RequestSize(&self, size: &windows_numerics::Vector2)
+                -> windows_core::Result<()>;
+                fn AutomationProviderRequested(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            ContentIsland,
+                            ContentIslandAutomationProviderRequestedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveAutomationProviderRequested(&self, token: i64)
+                -> windows_core::Result<()>;
+                fn StateChanged(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            ContentIsland,
+                            ContentIslandStateChangedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveStateChanged(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl IContentIsland_Vtbl {
+                pub const fn new<Identity: IContentIsland_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn ActualSize<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::ActualSize(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn AppData<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::AppData(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAppData<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::SetAppData(this, core::mem::transmute_copy(&value))
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn CoordinateConverter<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::CoordinateConverter(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CustomProperties<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::CustomProperties(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Environment<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::Environment(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Id<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut u64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::Id(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsConnected<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::IsConnected(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsHitTestVisibleWhenTransparent<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::IsHitTestVisibleWhenTransparent(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsHitTestVisibleWhenTransparent<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::SetIsHitTestVisibleWhenTransparent(this, value)
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn IsIslandEnabled<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::IsIslandEnabled(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsIslandEnabled<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::SetIsIslandEnabled(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn IsIslandVisible<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::IsIslandVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsIslandVisible<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::SetIsIslandVisible(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn IsSiteEnabled<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::IsSiteEnabled(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsSiteVisible<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::IsSiteVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LayoutDirection<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentLayoutDirection,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::LayoutDirection(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RasterizationScale<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::RasterizationScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetAutomationHostProvider<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::GetAutomationHostProvider(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetStateChangeDeferral<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::GetStateChangeDeferral(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RequestSize<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        size: windows_numerics::Vector2,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::RequestSize(this, core::mem::transmute(&size))
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn AutomationProviderRequested<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::AutomationProviderRequested(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveAutomationProviderRequested<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::RemoveAutomationProviderRequested(this, token)
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn StateChanged<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland_Impl::StateChanged(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveStateChanged<
+                        Identity: IContentIsland_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIsland_Impl::RemoveStateChanged(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIsland,
+                            OFFSET,
+                        >(),
+                        ActualSize: ActualSize::<Identity, OFFSET>,
+                        AppData: AppData::<Identity, OFFSET>,
+                        SetAppData: SetAppData::<Identity, OFFSET>,
+                        CoordinateConverter: CoordinateConverter::<Identity, OFFSET>,
+                        CustomProperties: CustomProperties::<Identity, OFFSET>,
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        Environment: Environment::<Identity, OFFSET>,
+                        Id: Id::<Identity, OFFSET>,
+                        IsConnected: IsConnected::<Identity, OFFSET>,
+                        IsHitTestVisibleWhenTransparent: IsHitTestVisibleWhenTransparent::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        SetIsHitTestVisibleWhenTransparent: SetIsHitTestVisibleWhenTransparent::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        IsIslandEnabled: IsIslandEnabled::<Identity, OFFSET>,
+                        SetIsIslandEnabled: SetIsIslandEnabled::<Identity, OFFSET>,
+                        IsIslandVisible: IsIslandVisible::<Identity, OFFSET>,
+                        SetIsIslandVisible: SetIsIslandVisible::<Identity, OFFSET>,
+                        IsSiteEnabled: IsSiteEnabled::<Identity, OFFSET>,
+                        IsSiteVisible: IsSiteVisible::<Identity, OFFSET>,
+                        LayoutDirection: LayoutDirection::<Identity, OFFSET>,
+                        RasterizationScale: RasterizationScale::<Identity, OFFSET>,
+                        GetAutomationHostProvider: GetAutomationHostProvider::<Identity, OFFSET>,
+                        GetStateChangeDeferral: GetStateChangeDeferral::<Identity, OFFSET>,
+                        RequestSize: RequestSize::<Identity, OFFSET>,
+                        AutomationProviderRequested: AutomationProviderRequested::<Identity, OFFSET>,
+                        RemoveAutomationProviderRequested: RemoveAutomationProviderRequested::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        StateChanged: StateChanged::<Identity, OFFSET>,
+                        RemoveStateChanged: RemoveStateChanged::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIsland as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIsland_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ActualSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_numerics::Vector2,
+                ) -> windows_core::HRESULT,
+                pub AppData: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub SetAppData: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub CoordinateConverter: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub CustomProperties: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub Environment: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub Id: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut u64,
+                ) -> windows_core::HRESULT,
+                pub IsConnected: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsHitTestVisibleWhenTransparent:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut bool,
+                    ) -> windows_core::HRESULT,
+                pub SetIsHitTestVisibleWhenTransparent:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        bool,
+                    ) -> windows_core::HRESULT,
+                pub IsIslandEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetIsIslandEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsIslandVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetIsIslandVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsSiteEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsSiteVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub LayoutDirection: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentLayoutDirection,
+                )
+                    -> windows_core::HRESULT,
+                pub RasterizationScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub GetAutomationHostProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub GetStateChangeDeferral: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub RequestSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    windows_numerics::Vector2,
+                )
+                    -> windows_core::HRESULT,
+                pub AutomationProviderRequested: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveAutomationProviderRequested:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub StateChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveStateChanged:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIsland2,
+                IContentIsland2_Vtbl,
+                0x9f891825_4f83_5ada_9ebd_9d329460aede
+            );
+            impl windows_core::RuntimeType for IContentIsland2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIsland2",
+                    );
+            }
+            impl IContentIsland2 {
+                pub fn Children(
+                    &self,
+                ) -> windows_core::Result<windows_collections::IIterable<ChildSiteLink>>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Children)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn LocalToClientTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToClientTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToParentTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Popups(
+                    &self,
+                ) -> windows_core::Result<windows_collections::IIterable<DesktopPopupSiteBridge>>
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Popups)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesKeyboardInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ProcessesPointerInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesPointerInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIsland2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIsland2";
+            }
+            pub trait IContentIsland2_Impl: windows_core::IUnknownImpl {
+                fn Children(
+                    &self,
+                ) -> windows_core::Result<windows_collections::IIterable<ChildSiteLink>>;
+                fn LocalToClientTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn Popups(
+                    &self,
+                ) -> windows_core::Result<windows_collections::IIterable<DesktopPopupSiteBridge>>;
+                fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool>;
+                fn ProcessesPointerInput(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentIsland2_Vtbl {
+                pub const fn new<Identity: IContentIsland2_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn Children<
+                        Identity: IContentIsland2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland2_Impl::Children(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LocalToClientTransformMatrix<
+                        Identity: IContentIsland2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland2_Impl::LocalToClientTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LocalToParentTransformMatrix<
+                        Identity: IContentIsland2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland2_Impl::LocalToParentTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Popups<
+                        Identity: IContentIsland2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland2_Impl::Popups(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesKeyboardInput<
+                        Identity: IContentIsland2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland2_Impl::ProcessesKeyboardInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesPointerInput<
+                        Identity: IContentIsland2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIsland2_Impl::ProcessesPointerInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIsland2,
+                            OFFSET,
+                        >(),
+                        Children: Children::<Identity, OFFSET>,
+                        LocalToClientTransformMatrix: LocalToClientTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        LocalToParentTransformMatrix: LocalToParentTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        Popups: Popups::<Identity, OFFSET>,
+                        ProcessesKeyboardInput: ProcessesKeyboardInput::<Identity, OFFSET>,
+                        ProcessesPointerInput: ProcessesPointerInput::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIsland2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIsland2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Children: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub LocalToClientTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub LocalToParentTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub Popups: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub ProcessesKeyboardInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub ProcessesPointerInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandAutomation,
+                IContentIslandAutomation_Vtbl,
+                0x8752c11e_1896_565a_bfb0_2b0770030e97
+            );
+            impl windows_core::RuntimeType for IContentIslandAutomation {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandAutomation",
+                    );
+            }
+            impl IContentIslandAutomation {
+                pub fn AutomationOption(&self) -> windows_core::Result<ContentAutomationOptions> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AutomationOption)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn FragmentRootAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).FragmentRootAutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn NextSiblingAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).NextSiblingAutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn ParentAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ParentAutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn PreviousSiblingAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).PreviousSiblingAutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIslandAutomation {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandAutomation";
+            }
+            pub trait IContentIslandAutomation_Impl: windows_core::IUnknownImpl {
+                fn AutomationOption(&self) -> windows_core::Result<ContentAutomationOptions>;
+                fn FragmentRootAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable>;
+                fn NextSiblingAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable>;
+                fn ParentAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable>;
+                fn PreviousSiblingAutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable>;
+            }
+            impl IContentIslandAutomation_Vtbl {
+                pub const fn new<Identity: IContentIslandAutomation_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AutomationOption<
+                        Identity: IContentIslandAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentAutomationOptions,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomation_Impl::AutomationOption(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn FragmentRootAutomationProvider<
+                        Identity: IContentIslandAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomation_Impl::FragmentRootAutomationProvider(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn NextSiblingAutomationProvider<
+                        Identity: IContentIslandAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomation_Impl::NextSiblingAutomationProvider(this)
+                            {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ParentAutomationProvider<
+                        Identity: IContentIslandAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomation_Impl::ParentAutomationProvider(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn PreviousSiblingAutomationProvider<
+                        Identity: IContentIslandAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomation_Impl::PreviousSiblingAutomationProvider(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandAutomation,
+                            OFFSET,
+                        >(),
+                        AutomationOption: AutomationOption::<Identity, OFFSET>,
+                        FragmentRootAutomationProvider: FragmentRootAutomationProvider::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        NextSiblingAutomationProvider: NextSiblingAutomationProvider::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        ParentAutomationProvider: ParentAutomationProvider::<Identity, OFFSET>,
+                        PreviousSiblingAutomationProvider: PreviousSiblingAutomationProvider::<
+                            Identity,
+                            OFFSET,
+                        >,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandAutomation as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandAutomation_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AutomationOption: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentAutomationOptions,
+                )
+                    -> windows_core::HRESULT,
+                pub FragmentRootAutomationProvider:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT,
+                pub NextSiblingAutomationProvider:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT,
+                pub ParentAutomationProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub PreviousSiblingAutomationProvider:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandAutomationProviderRequestedEventArgs,
+                IContentIslandAutomationProviderRequestedEventArgs_Vtbl,
+                0x9fe24bed_2b9c_5137_887f_403c94841824
+            );
+            impl windows_core::RuntimeType for IContentIslandAutomationProviderRequestedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandAutomationProviderRequestedEventArgs",
+                    );
+            }
+            impl IContentIslandAutomationProviderRequestedEventArgs {
+                pub fn AutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn SetAutomationProvider<P0>(&self, value: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<windows_core::IInspectable>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            value.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Handled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Handled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetHandled(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetHandled)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIslandAutomationProviderRequestedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentIslandAutomationProviderRequestedEventArgs";
+            }
+            pub trait IContentIslandAutomationProviderRequestedEventArgs_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn AutomationProvider(&self) -> windows_core::Result<windows_core::IInspectable>;
+                fn SetAutomationProvider(
+                    &self,
+                    value: windows_core::Ref<windows_core::IInspectable>,
+                ) -> windows_core::Result<()>;
+                fn Handled(&self) -> windows_core::Result<bool>;
+                fn SetHandled(&self, value: bool) -> windows_core::Result<()>;
+            }
+            impl IContentIslandAutomationProviderRequestedEventArgs_Vtbl {
+                pub const fn new<
+                    Identity: IContentIslandAutomationProviderRequestedEventArgs_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn AutomationProvider<
+                        Identity: IContentIslandAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomationProviderRequestedEventArgs_Impl::AutomationProvider (this ,) { Ok (ok__) => { result__ . write (core::mem::transmute_copy (& ok__)) ; core::mem::forget (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn SetAutomationProvider<
+                        Identity: IContentIslandAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIslandAutomationProviderRequestedEventArgs_Impl::SetAutomationProvider (this , core::mem::transmute_copy (& value) ,) . into ()
+                        }
+                    }
+                    unsafe extern "system" fn Handled<
+                        Identity: IContentIslandAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandAutomationProviderRequestedEventArgs_Impl::Handled(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetHandled<
+                        Identity: IContentIslandAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIslandAutomationProviderRequestedEventArgs_Impl::SetHandled(
+                                this, value,
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandAutomationProviderRequestedEventArgs,
+                            OFFSET,
+                        >(),
+                        AutomationProvider: AutomationProvider::<Identity, OFFSET>,
+                        SetAutomationProvider: SetAutomationProvider::<Identity, OFFSET>,
+                        Handled: Handled::<Identity, OFFSET>,
+                        SetHandled: SetHandled::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == & < IContentIslandAutomationProviderRequestedEventArgs as windows_core::Interface >::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandAutomationProviderRequestedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AutomationProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub SetAutomationProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub Handled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub SetHandled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandEnvironment,
+                IContentIslandEnvironment_Vtbl,
+                0xc334236d_da88_566d_811d_74aef2eba978
+            );
+            impl windows_core::RuntimeType for IContentIslandEnvironment {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandEnvironment",
+                    );
+            }
+            impl IContentIslandEnvironment {
+                pub fn AppWindowId(&self) -> windows_core::Result<super::WindowId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AppWindowId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DisplayId(&self) -> windows_core::Result<super::DisplayId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DisplayId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SettingChanged<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<ContentIslandEnvironment>,
+                            windows_core::Ref<ContentEnvironmentSettingChangedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        ContentIslandEnvironment,
+                        ContentEnvironmentSettingChangedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                ContentIslandEnvironment,
+                                ContentEnvironmentSettingChangedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                ContentIslandEnvironment,
+                                ContentEnvironmentSettingChangedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).SettingChanged)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveSettingChanged,
+                        ))
+                    }
+                }
+                pub fn StateChanged<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<ContentIslandEnvironment>,
+                            windows_core::Ref<ContentEnvironmentStateChangedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        ContentIslandEnvironment,
+                        ContentEnvironmentStateChangedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                ContentIslandEnvironment,
+                                ContentEnvironmentStateChangedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                ContentIslandEnvironment,
+                                ContentEnvironmentStateChangedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).StateChanged)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveStateChanged,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIslandEnvironment {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandEnvironment";
+            }
+            pub trait IContentIslandEnvironment_Impl: windows_core::IUnknownImpl {
+                fn AppWindowId(&self) -> windows_core::Result<super::WindowId>;
+                fn DisplayId(&self) -> windows_core::Result<super::DisplayId>;
+                fn SettingChanged(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            ContentIslandEnvironment,
+                            ContentEnvironmentSettingChangedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveSettingChanged(&self, token: i64) -> windows_core::Result<()>;
+                fn StateChanged(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            ContentIslandEnvironment,
+                            ContentEnvironmentStateChangedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveStateChanged(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl IContentIslandEnvironment_Vtbl {
+                pub const fn new<Identity: IContentIslandEnvironment_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AppWindowId<
+                        Identity: IContentIslandEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandEnvironment_Impl::AppWindowId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DisplayId<
+                        Identity: IContentIslandEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::DisplayId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandEnvironment_Impl::DisplayId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SettingChanged<
+                        Identity: IContentIslandEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandEnvironment_Impl::SettingChanged(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveSettingChanged<
+                        Identity: IContentIslandEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIslandEnvironment_Impl::RemoveSettingChanged(this, token).into()
+                        }
+                    }
+                    unsafe extern "system" fn StateChanged<
+                        Identity: IContentIslandEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandEnvironment_Impl::StateChanged(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveStateChanged<
+                        Identity: IContentIslandEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentIslandEnvironment_Impl::RemoveStateChanged(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandEnvironment,
+                            OFFSET,
+                        >(),
+                        AppWindowId: AppWindowId::<Identity, OFFSET>,
+                        DisplayId: DisplayId::<Identity, OFFSET>,
+                        SettingChanged: SettingChanged::<Identity, OFFSET>,
+                        RemoveSettingChanged: RemoveSettingChanged::<Identity, OFFSET>,
+                        StateChanged: StateChanged::<Identity, OFFSET>,
+                        RemoveStateChanged: RemoveStateChanged::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandEnvironment as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandEnvironment_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AppWindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::WindowId,
+                )
+                    -> windows_core::HRESULT,
+                pub DisplayId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::DisplayId,
+                ) -> windows_core::HRESULT,
+                pub SettingChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveSettingChanged:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub StateChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveStateChanged:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandEnvironment2,
+                IContentIslandEnvironment2_Vtbl,
+                0x6bf81a71_c1e4_54d6_ac0d_02bcff5297e7
+            );
+            impl windows_core::RuntimeType for IContentIslandEnvironment2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandEnvironment2",
+                    );
+            }
+            impl IContentIslandEnvironment2 {
+                pub fn DisplayScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DisplayScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIslandEnvironment2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandEnvironment2";
+            }
+            pub trait IContentIslandEnvironment2_Impl: windows_core::IUnknownImpl {
+                fn DisplayScale(&self) -> windows_core::Result<f32>;
+            }
+            impl IContentIslandEnvironment2_Vtbl {
+                pub const fn new<Identity: IContentIslandEnvironment2_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn DisplayScale<
+                        Identity: IContentIslandEnvironment2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandEnvironment2_Impl::DisplayScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandEnvironment2,
+                            OFFSET,
+                        >(),
+                        DisplayScale: DisplayScale::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandEnvironment2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandEnvironment2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DisplayScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandEnvironmentFactory,
+                IContentIslandEnvironmentFactory_Vtbl,
+                0x47a782d6_b177_5c1e_bf87_90437dd809d0
+            );
+            impl windows_core::RuntimeType for IContentIslandEnvironmentFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandEnvironmentFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentIslandEnvironmentFactory {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandEnvironmentFactory";
+            }
+            pub trait IContentIslandEnvironmentFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentIslandEnvironmentFactory_Vtbl {
+                pub const fn new<
+                    Identity: IContentIslandEnvironmentFactory_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandEnvironmentFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandEnvironmentFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandEnvironmentFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandFactory,
+                IContentIslandFactory_Vtbl,
+                0x82383f52_e81a_5ec9_a954_bac8a931ba7d
+            );
+            impl windows_core::RuntimeType for IContentIslandFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentIslandFactory {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandFactory";
+            }
+            pub trait IContentIslandFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentIslandFactory_Vtbl {
+                pub const fn new<Identity: IContentIslandFactory_Impl, const OFFSET: isize>() -> Self
+                {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandStateChangedEventArgs,
+                IContentIslandStateChangedEventArgs_Vtbl,
+                0xc828eeb2_0c62_5b40_9d48_77c06083c278
+            );
+            impl windows_core::RuntimeType for IContentIslandStateChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandStateChangedEventArgs",
+                    );
+            }
+            impl IContentIslandStateChangedEventArgs {
+                pub fn DidActualSizeChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidActualSizeChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DidSiteEnabledChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidSiteEnabledChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DidSiteVisibleChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidSiteVisibleChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DidLayoutDirectionChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidLayoutDirectionChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DidRasterizationScaleChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidRasterizationScaleChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIslandStateChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentIslandStateChangedEventArgs";
+            }
+            pub trait IContentIslandStateChangedEventArgs_Impl: windows_core::IUnknownImpl {
+                fn DidActualSizeChange(&self) -> windows_core::Result<bool>;
+                fn DidSiteEnabledChange(&self) -> windows_core::Result<bool>;
+                fn DidSiteVisibleChange(&self) -> windows_core::Result<bool>;
+                fn DidLayoutDirectionChange(&self) -> windows_core::Result<bool>;
+                fn DidRasterizationScaleChange(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentIslandStateChangedEventArgs_Vtbl {
+                pub const fn new<
+                    Identity: IContentIslandStateChangedEventArgs_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn DidActualSizeChange<
+                        Identity: IContentIslandStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs_Impl::DidActualSizeChange(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DidSiteEnabledChange<
+                        Identity: IContentIslandStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs_Impl::DidSiteEnabledChange(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DidSiteVisibleChange<
+                        Identity: IContentIslandStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs_Impl::DidSiteVisibleChange(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DidLayoutDirectionChange<
+                        Identity: IContentIslandStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs_Impl::DidLayoutDirectionChange(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DidRasterizationScaleChange<
+                        Identity: IContentIslandStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs_Impl::DidRasterizationScaleChange (this ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandStateChangedEventArgs,
+                            OFFSET,
+                        >(),
+                        DidActualSizeChange: DidActualSizeChange::<Identity, OFFSET>,
+                        DidSiteEnabledChange: DidSiteEnabledChange::<Identity, OFFSET>,
+                        DidSiteVisibleChange: DidSiteVisibleChange::<Identity, OFFSET>,
+                        DidLayoutDirectionChange: DidLayoutDirectionChange::<Identity, OFFSET>,
+                        DidRasterizationScaleChange: DidRasterizationScaleChange::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandStateChangedEventArgs as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandStateChangedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DidActualSizeChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub DidSiteEnabledChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub DidSiteVisibleChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub DidLayoutDirectionChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub DidRasterizationScaleChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandStateChangedEventArgs2,
+                IContentIslandStateChangedEventArgs2_Vtbl,
+                0x8ad25be1_a89a_5872_896e_8298dd20eb0d
+            );
+            impl windows_core::RuntimeType for IContentIslandStateChangedEventArgs2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandStateChangedEventArgs2",
+                    );
+            }
+            impl IContentIslandStateChangedEventArgs2 {
+                pub fn DidLocalToClientTransformMatrixChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self)
+                            .DidLocalToClientTransformMatrixChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DidLocalToParentTransformMatrixChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self)
+                            .DidLocalToParentTransformMatrixChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentIslandStateChangedEventArgs2 {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentIslandStateChangedEventArgs2";
+            }
+            pub trait IContentIslandStateChangedEventArgs2_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn DidLocalToClientTransformMatrixChange(&self) -> windows_core::Result<bool>;
+                fn DidLocalToParentTransformMatrixChange(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentIslandStateChangedEventArgs2_Vtbl {
+                pub const fn new<
+                    Identity: IContentIslandStateChangedEventArgs2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn DidLocalToClientTransformMatrixChange<
+                        Identity: IContentIslandStateChangedEventArgs2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs2_Impl::DidLocalToClientTransformMatrixChange (this ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn DidLocalToParentTransformMatrixChange<
+                        Identity: IContentIslandStateChangedEventArgs2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStateChangedEventArgs2_Impl::DidLocalToParentTransformMatrixChange (this ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandStateChangedEventArgs2,
+                            OFFSET,
+                        >(),
+                        DidLocalToClientTransformMatrixChange:
+                            DidLocalToClientTransformMatrixChange::<Identity, OFFSET>,
+                        DidLocalToParentTransformMatrixChange:
+                            DidLocalToParentTransformMatrixChange::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandStateChangedEventArgs2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandStateChangedEventArgs2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DidLocalToClientTransformMatrixChange:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut bool,
+                    ) -> windows_core::HRESULT,
+                pub DidLocalToParentTransformMatrixChange:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut bool,
+                    ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandStatics,
+                IContentIslandStatics_Vtbl,
+                0x7b9eb7cc_8c43_5e0a_ab23_ab48628fd223
+            );
+            impl windows_core::RuntimeType for IContentIslandStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentIslandStatics {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandStatics";
+            }
+            pub trait IContentIslandStatics_Impl: windows_core::IUnknownImpl {
+                fn Create(
+                    &self,
+                    Root: windows_core::Ref<super::Composition::Visual>,
+                ) -> windows_core::Result<ContentIsland>;
+                fn FindAllForCompositor(
+                    &self,
+                    compositor: windows_core::Ref<super::Composition::Compositor>,
+                ) -> windows_core::Result<windows_core::Array<ContentIsland>>;
+                fn FindAllForCurrentThread(
+                    &self,
+                ) -> windows_core::Result<windows_core::Array<ContentIsland>>;
+                fn GetByVisual(
+                    &self,
+                    child: windows_core::Ref<super::Composition::Visual>,
+                ) -> windows_core::Result<ContentIsland>;
+                fn GetFromId(&self, id: u64) -> windows_core::Result<ContentIsland>;
+            }
+            impl IContentIslandStatics_Vtbl {
+                pub const fn new<Identity: IContentIslandStatics_Impl, const OFFSET: isize>() -> Self
+                {
+                    unsafe extern "system" fn Create<
+                        Identity: IContentIslandStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        root: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics_Impl::Create(
+                                this,
+                                core::mem::transmute_copy(&root),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn FindAllForCompositor<
+                        Identity: IContentIslandStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        compositor: *mut core::ffi::c_void,
+                        result_size__: *mut u32,
+                        result__: *mut *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics_Impl::FindAllForCompositor(
+                                this,
+                                core::mem::transmute_copy(&compositor),
+                            ) {
+                                Ok(ok__) => {
+                                    let (ok_data__, ok_data_len__) = ok__.into_abi();
+                                    result__.write(core::mem::transmute(ok_data__));
+                                    result_size__.write(ok_data_len__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn FindAllForCurrentThread<
+                        Identity: IContentIslandStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result_size__: *mut u32,
+                        result__: *mut *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics_Impl::FindAllForCurrentThread(this) {
+                                Ok(ok__) => {
+                                    let (ok_data__, ok_data_len__) = ok__.into_abi();
+                                    result__.write(core::mem::transmute(ok_data__));
+                                    result_size__.write(ok_data_len__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetByVisual<
+                        Identity: IContentIslandStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        child: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics_Impl::GetByVisual(
+                                this,
+                                core::mem::transmute_copy(&child),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetFromId<
+                        Identity: IContentIslandStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        id: u64,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics_Impl::GetFromId(this, id) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandStatics,
+                            OFFSET,
+                        >(),
+                        Create: Create::<Identity, OFFSET>,
+                        FindAllForCompositor: FindAllForCompositor::<Identity, OFFSET>,
+                        FindAllForCurrentThread: FindAllForCurrentThread::<Identity, OFFSET>,
+                        GetByVisual: GetByVisual::<Identity, OFFSET>,
+                        GetFromId: GetFromId::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Create: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub FindAllForCompositor: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut u32,
+                    *mut *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub FindAllForCurrentThread: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut u32,
+                    *mut *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub GetByVisual: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub GetFromId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    u64,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentIslandStatics2,
+                IContentIslandStatics2_Vtbl,
+                0xb2c6fa77_13c9_5064_bb1d_f878d86acc65
+            );
+            impl windows_core::RuntimeType for IContentIslandStatics2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentIslandStatics2",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentIslandStatics2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentIslandStatics2";
+            }
+            pub trait IContentIslandStatics2_Impl: windows_core::IUnknownImpl {
+                fn CreateForSystemVisual(
+                    &self,
+                    queue: windows_core::Ref<super::Dispatching::DispatcherQueue>,
+                    root: windows_core::Ref<super::super::super::Windows::UI::Composition::Visual>,
+                ) -> windows_core::Result<ContentIsland>;
+                fn FindAllForSystemCompositor(
+                    &self,
+                    compositor: windows_core::Ref<
+                        super::super::super::Windows::UI::Composition::Compositor,
+                    >,
+                ) -> windows_core::Result<windows_core::Array<ContentIsland>>;
+                fn GetBySystemVisual(
+                    &self,
+                    child: windows_core::Ref<super::super::super::Windows::UI::Composition::Visual>,
+                ) -> windows_core::Result<ContentIsland>;
+            }
+            impl IContentIslandStatics2_Vtbl {
+                pub const fn new<Identity: IContentIslandStatics2_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn CreateForSystemVisual<
+                        Identity: IContentIslandStatics2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        queue: *mut core::ffi::c_void,
+                        root: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics2_Impl::CreateForSystemVisual(
+                                this,
+                                core::mem::transmute_copy(&queue),
+                                core::mem::transmute_copy(&root),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn FindAllForSystemCompositor<
+                        Identity: IContentIslandStatics2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        compositor: *mut core::ffi::c_void,
+                        result_size__: *mut u32,
+                        result__: *mut *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics2_Impl::FindAllForSystemCompositor(
+                                this,
+                                core::mem::transmute_copy(&compositor),
+                            ) {
+                                Ok(ok__) => {
+                                    let (ok_data__, ok_data_len__) = ok__.into_abi();
+                                    result__.write(core::mem::transmute(ok_data__));
+                                    result_size__.write(ok_data_len__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn GetBySystemVisual<
+                        Identity: IContentIslandStatics2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        child: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentIslandStatics2_Impl::GetBySystemVisual(
+                                this,
+                                core::mem::transmute_copy(&child),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentIslandStatics2,
+                            OFFSET,
+                        >(),
+                        CreateForSystemVisual: CreateForSystemVisual::<Identity, OFFSET>,
+                        FindAllForSystemCompositor: FindAllForSystemCompositor::<Identity, OFFSET>,
+                        GetBySystemVisual: GetBySystemVisual::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentIslandStatics2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentIslandStatics2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateForSystemVisual: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub FindAllForSystemCompositor: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut u32,
+                    *mut *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub GetBySystemVisual: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSite,
+                IContentSite_Vtbl,
+                0x996c60c4_02b2_5eef_93b0_dd6b1ec2fd7b
+            );
+            impl windows_core::RuntimeType for IContentSite {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSite",
+                    );
+            }
+            impl IContentSite {
+                pub fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ActualSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetActualSize(
+                    &self,
+                    value: windows_numerics::Vector2,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetActualSize)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn CoordinateConverter(
+                    &self,
+                ) -> windows_core::Result<ContentCoordinateConverter> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CoordinateConverter)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn Environment(&self) -> windows_core::Result<ContentSiteEnvironment> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Environment)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn IsConnected(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsConnected)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsSiteEnabled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsSiteEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetIsSiteEnabled(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetIsSiteEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn IsSiteVisible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsSiteVisible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetIsSiteVisible(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetIsSiteVisible)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn LayoutDirection(&self) -> windows_core::Result<ContentLayoutDirection> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LayoutDirection)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetLayoutDirection(
+                    &self,
+                    value: ContentLayoutDirection,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetLayoutDirection)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn OverrideScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).OverrideScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetOverrideScale(&self, value: f32) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetOverrideScale)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ParentScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ParentScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetParentScale(&self, value: f32) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetParentScale)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn RasterizationScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).RasterizationScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn RequestedSize(&self) -> windows_core::Result<windows_numerics::Vector2> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).RequestedSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ShouldApplyRasterizationScale(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ShouldApplyRasterizationScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetShouldApplyRasterizationScale(
+                    &self,
+                    value: bool,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetShouldApplyRasterizationScale)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn View(&self) -> windows_core::Result<ContentSiteView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).View)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn GetIslandStateChangeDeferral(
+                    &self,
+                ) -> windows_core::Result<ContentDeferral> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).GetIslandStateChangeDeferral)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn RequestedStateChanged<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<ContentSite>,
+                            windows_core::Ref<ContentSiteRequestedStateChangedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        ContentSite,
+                        ContentSiteRequestedStateChangedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                ContentSite,
+                                ContentSiteRequestedStateChangedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                ContentSite,
+                                ContentSiteRequestedStateChangedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ =
+                            (windows_core::Interface::vtable(self).RequestedStateChanged)(
+                                windows_core::Interface::as_raw(self),
+                                windows_core::Interface::as_raw(&handler),
+                                &mut result__,
+                            )
+                            .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveRequestedStateChanged,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSite {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSite";
+            }
+            #[repr(C)]
+            pub struct IContentSite_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ActualSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_numerics::Vector2,
+                ) -> windows_core::HRESULT,
+                pub SetActualSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    windows_numerics::Vector2,
+                )
+                    -> windows_core::HRESULT,
+                ClientSize: usize,
+                SetClientSize: usize,
+                pub CoordinateConverter: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub Environment: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub IsConnected: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsSiteEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetIsSiteEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsSiteVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetIsSiteVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub LayoutDirection: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentLayoutDirection,
+                )
+                    -> windows_core::HRESULT,
+                pub SetLayoutDirection: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    ContentLayoutDirection,
+                )
+                    -> windows_core::HRESULT,
+                pub OverrideScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub SetOverrideScale:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, f32) -> windows_core::HRESULT,
+                pub ParentScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub SetParentScale:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, f32) -> windows_core::HRESULT,
+                pub RasterizationScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub RequestedSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_numerics::Vector2,
+                )
+                    -> windows_core::HRESULT,
+                pub ShouldApplyRasterizationScale:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut bool,
+                    ) -> windows_core::HRESULT,
+                pub SetShouldApplyRasterizationScale:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        bool,
+                    ) -> windows_core::HRESULT,
+                pub View: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub GetIslandStateChangeDeferral:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT,
+                pub RequestedStateChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveRequestedStateChanged:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSite2,
+                IContentSite2_Vtbl,
+                0xc3f0149e_3f8c_5961_9d04_cd6c8a7f6026
+            );
+            impl windows_core::RuntimeType for IContentSite2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSite2",
+                    );
+            }
+            impl IContentSite2 {
+                pub fn LocalToClientTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToClientTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToParentTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetLocalToParentTransformMatrix(
+                    &self,
+                    value: windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetLocalToParentTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesKeyboardInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetProcessesKeyboardInput(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetProcessesKeyboardInput)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ProcessesPointerInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesPointerInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetProcessesPointerInput(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetProcessesPointerInput)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSite2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSite2";
+            }
+            pub trait IContentSite2_Impl: windows_core::IUnknownImpl {
+                fn LocalToClientTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn SetLocalToParentTransformMatrix(
+                    &self,
+                    value: &windows_numerics::Matrix4x4,
+                ) -> windows_core::Result<()>;
+                fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool>;
+                fn SetProcessesKeyboardInput(&self, value: bool) -> windows_core::Result<()>;
+                fn ProcessesPointerInput(&self) -> windows_core::Result<bool>;
+                fn SetProcessesPointerInput(&self, value: bool) -> windows_core::Result<()>;
+            }
+            impl IContentSite2_Vtbl {
+                pub const fn new<Identity: IContentSite2_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn LocalToClientTransformMatrix<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite2_Impl::LocalToClientTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LocalToParentTransformMatrix<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite2_Impl::LocalToParentTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetLocalToParentTransformMatrix<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite2_Impl::SetLocalToParentTransformMatrix(
+                                this,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesKeyboardInput<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite2_Impl::ProcessesKeyboardInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetProcessesKeyboardInput<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite2_Impl::SetProcessesKeyboardInput(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesPointerInput<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSite2_Impl::ProcessesPointerInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetProcessesPointerInput<
+                        Identity: IContentSite2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSite2_Impl::SetProcessesPointerInput(this, value).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSite2,
+                            OFFSET,
+                        >(),
+                        LocalToClientTransformMatrix: LocalToClientTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        LocalToParentTransformMatrix: LocalToParentTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        SetLocalToParentTransformMatrix: SetLocalToParentTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        ProcessesKeyboardInput: ProcessesKeyboardInput::<Identity, OFFSET>,
+                        SetProcessesKeyboardInput: SetProcessesKeyboardInput::<Identity, OFFSET>,
+                        ProcessesPointerInput: ProcessesPointerInput::<Identity, OFFSET>,
+                        SetProcessesPointerInput: SetProcessesPointerInput::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSite2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSite2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub LocalToClientTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub LocalToParentTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub SetLocalToParentTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub ProcessesKeyboardInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetProcessesKeyboardInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub ProcessesPointerInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetProcessesPointerInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteAutomation,
+                IContentSiteAutomation_Vtbl,
+                0xdb4f4683_cd76_50d0_9ae1_044ceb3d3c7a
+            );
+            impl windows_core::RuntimeType for IContentSiteAutomation {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteAutomation",
+                    );
+            }
+            windows_core::imp::interface_hierarchy!(
+                IContentSiteAutomation,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl IContentSiteAutomation {
+                pub fn AutomationOption(&self) -> windows_core::Result<ContentAutomationOptions> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AutomationOption)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetAutomationOption(
+                    &self,
+                    value: ContentAutomationOptions,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAutomationOption)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn AutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn FragmentRootAutomationProviderRequested<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<Self>,
+                            windows_core::Ref<ContentSiteAutomationProviderRequestedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        Self,
+                        ContentSiteAutomationProviderRequestedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .FragmentRootAutomationProviderRequested)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self)
+                                .RemoveFragmentRootAutomationProviderRequested,
+                        ))
+                    }
+                }
+                pub fn NextSiblingAutomationProviderRequested<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<Self>,
+                            windows_core::Ref<ContentSiteAutomationProviderRequestedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        Self,
+                        ContentSiteAutomationProviderRequestedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .NextSiblingAutomationProviderRequested)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self)
+                                .RemoveNextSiblingAutomationProviderRequested,
+                        ))
+                    }
+                }
+                pub fn ParentAutomationProviderRequested<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<Self>,
+                            windows_core::Ref<ContentSiteAutomationProviderRequestedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        Self,
+                        ContentSiteAutomationProviderRequestedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .ParentAutomationProviderRequested)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self)
+                                .RemoveParentAutomationProviderRequested,
+                        ))
+                    }
+                }
+                pub fn PreviousSiblingAutomationProviderRequested<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<Self>,
+                            windows_core::Ref<ContentSiteAutomationProviderRequestedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        Self,
+                        ContentSiteAutomationProviderRequestedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                Self,
+                                ContentSiteAutomationProviderRequestedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .PreviousSiblingAutomationProviderRequested)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self)
+                                .RemovePreviousSiblingAutomationProviderRequested,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteAutomation {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteAutomation";
+            }
+            pub trait IContentSiteAutomation_Impl: windows_core::IUnknownImpl {
+                fn AutomationOption(&self) -> windows_core::Result<ContentAutomationOptions>;
+                fn SetAutomationOption(
+                    &self,
+                    value: ContentAutomationOptions,
+                ) -> windows_core::Result<()>;
+                fn AutomationProvider(&self) -> windows_core::Result<windows_core::IInspectable>;
+                fn FragmentRootAutomationProviderRequested(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            IContentSiteAutomation,
+                            ContentSiteAutomationProviderRequestedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveFragmentRootAutomationProviderRequested(
+                    &self,
+                    token: i64,
+                ) -> windows_core::Result<()>;
+                fn NextSiblingAutomationProviderRequested(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            IContentSiteAutomation,
+                            ContentSiteAutomationProviderRequestedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveNextSiblingAutomationProviderRequested(
+                    &self,
+                    token: i64,
+                ) -> windows_core::Result<()>;
+                fn ParentAutomationProviderRequested(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            IContentSiteAutomation,
+                            ContentSiteAutomationProviderRequestedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveParentAutomationProviderRequested(
+                    &self,
+                    token: i64,
+                ) -> windows_core::Result<()>;
+                fn PreviousSiblingAutomationProviderRequested(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            IContentSiteAutomation,
+                            ContentSiteAutomationProviderRequestedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemovePreviousSiblingAutomationProviderRequested(
+                    &self,
+                    token: i64,
+                ) -> windows_core::Result<()>;
+            }
+            impl IContentSiteAutomation_Vtbl {
+                pub const fn new<Identity: IContentSiteAutomation_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AutomationOption<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentAutomationOptions,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomation_Impl::AutomationOption(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAutomationOption<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: ContentAutomationOptions,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomation_Impl::SetAutomationOption(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn AutomationProvider<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomation_Impl::AutomationProvider(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn FragmentRootAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomation_Impl::FragmentRootAutomationProviderRequested (this , core::mem::transmute_copy (& handler) ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveFragmentRootAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomation_Impl::RemoveFragmentRootAutomationProviderRequested (this , token ,) . into ()
+                        }
+                    }
+                    unsafe extern "system" fn NextSiblingAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomation_Impl::NextSiblingAutomationProviderRequested (this , core::mem::transmute_copy (& handler) ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveNextSiblingAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomation_Impl::RemoveNextSiblingAutomationProviderRequested (this , token ,) . into ()
+                        }
+                    }
+                    unsafe extern "system" fn ParentAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomation_Impl::ParentAutomationProviderRequested(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveParentAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomation_Impl::RemoveParentAutomationProviderRequested(
+                                this, token,
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn PreviousSiblingAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomation_Impl::PreviousSiblingAutomationProviderRequested (this , core::mem::transmute_copy (& handler) ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn RemovePreviousSiblingAutomationProviderRequested<
+                        Identity: IContentSiteAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomation_Impl::RemovePreviousSiblingAutomationProviderRequested (this , token ,) . into ()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteAutomation,
+                            OFFSET,
+                        >(),
+                        AutomationOption: AutomationOption::<Identity, OFFSET>,
+                        SetAutomationOption: SetAutomationOption::<Identity, OFFSET>,
+                        AutomationProvider: AutomationProvider::<Identity, OFFSET>,
+                        FragmentRootAutomationProviderRequested:
+                            FragmentRootAutomationProviderRequested::<Identity, OFFSET>,
+                        RemoveFragmentRootAutomationProviderRequested:
+                            RemoveFragmentRootAutomationProviderRequested::<Identity, OFFSET>,
+                        NextSiblingAutomationProviderRequested:
+                            NextSiblingAutomationProviderRequested::<Identity, OFFSET>,
+                        RemoveNextSiblingAutomationProviderRequested:
+                            RemoveNextSiblingAutomationProviderRequested::<Identity, OFFSET>,
+                        ParentAutomationProviderRequested: ParentAutomationProviderRequested::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        RemoveParentAutomationProviderRequested:
+                            RemoveParentAutomationProviderRequested::<Identity, OFFSET>,
+                        PreviousSiblingAutomationProviderRequested:
+                            PreviousSiblingAutomationProviderRequested::<Identity, OFFSET>,
+                        RemovePreviousSiblingAutomationProviderRequested:
+                            RemovePreviousSiblingAutomationProviderRequested::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteAutomation as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteAutomation_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AutomationOption: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentAutomationOptions,
+                )
+                    -> windows_core::HRESULT,
+                pub SetAutomationOption: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    ContentAutomationOptions,
+                )
+                    -> windows_core::HRESULT,
+                pub AutomationProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub FragmentRootAutomationProviderRequested:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    ) -> windows_core::HRESULT,
+                pub RemoveFragmentRootAutomationProviderRequested:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub NextSiblingAutomationProviderRequested:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    ) -> windows_core::HRESULT,
+                pub RemoveNextSiblingAutomationProviderRequested:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub ParentAutomationProviderRequested:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    ) -> windows_core::HRESULT,
+                pub RemoveParentAutomationProviderRequested:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub PreviousSiblingAutomationProviderRequested:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    ) -> windows_core::HRESULT,
+                pub RemovePreviousSiblingAutomationProviderRequested:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteAutomationProviderRequestedEventArgs,
+                IContentSiteAutomationProviderRequestedEventArgs_Vtbl,
+                0x73a093b9_55d4_5598_b70e_6250b732f821
+            );
+            impl windows_core::RuntimeType for IContentSiteAutomationProviderRequestedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteAutomationProviderRequestedEventArgs",
+                    );
+            }
+            impl IContentSiteAutomationProviderRequestedEventArgs {
+                pub fn AutomationProvider(
+                    &self,
+                ) -> windows_core::Result<windows_core::IInspectable> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn SetAutomationProvider<P0>(&self, value: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<windows_core::IInspectable>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAutomationProvider)(
+                            windows_core::Interface::as_raw(self),
+                            value.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Handled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Handled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetHandled(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetHandled)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteAutomationProviderRequestedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentSiteAutomationProviderRequestedEventArgs";
+            }
+            pub trait IContentSiteAutomationProviderRequestedEventArgs_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn AutomationProvider(&self) -> windows_core::Result<windows_core::IInspectable>;
+                fn SetAutomationProvider(
+                    &self,
+                    value: windows_core::Ref<windows_core::IInspectable>,
+                ) -> windows_core::Result<()>;
+                fn Handled(&self) -> windows_core::Result<bool>;
+                fn SetHandled(&self, value: bool) -> windows_core::Result<()>;
+            }
+            impl IContentSiteAutomationProviderRequestedEventArgs_Vtbl {
+                pub const fn new<
+                    Identity: IContentSiteAutomationProviderRequestedEventArgs_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn AutomationProvider<
+                        Identity: IContentSiteAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomationProviderRequestedEventArgs_Impl::AutomationProvider (this ,) { Ok (ok__) => { result__ . write (core::mem::transmute_copy (& ok__)) ; core::mem::forget (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    unsafe extern "system" fn SetAutomationProvider<
+                        Identity: IContentSiteAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomationProviderRequestedEventArgs_Impl::SetAutomationProvider (this , core::mem::transmute_copy (& value) ,) . into ()
+                        }
+                    }
+                    unsafe extern "system" fn Handled<
+                        Identity: IContentSiteAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteAutomationProviderRequestedEventArgs_Impl::Handled(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetHandled<
+                        Identity: IContentSiteAutomationProviderRequestedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteAutomationProviderRequestedEventArgs_Impl::SetHandled(
+                                this, value,
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteAutomationProviderRequestedEventArgs,
+                            OFFSET,
+                        >(),
+                        AutomationProvider: AutomationProvider::<Identity, OFFSET>,
+                        SetAutomationProvider: SetAutomationProvider::<Identity, OFFSET>,
+                        Handled: Handled::<Identity, OFFSET>,
+                        SetHandled: SetHandled::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == & < IContentSiteAutomationProviderRequestedEventArgs as windows_core::Interface >::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteAutomationProviderRequestedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AutomationProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub SetAutomationProvider: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub Handled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub SetHandled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteBridge,
+                IContentSiteBridge_Vtbl,
+                0xfaaab99e_a42b_549c_92df_3b6d6e1e368b
+            );
+            impl windows_core::RuntimeType for IContentSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteBridge",
+                    );
+            }
+            windows_core::imp::interface_hierarchy!(
+                IContentSiteBridge,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(
+                IContentSiteBridge,
+                super::super::super::Windows::Foundation::IClosable
+            );
+            impl IContentSiteBridge {
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn LayoutDirectionOverride(
+                    &self,
+                ) -> windows_core::Result<ContentLayoutDirection> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LayoutDirectionOverride)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                        .and_then(
+                            |r__: windows_reference::IReference<ContentLayoutDirection>| {
+                                r__.Value()
+                            },
+                        )
+                    }
+                }
+                pub fn SetLayoutDirectionOverride(
+                    &self,
+                    value: Option<ContentLayoutDirection>,
+                ) -> windows_core::Result<()> {
+                    let value__ = value.map(
+                        <windows_reference::IReference<ContentLayoutDirection> as From<_>>::from,
+                    );
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetLayoutDirectionOverride)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Param::param(value__.as_ref()).abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn OverrideScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).OverrideScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetOverrideScale(&self, value: f32) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetOverrideScale)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteBridge";
+            }
+            pub trait IContentSiteBridge_Impl:
+                super::super::super::Windows::Foundation::IClosable_Impl
+            {
+                fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue>;
+                fn LayoutDirectionOverride(
+                    &self,
+                ) -> windows_core::Result<windows_reference::IReference<ContentLayoutDirection>>;
+                fn SetLayoutDirectionOverride(
+                    &self,
+                    value: windows_core::Ref<windows_reference::IReference<ContentLayoutDirection>>,
+                ) -> windows_core::Result<()>;
+                fn OverrideScale(&self) -> windows_core::Result<f32>;
+                fn SetOverrideScale(&self, value: f32) -> windows_core::Result<()>;
+            }
+            impl IContentSiteBridge_Vtbl {
+                pub const fn new<Identity: IContentSiteBridge_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IContentSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteBridge_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LayoutDirectionOverride<
+                        Identity: IContentSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteBridge_Impl::LayoutDirectionOverride(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetLayoutDirectionOverride<
+                        Identity: IContentSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteBridge_Impl::SetLayoutDirectionOverride(
+                                this,
+                                core::mem::transmute_copy(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn OverrideScale<
+                        Identity: IContentSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteBridge_Impl::OverrideScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetOverrideScale<
+                        Identity: IContentSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteBridge_Impl::SetOverrideScale(this, value).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteBridge,
+                            OFFSET,
+                        >(),
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        LayoutDirectionOverride: LayoutDirectionOverride::<Identity, OFFSET>,
+                        SetLayoutDirectionOverride: SetLayoutDirectionOverride::<Identity, OFFSET>,
+                        OverrideScale: OverrideScale::<Identity, OFFSET>,
+                        SetOverrideScale: SetOverrideScale::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteBridge as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteBridge_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub LayoutDirectionOverride: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub SetLayoutDirectionOverride: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub OverrideScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub SetOverrideScale:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, f32) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteEnvironment,
+                IContentSiteEnvironment_Vtbl,
+                0x685d085d_be53_55d1_aec4_ba2273d5468b
+            );
+            impl windows_core::RuntimeType for IContentSiteEnvironment {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteEnvironment",
+                    );
+            }
+            impl IContentSiteEnvironment {
+                pub fn AppWindowId(&self) -> windows_core::Result<super::WindowId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AppWindowId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetAppWindowId(&self, value: super::WindowId) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAppWindowId)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn DisplayId(&self) -> windows_core::Result<super::DisplayId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DisplayId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetDisplayId(&self, value: super::DisplayId) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetDisplayId)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn View(&self) -> windows_core::Result<ContentSiteEnvironmentView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).View)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn NotifySettingChanged(&self, setting: &str) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).NotifySettingChanged)(
+                            windows_core::Interface::as_raw(self),
+                            core::mem::transmute_copy(&windows_core::HSTRING::from(setting)),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteEnvironment {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteEnvironment";
+            }
+            pub trait IContentSiteEnvironment_Impl: windows_core::IUnknownImpl {
+                fn AppWindowId(&self) -> windows_core::Result<super::WindowId>;
+                fn SetAppWindowId(&self, value: &super::WindowId) -> windows_core::Result<()>;
+                fn DisplayId(&self) -> windows_core::Result<super::DisplayId>;
+                fn SetDisplayId(&self, value: &super::DisplayId) -> windows_core::Result<()>;
+                fn View(&self) -> windows_core::Result<ContentSiteEnvironmentView>;
+                fn NotifySettingChanged(
+                    &self,
+                    setting: &windows_core::HSTRING,
+                ) -> windows_core::Result<()>;
+            }
+            impl IContentSiteEnvironment_Vtbl {
+                pub const fn new<Identity: IContentSiteEnvironment_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AppWindowId<
+                        Identity: IContentSiteEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironment_Impl::AppWindowId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAppWindowId<
+                        Identity: IContentSiteEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteEnvironment_Impl::SetAppWindowId(
+                                this,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn DisplayId<
+                        Identity: IContentSiteEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::DisplayId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironment_Impl::DisplayId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetDisplayId<
+                        Identity: IContentSiteEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: super::DisplayId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteEnvironment_Impl::SetDisplayId(
+                                this,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn View<
+                        Identity: IContentSiteEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironment_Impl::View(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn NotifySettingChanged<
+                        Identity: IContentSiteEnvironment_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        setting: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteEnvironment_Impl::NotifySettingChanged(
+                                this,
+                                core::mem::transmute(&setting),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteEnvironment,
+                            OFFSET,
+                        >(),
+                        AppWindowId: AppWindowId::<Identity, OFFSET>,
+                        SetAppWindowId: SetAppWindowId::<Identity, OFFSET>,
+                        DisplayId: DisplayId::<Identity, OFFSET>,
+                        SetDisplayId: SetDisplayId::<Identity, OFFSET>,
+                        View: View::<Identity, OFFSET>,
+                        NotifySettingChanged: NotifySettingChanged::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteEnvironment as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteEnvironment_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AppWindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::WindowId,
+                )
+                    -> windows_core::HRESULT,
+                pub SetAppWindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                )
+                    -> windows_core::HRESULT,
+                pub DisplayId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::DisplayId,
+                ) -> windows_core::HRESULT,
+                pub SetDisplayId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::DisplayId,
+                )
+                    -> windows_core::HRESULT,
+                pub View: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub NotifySettingChanged: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteEnvironment2,
+                IContentSiteEnvironment2_Vtbl,
+                0x381ae3cd_c780_5a69_ba6a_0ead8560a31f
+            );
+            impl windows_core::RuntimeType for IContentSiteEnvironment2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteEnvironment2",
+                    );
+            }
+            impl IContentSiteEnvironment2 {
+                pub fn DisplayScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DisplayScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetDisplayScale(&self, value: f32) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetDisplayScale)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteEnvironment2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteEnvironment2";
+            }
+            pub trait IContentSiteEnvironment2_Impl: windows_core::IUnknownImpl {
+                fn DisplayScale(&self) -> windows_core::Result<f32>;
+                fn SetDisplayScale(&self, value: f32) -> windows_core::Result<()>;
+            }
+            impl IContentSiteEnvironment2_Vtbl {
+                pub const fn new<Identity: IContentSiteEnvironment2_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn DisplayScale<
+                        Identity: IContentSiteEnvironment2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironment2_Impl::DisplayScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetDisplayScale<
+                        Identity: IContentSiteEnvironment2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteEnvironment2_Impl::SetDisplayScale(this, value).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteEnvironment2,
+                            OFFSET,
+                        >(),
+                        DisplayScale: DisplayScale::<Identity, OFFSET>,
+                        SetDisplayScale: SetDisplayScale::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteEnvironment2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteEnvironment2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DisplayScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub SetDisplayScale:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, f32) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteEnvironmentFactory,
+                IContentSiteEnvironmentFactory_Vtbl,
+                0x0befa998_cb15_5f16_a4a5_c0ed1674e186
+            );
+            impl windows_core::RuntimeType for IContentSiteEnvironmentFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteEnvironmentFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentSiteEnvironmentFactory {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteEnvironmentFactory";
+            }
+            pub trait IContentSiteEnvironmentFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentSiteEnvironmentFactory_Vtbl {
+                pub const fn new<
+                    Identity: IContentSiteEnvironmentFactory_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteEnvironmentFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteEnvironmentFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteEnvironmentFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteEnvironmentView,
+                IContentSiteEnvironmentView_Vtbl,
+                0x5b6fe420_0bb3_54dd_8589_786cf02e38f1
+            );
+            impl windows_core::RuntimeType for IContentSiteEnvironmentView {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteEnvironmentView",
+                    );
+            }
+            impl IContentSiteEnvironmentView {
+                pub fn AppWindowId(&self) -> windows_core::Result<super::WindowId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AppWindowId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn DisplayId(&self) -> windows_core::Result<super::DisplayId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DisplayId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteEnvironmentView {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteEnvironmentView";
+            }
+            pub trait IContentSiteEnvironmentView_Impl: windows_core::IUnknownImpl {
+                fn AppWindowId(&self) -> windows_core::Result<super::WindowId>;
+                fn DisplayId(&self) -> windows_core::Result<super::DisplayId>;
+            }
+            impl IContentSiteEnvironmentView_Vtbl {
+                pub const fn new<
+                    Identity: IContentSiteEnvironmentView_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn AppWindowId<
+                        Identity: IContentSiteEnvironmentView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironmentView_Impl::AppWindowId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn DisplayId<
+                        Identity: IContentSiteEnvironmentView_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::DisplayId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironmentView_Impl::DisplayId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteEnvironmentView,
+                            OFFSET,
+                        >(),
+                        AppWindowId: AppWindowId::<Identity, OFFSET>,
+                        DisplayId: DisplayId::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteEnvironmentView as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteEnvironmentView_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AppWindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::WindowId,
+                )
+                    -> windows_core::HRESULT,
+                pub DisplayId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::DisplayId,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteEnvironmentView2,
+                IContentSiteEnvironmentView2_Vtbl,
+                0x0b43c89a_9196_5a64_a078_eb150acae527
+            );
+            impl windows_core::RuntimeType for IContentSiteEnvironmentView2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteEnvironmentView2",
+                    );
+            }
+            impl IContentSiteEnvironmentView2 {
+                pub fn DisplayScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DisplayScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteEnvironmentView2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteEnvironmentView2";
+            }
+            pub trait IContentSiteEnvironmentView2_Impl: windows_core::IUnknownImpl {
+                fn DisplayScale(&self) -> windows_core::Result<f32>;
+            }
+            impl IContentSiteEnvironmentView2_Vtbl {
+                pub const fn new<
+                    Identity: IContentSiteEnvironmentView2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn DisplayScale<
+                        Identity: IContentSiteEnvironmentView2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut f32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteEnvironmentView2_Impl::DisplayScale(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteEnvironmentView2,
+                            OFFSET,
+                        >(),
+                        DisplayScale: DisplayScale::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteEnvironmentView2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteEnvironmentView2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DisplayScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteEnvironmentViewFactory,
+                IContentSiteEnvironmentViewFactory_Vtbl,
+                0xc901edf2_f184_5a64_8d58_8cf8efa8b678
+            );
+            impl windows_core::RuntimeType for IContentSiteEnvironmentViewFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteEnvironmentViewFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentSiteEnvironmentViewFactory {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentSiteEnvironmentViewFactory";
+            }
+            pub trait IContentSiteEnvironmentViewFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentSiteEnvironmentViewFactory_Vtbl {
+                pub const fn new<
+                    Identity: IContentSiteEnvironmentViewFactory_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteEnvironmentViewFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteEnvironmentViewFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteEnvironmentViewFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteFactory,
+                IContentSiteFactory_Vtbl,
+                0x72fb98d5_b28a_57f1_91fa_24c014a342c1
+            );
+            impl windows_core::RuntimeType for IContentSiteFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentSiteFactory {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteFactory";
+            }
+            pub trait IContentSiteFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentSiteFactory_Vtbl {
+                pub const fn new<Identity: IContentSiteFactory_Impl, const OFFSET: isize>() -> Self
+                {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteInput,
+                IContentSiteInput_Vtbl,
+                0x0ead8189_10d3_550d_b747_8847bd7c9d21
+            );
+            impl windows_core::RuntimeType for IContentSiteInput {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteInput",
+                    );
+            }
+            windows_core::imp::interface_hierarchy!(
+                IContentSiteInput,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl IContentSiteInput {
+                pub fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesKeyboardInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetProcessesKeyboardInput(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetProcessesKeyboardInput)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn ProcessesPointerInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesPointerInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetProcessesPointerInput(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetProcessesPointerInput)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteInput {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteInput";
+            }
+            pub trait IContentSiteInput_Impl: windows_core::IUnknownImpl {
+                fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool>;
+                fn SetProcessesKeyboardInput(&self, value: bool) -> windows_core::Result<()>;
+                fn ProcessesPointerInput(&self) -> windows_core::Result<bool>;
+                fn SetProcessesPointerInput(&self, value: bool) -> windows_core::Result<()>;
+            }
+            impl IContentSiteInput_Vtbl {
+                pub const fn new<Identity: IContentSiteInput_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn ProcessesKeyboardInput<
+                        Identity: IContentSiteInput_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteInput_Impl::ProcessesKeyboardInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetProcessesKeyboardInput<
+                        Identity: IContentSiteInput_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteInput_Impl::SetProcessesKeyboardInput(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesPointerInput<
+                        Identity: IContentSiteInput_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteInput_Impl::ProcessesPointerInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetProcessesPointerInput<
+                        Identity: IContentSiteInput_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IContentSiteInput_Impl::SetProcessesPointerInput(this, value).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteInput,
+                            OFFSET,
+                        >(),
+                        ProcessesKeyboardInput: ProcessesKeyboardInput::<Identity, OFFSET>,
+                        SetProcessesKeyboardInput: SetProcessesKeyboardInput::<Identity, OFFSET>,
+                        ProcessesPointerInput: ProcessesPointerInput::<Identity, OFFSET>,
+                        SetProcessesPointerInput: SetProcessesPointerInput::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteInput as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteInput_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ProcessesKeyboardInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetProcessesKeyboardInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub ProcessesPointerInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetProcessesPointerInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteLink,
+                IContentSiteLink_Vtbl,
+                0xd9247341_f5d0_5084_af66_f5df5f314fc0
+            );
+            impl windows_core::RuntimeType for IContentSiteLink {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteLink",
+                    );
+            }
+            windows_core::imp::interface_hierarchy!(
+                IContentSiteLink,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl IContentSiteLink {
+                pub fn Parent(&self) -> windows_core::Result<ContentIsland> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Parent)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteLink {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteLink";
+            }
+            pub trait IContentSiteLink_Impl: windows_core::IUnknownImpl {
+                fn Parent(&self) -> windows_core::Result<ContentIsland>;
+            }
+            impl IContentSiteLink_Vtbl {
+                pub const fn new<Identity: IContentSiteLink_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn Parent<
+                        Identity: IContentSiteLink_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteLink_Impl::Parent(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteLink,
+                            OFFSET,
+                        >(),
+                        Parent: Parent::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteLink as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteLink_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Parent: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteRequestedStateChangedEventArgs,
+                IContentSiteRequestedStateChangedEventArgs_Vtbl,
+                0x1b55fd1d_7292_562b_b4a1_d4de7972e684
+            );
+            impl windows_core::RuntimeType for IContentSiteRequestedStateChangedEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteRequestedStateChangedEventArgs",
+                    );
+            }
+            impl IContentSiteRequestedStateChangedEventArgs {
+                pub fn DidRequestedSizeChange(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DidRequestedSizeChange)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteRequestedStateChangedEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Content.IContentSiteRequestedStateChangedEventArgs";
+            }
+            pub trait IContentSiteRequestedStateChangedEventArgs_Impl:
+                windows_core::IUnknownImpl
+            {
+                fn DidRequestedSizeChange(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentSiteRequestedStateChangedEventArgs_Vtbl {
+                pub const fn new<
+                    Identity: IContentSiteRequestedStateChangedEventArgs_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn DidRequestedSizeChange<
+                        Identity: IContentSiteRequestedStateChangedEventArgs_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteRequestedStateChangedEventArgs_Impl::DidRequestedSizeChange (this ,) { Ok (ok__) => { result__ . write (ok__) ; windows_core::HRESULT (0) } Err (err) => err . into () }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteRequestedStateChangedEventArgs,
+                            OFFSET,
+                        >(),
+                        DidRequestedSizeChange: DidRequestedSizeChange::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == & < IContentSiteRequestedStateChangedEventArgs as windows_core::Interface >::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteRequestedStateChangedEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DidRequestedSizeChange: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteView,
+                IContentSiteView_Vtbl,
+                0x2d5d8dd5_358e_5b05_993b_b2666d1786b3
+            );
+            impl windows_core::RuntimeType for IContentSiteView {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteView",
+                    );
+            }
+            impl IContentSiteView {
+                pub fn ActualSize(&self) -> windows_core::Result<windows_numerics::Vector2> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ActualSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn CoordinateConverter(
+                    &self,
+                ) -> windows_core::Result<ContentCoordinateConverter> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CoordinateConverter)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn DispatcherQueue(
+                    &self,
+                ) -> windows_core::Result<super::Dispatching::DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn EnvironmentView(&self) -> windows_core::Result<ContentSiteEnvironmentView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).EnvironmentView)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn IsConnected(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsConnected)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsSiteEnabled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsSiteEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsSiteVisible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsSiteVisible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn LayoutDirection(&self) -> windows_core::Result<ContentLayoutDirection> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LayoutDirection)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn OverrideScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).OverrideScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ParentScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ParentScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn RasterizationScale(&self) -> windows_core::Result<f32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).RasterizationScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn RequestedSize(&self) -> windows_core::Result<windows_numerics::Vector2> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).RequestedSize)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ShouldApplyRasterizationScale(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ShouldApplyRasterizationScale)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteView {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteView";
+            }
+            #[repr(C)]
+            pub struct IContentSiteView_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ActualSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_numerics::Vector2,
+                ) -> windows_core::HRESULT,
+                ClientSize: usize,
+                pub CoordinateConverter: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub EnvironmentView: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub IsConnected: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsSiteEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub IsSiteVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub LayoutDirection: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentLayoutDirection,
+                )
+                    -> windows_core::HRESULT,
+                pub OverrideScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub ParentScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub RasterizationScale: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut f32,
+                )
+                    -> windows_core::HRESULT,
+                pub RequestedSize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_numerics::Vector2,
+                )
+                    -> windows_core::HRESULT,
+                pub ShouldApplyRasterizationScale:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut bool,
+                    ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteView2,
+                IContentSiteView2_Vtbl,
+                0x628adce3_820f_57de_bdc8_3720ff73014b
+            );
+            impl windows_core::RuntimeType for IContentSiteView2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteView2",
+                    );
+            }
+            impl IContentSiteView2 {
+                pub fn LocalToClientTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToClientTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).LocalToParentTransformMatrix)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesKeyboardInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ProcessesPointerInput(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ProcessesPointerInput)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteView2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteView2";
+            }
+            pub trait IContentSiteView2_Impl: windows_core::IUnknownImpl {
+                fn LocalToClientTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn LocalToParentTransformMatrix(
+                    &self,
+                ) -> windows_core::Result<windows_numerics::Matrix4x4>;
+                fn ProcessesKeyboardInput(&self) -> windows_core::Result<bool>;
+                fn ProcessesPointerInput(&self) -> windows_core::Result<bool>;
+            }
+            impl IContentSiteView2_Vtbl {
+                pub const fn new<Identity: IContentSiteView2_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn LocalToClientTransformMatrix<
+                        Identity: IContentSiteView2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView2_Impl::LocalToClientTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn LocalToParentTransformMatrix<
+                        Identity: IContentSiteView2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView2_Impl::LocalToParentTransformMatrix(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesKeyboardInput<
+                        Identity: IContentSiteView2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView2_Impl::ProcessesKeyboardInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ProcessesPointerInput<
+                        Identity: IContentSiteView2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteView2_Impl::ProcessesPointerInput(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteView2,
+                            OFFSET,
+                        >(),
+                        LocalToClientTransformMatrix: LocalToClientTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        LocalToParentTransformMatrix: LocalToParentTransformMatrix::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        ProcessesKeyboardInput: ProcessesKeyboardInput::<Identity, OFFSET>,
+                        ProcessesPointerInput: ProcessesPointerInput::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteView2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteView2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub LocalToClientTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub LocalToParentTransformMatrix:
+                    unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut windows_numerics::Matrix4x4,
+                    ) -> windows_core::HRESULT,
+                pub ProcessesKeyboardInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub ProcessesPointerInput: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteViewAutomation,
+                IContentSiteViewAutomation_Vtbl,
+                0xf9d1d5ff_9669_5553_a875_aee03e11edd8
+            );
+            impl windows_core::RuntimeType for IContentSiteViewAutomation {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteViewAutomation",
+                    );
+            }
+            impl IContentSiteViewAutomation {
+                pub fn AutomationOption(&self) -> windows_core::Result<ContentAutomationOptions> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AutomationOption)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IContentSiteViewAutomation {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteViewAutomation";
+            }
+            pub trait IContentSiteViewAutomation_Impl: windows_core::IUnknownImpl {
+                fn AutomationOption(&self) -> windows_core::Result<ContentAutomationOptions>;
+            }
+            impl IContentSiteViewAutomation_Vtbl {
+                pub const fn new<Identity: IContentSiteViewAutomation_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AutomationOption<
+                        Identity: IContentSiteViewAutomation_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentAutomationOptions,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IContentSiteViewAutomation_Impl::AutomationOption(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteViewAutomation,
+                            OFFSET,
+                        >(),
+                        AutomationOption: AutomationOption::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteViewAutomation as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteViewAutomation_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AutomationOption: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentAutomationOptions,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IContentSiteViewFactory,
+                IContentSiteViewFactory_Vtbl,
+                0x9efd72f0_63ef_5b6a_a50c_5685bd8100f1
+            );
+            impl windows_core::RuntimeType for IContentSiteViewFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IContentSiteViewFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IContentSiteViewFactory {
+                const NAME: &'static str = "Microsoft.UI.Content.IContentSiteViewFactory";
+            }
+            pub trait IContentSiteViewFactory_Impl: windows_core::IUnknownImpl {}
+            impl IContentSiteViewFactory_Vtbl {
+                pub const fn new<Identity: IContentSiteViewFactory_Impl, const OFFSET: isize>()
+                -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IContentSiteViewFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IContentSiteViewFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IContentSiteViewFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopAttachedSiteBridge,
+                IDesktopAttachedSiteBridge_Vtbl,
+                0xc8ad3758_c8d3_5ea5_a274_ce12d9cf6845
+            );
+            impl windows_core::RuntimeType for IDesktopAttachedSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopAttachedSiteBridge",
+                    );
+            }
+            impl IDesktopAttachedSiteBridge {
+                pub fn SiteView(&self) -> windows_core::Result<ContentSiteView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SiteView)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn WindowId(&self) -> windows_core::Result<super::WindowId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).WindowId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Connect<P0>(&self, content: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Connect)(
+                            windows_core::Interface::as_raw(self),
+                            content.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDesktopAttachedSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopAttachedSiteBridge";
+            }
+            pub trait IDesktopAttachedSiteBridge_Impl: windows_core::IUnknownImpl {
+                fn SiteView(&self) -> windows_core::Result<ContentSiteView>;
+                fn WindowId(&self) -> windows_core::Result<super::WindowId>;
+                fn Connect(
+                    &self,
+                    content: windows_core::Ref<ContentIsland>,
+                ) -> windows_core::Result<()>;
+            }
+            impl IDesktopAttachedSiteBridge_Vtbl {
+                pub const fn new<Identity: IDesktopAttachedSiteBridge_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn SiteView<
+                        Identity: IDesktopAttachedSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopAttachedSiteBridge_Impl::SiteView(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn WindowId<
+                        Identity: IDesktopAttachedSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopAttachedSiteBridge_Impl::WindowId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Connect<
+                        Identity: IDesktopAttachedSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        content: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopAttachedSiteBridge_Impl::Connect(
+                                this,
+                                core::mem::transmute_copy(&content),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopAttachedSiteBridge,
+                            OFFSET,
+                        >(),
+                        SiteView: SiteView::<Identity, OFFSET>,
+                        WindowId: WindowId::<Identity, OFFSET>,
+                        Connect: Connect::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopAttachedSiteBridge as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopAttachedSiteBridge_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub SiteView: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub WindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::WindowId,
+                ) -> windows_core::HRESULT,
+                pub Connect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopAttachedSiteBridgeStatics,
+                IDesktopAttachedSiteBridgeStatics_Vtbl,
+                0x41f6930f_310e_5680_812c_6dac16dfff44
+            );
+            impl windows_core::RuntimeType for IDesktopAttachedSiteBridgeStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopAttachedSiteBridgeStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IDesktopAttachedSiteBridgeStatics {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopAttachedSiteBridgeStatics";
+            }
+            pub trait IDesktopAttachedSiteBridgeStatics_Impl: windows_core::IUnknownImpl {
+                fn CreateFromWindowId(
+                    &self,
+                    queue: windows_core::Ref<super::Dispatching::DispatcherQueue>,
+                    windowId: &super::WindowId,
+                ) -> windows_core::Result<DesktopAttachedSiteBridge>;
+            }
+            impl IDesktopAttachedSiteBridgeStatics_Vtbl {
+                pub const fn new<
+                    Identity: IDesktopAttachedSiteBridgeStatics_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CreateFromWindowId<
+                        Identity: IDesktopAttachedSiteBridgeStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        queue: *mut core::ffi::c_void,
+                        windowid: super::WindowId,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopAttachedSiteBridgeStatics_Impl::CreateFromWindowId(
+                                this,
+                                core::mem::transmute_copy(&queue),
+                                core::mem::transmute(&windowid),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopAttachedSiteBridgeStatics,
+                            OFFSET,
+                        >(),
+                        CreateFromWindowId: CreateFromWindowId::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopAttachedSiteBridgeStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopAttachedSiteBridgeStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateFromWindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopChildSiteBridge,
+                IDesktopChildSiteBridge_Vtbl,
+                0xb2f2ff7b_1825_51b0_b80b_7599889c569f
+            );
+            impl windows_core::RuntimeType for IDesktopChildSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopChildSiteBridge",
+                    );
+            }
+            impl IDesktopChildSiteBridge {
+                pub fn ResizePolicy(&self) -> windows_core::Result<ContentSizePolicy> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ResizePolicy)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetResizePolicy(
+                    &self,
+                    value: ContentSizePolicy,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetResizePolicy)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn SiteView(&self) -> windows_core::Result<ContentSiteView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SiteView)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDesktopChildSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopChildSiteBridge";
+            }
+            pub trait IDesktopChildSiteBridge_Impl: windows_core::IUnknownImpl {
+                fn ResizePolicy(&self) -> windows_core::Result<ContentSizePolicy>;
+                fn SetResizePolicy(&self, value: ContentSizePolicy) -> windows_core::Result<()>;
+                fn SiteView(&self) -> windows_core::Result<ContentSiteView>;
+            }
+            impl IDesktopChildSiteBridge_Vtbl {
+                pub const fn new<Identity: IDesktopChildSiteBridge_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn ResizePolicy<
+                        Identity: IDesktopChildSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentSizePolicy,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopChildSiteBridge_Impl::ResizePolicy(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetResizePolicy<
+                        Identity: IDesktopChildSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: ContentSizePolicy,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopChildSiteBridge_Impl::SetResizePolicy(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn SiteView<
+                        Identity: IDesktopChildSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopChildSiteBridge_Impl::SiteView(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopChildSiteBridge,
+                            OFFSET,
+                        >(),
+                        ResizePolicy: ResizePolicy::<Identity, OFFSET>,
+                        SetResizePolicy: SetResizePolicy::<Identity, OFFSET>,
+                        SiteView: SiteView::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopChildSiteBridge as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopChildSiteBridge_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ResizePolicy: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentSizePolicy,
+                )
+                    -> windows_core::HRESULT,
+                pub SetResizePolicy: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    ContentSizePolicy,
+                )
+                    -> windows_core::HRESULT,
+                pub SiteView: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopChildSiteBridgeStatics,
+                IDesktopChildSiteBridgeStatics_Vtbl,
+                0xab6b82de_6a47_5de3_a860_613c8db679ab
+            );
+            impl windows_core::RuntimeType for IDesktopChildSiteBridgeStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopChildSiteBridgeStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IDesktopChildSiteBridgeStatics {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopChildSiteBridgeStatics";
+            }
+            pub trait IDesktopChildSiteBridgeStatics_Impl: windows_core::IUnknownImpl {
+                fn Create(
+                    &self,
+                    compositor: windows_core::Ref<super::Composition::Compositor>,
+                    parentWindowId: &super::WindowId,
+                ) -> windows_core::Result<DesktopChildSiteBridge>;
+            }
+            impl IDesktopChildSiteBridgeStatics_Vtbl {
+                pub const fn new<
+                    Identity: IDesktopChildSiteBridgeStatics_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn Create<
+                        Identity: IDesktopChildSiteBridgeStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        compositor: *mut core::ffi::c_void,
+                        parentwindowid: super::WindowId,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopChildSiteBridgeStatics_Impl::Create(
+                                this,
+                                core::mem::transmute_copy(&compositor),
+                                core::mem::transmute(&parentwindowid),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopChildSiteBridgeStatics,
+                            OFFSET,
+                        >(),
+                        Create: Create::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopChildSiteBridgeStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopChildSiteBridgeStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Create: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopChildSiteBridgeStatics2,
+                IDesktopChildSiteBridgeStatics2_Vtbl,
+                0xaae99407_e378_5c53_9aff_5a3b53e194a8
+            );
+            impl windows_core::RuntimeType for IDesktopChildSiteBridgeStatics2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopChildSiteBridgeStatics2",
+                    );
+            }
+            impl windows_core::RuntimeName for IDesktopChildSiteBridgeStatics2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopChildSiteBridgeStatics2";
+            }
+            pub trait IDesktopChildSiteBridgeStatics2_Impl: windows_core::IUnknownImpl {
+                fn CreateWithDispatcherQueue(
+                    &self,
+                    queue: windows_core::Ref<super::Dispatching::DispatcherQueue>,
+                    parentWindowId: &super::WindowId,
+                ) -> windows_core::Result<DesktopChildSiteBridge>;
+            }
+            impl IDesktopChildSiteBridgeStatics2_Vtbl {
+                pub const fn new<
+                    Identity: IDesktopChildSiteBridgeStatics2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CreateWithDispatcherQueue<
+                        Identity: IDesktopChildSiteBridgeStatics2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        queue: *mut core::ffi::c_void,
+                        parentwindowid: super::WindowId,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopChildSiteBridgeStatics2_Impl::CreateWithDispatcherQueue(
+                                this,
+                                core::mem::transmute_copy(&queue),
+                                core::mem::transmute(&parentwindowid),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopChildSiteBridgeStatics2,
+                            OFFSET,
+                        >(),
+                        CreateWithDispatcherQueue: CreateWithDispatcherQueue::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopChildSiteBridgeStatics2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopChildSiteBridgeStatics2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateWithDispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopPopupSiteBridge,
+                IDesktopPopupSiteBridge_Vtbl,
+                0x84eaab23_f716_5ad8_ac00_3d77c01d42cc
+            );
+            impl windows_core::RuntimeType for IDesktopPopupSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopPopupSiteBridge",
+                    );
+            }
+            impl IDesktopPopupSiteBridge {
+                pub fn IsEnabled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsVisible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsVisible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SiteView(&self) -> windows_core::Result<ContentSiteView> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SiteView)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn WindowId(&self) -> windows_core::Result<super::WindowId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).WindowId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Connect<P0>(&self, content: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Connect)(
+                            windows_core::Interface::as_raw(self),
+                            content.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Disable(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Disable)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Enable(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Enable)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Hide(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Hide)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveAndResize(
+                    &self,
+                    rect: super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveAndResize)(
+                            windows_core::Interface::as_raw(self),
+                            rect,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveInZOrderAtBottom(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveInZOrderAtBottom)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveInZOrderAtTop(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveInZOrderAtTop)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveInZOrderBelow(
+                    &self,
+                    windowid: super::WindowId,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveInZOrderBelow)(
+                            windows_core::Interface::as_raw(self),
+                            windowid,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Show(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Show)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDesktopPopupSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopPopupSiteBridge";
+            }
+            pub trait IDesktopPopupSiteBridge_Impl: windows_core::IUnknownImpl {
+                fn IsEnabled(&self) -> windows_core::Result<bool>;
+                fn IsVisible(&self) -> windows_core::Result<bool>;
+                fn SiteView(&self) -> windows_core::Result<ContentSiteView>;
+                fn WindowId(&self) -> windows_core::Result<super::WindowId>;
+                fn Connect(
+                    &self,
+                    content: windows_core::Ref<ContentIsland>,
+                ) -> windows_core::Result<()>;
+                fn Disable(&self) -> windows_core::Result<()>;
+                fn Enable(&self) -> windows_core::Result<()>;
+                fn Hide(&self) -> windows_core::Result<()>;
+                fn MoveAndResize(
+                    &self,
+                    rect: &super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+                fn MoveInZOrderAtBottom(&self) -> windows_core::Result<()>;
+                fn MoveInZOrderAtTop(&self) -> windows_core::Result<()>;
+                fn MoveInZOrderBelow(&self, windowId: &super::WindowId)
+                -> windows_core::Result<()>;
+                fn Show(&self) -> windows_core::Result<()>;
+            }
+            impl IDesktopPopupSiteBridge_Vtbl {
+                pub const fn new<Identity: IDesktopPopupSiteBridge_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn IsEnabled<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridge_Impl::IsEnabled(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsVisible<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridge_Impl::IsVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SiteView<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridge_Impl::SiteView(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn WindowId<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridge_Impl::WindowId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Connect<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        content: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::Connect(
+                                this,
+                                core::mem::transmute_copy(&content),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn Disable<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::Disable(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Enable<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::Enable(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Hide<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::Hide(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveAndResize<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        rect: super::super::super::Windows::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::MoveAndResize(
+                                this,
+                                core::mem::transmute(&rect),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveInZOrderAtBottom<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::MoveInZOrderAtBottom(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveInZOrderAtTop<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::MoveInZOrderAtTop(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveInZOrderBelow<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        windowid: super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::MoveInZOrderBelow(
+                                this,
+                                core::mem::transmute(&windowid),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn Show<
+                        Identity: IDesktopPopupSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge_Impl::Show(this).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopPopupSiteBridge,
+                            OFFSET,
+                        >(),
+                        IsEnabled: IsEnabled::<Identity, OFFSET>,
+                        IsVisible: IsVisible::<Identity, OFFSET>,
+                        SiteView: SiteView::<Identity, OFFSET>,
+                        WindowId: WindowId::<Identity, OFFSET>,
+                        Connect: Connect::<Identity, OFFSET>,
+                        Disable: Disable::<Identity, OFFSET>,
+                        Enable: Enable::<Identity, OFFSET>,
+                        Hide: Hide::<Identity, OFFSET>,
+                        MoveAndResize: MoveAndResize::<Identity, OFFSET>,
+                        MoveInZOrderAtBottom: MoveInZOrderAtBottom::<Identity, OFFSET>,
+                        MoveInZOrderAtTop: MoveInZOrderAtTop::<Identity, OFFSET>,
+                        MoveInZOrderBelow: MoveInZOrderBelow::<Identity, OFFSET>,
+                        Show: Show::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopPopupSiteBridge as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopPopupSiteBridge_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub IsEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub IsVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub SiteView: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub WindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::WindowId,
+                ) -> windows_core::HRESULT,
+                pub Connect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub Disable:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Enable:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Hide:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub MoveAndResize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
+                pub MoveInZOrderAtBottom:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub MoveInZOrderAtTop:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub MoveInZOrderBelow: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                )
+                    -> windows_core::HRESULT,
+                pub Show:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopPopupSiteBridge2,
+                IDesktopPopupSiteBridge2_Vtbl,
+                0x4559ff0e_4326_5038_b18d_37b66b242eb3
+            );
+            impl windows_core::RuntimeType for IDesktopPopupSiteBridge2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopPopupSiteBridge2",
+                    );
+            }
+            impl IDesktopPopupSiteBridge2 {
+                pub fn AnchoringBehavior(&self) -> windows_core::Result<PopupAnchor> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AnchoringBehavior)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetAnchoringBehavior(&self, value: PopupAnchor) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAnchoringBehavior)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn AnchoringPixelAlignment(
+                    &self,
+                ) -> windows_core::Result<ContentCoordinateRoundingMode> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).AnchoringPixelAlignment)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetAnchoringPixelAlignment(
+                    &self,
+                    value: ContentCoordinateRoundingMode,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetAnchoringPixelAlignment)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDesktopPopupSiteBridge2 {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopPopupSiteBridge2";
+            }
+            pub trait IDesktopPopupSiteBridge2_Impl: windows_core::IUnknownImpl {
+                fn AnchoringBehavior(&self) -> windows_core::Result<PopupAnchor>;
+                fn SetAnchoringBehavior(&self, value: PopupAnchor) -> windows_core::Result<()>;
+                fn AnchoringPixelAlignment(
+                    &self,
+                ) -> windows_core::Result<ContentCoordinateRoundingMode>;
+                fn SetAnchoringPixelAlignment(
+                    &self,
+                    value: ContentCoordinateRoundingMode,
+                ) -> windows_core::Result<()>;
+            }
+            impl IDesktopPopupSiteBridge2_Vtbl {
+                pub const fn new<Identity: IDesktopPopupSiteBridge2_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AnchoringBehavior<
+                        Identity: IDesktopPopupSiteBridge2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut PopupAnchor,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridge2_Impl::AnchoringBehavior(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAnchoringBehavior<
+                        Identity: IDesktopPopupSiteBridge2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: PopupAnchor,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge2_Impl::SetAnchoringBehavior(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn AnchoringPixelAlignment<
+                        Identity: IDesktopPopupSiteBridge2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut ContentCoordinateRoundingMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridge2_Impl::AnchoringPixelAlignment(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetAnchoringPixelAlignment<
+                        Identity: IDesktopPopupSiteBridge2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: ContentCoordinateRoundingMode,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopPopupSiteBridge2_Impl::SetAnchoringPixelAlignment(this, value)
+                                .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopPopupSiteBridge2,
+                            OFFSET,
+                        >(),
+                        AnchoringBehavior: AnchoringBehavior::<Identity, OFFSET>,
+                        SetAnchoringBehavior: SetAnchoringBehavior::<Identity, OFFSET>,
+                        AnchoringPixelAlignment: AnchoringPixelAlignment::<Identity, OFFSET>,
+                        SetAnchoringPixelAlignment: SetAnchoringPixelAlignment::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopPopupSiteBridge2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopPopupSiteBridge2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub AnchoringBehavior: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut PopupAnchor,
+                )
+                    -> windows_core::HRESULT,
+                pub SetAnchoringBehavior: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    PopupAnchor,
+                )
+                    -> windows_core::HRESULT,
+                pub AnchoringPixelAlignment: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut ContentCoordinateRoundingMode,
+                )
+                    -> windows_core::HRESULT,
+                pub SetAnchoringPixelAlignment: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    ContentCoordinateRoundingMode,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopPopupSiteBridgeStatics,
+                IDesktopPopupSiteBridgeStatics_Vtbl,
+                0x4ea2b77b_3177_5e5b_8d0d_a76e15c6d080
+            );
+            impl windows_core::RuntimeType for IDesktopPopupSiteBridgeStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopPopupSiteBridgeStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IDesktopPopupSiteBridgeStatics {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopPopupSiteBridgeStatics";
+            }
+            pub trait IDesktopPopupSiteBridgeStatics_Impl: windows_core::IUnknownImpl {
+                fn Create(
+                    &self,
+                    parent: windows_core::Ref<ContentIsland>,
+                ) -> windows_core::Result<DesktopPopupSiteBridge>;
+            }
+            impl IDesktopPopupSiteBridgeStatics_Vtbl {
+                pub const fn new<
+                    Identity: IDesktopPopupSiteBridgeStatics_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn Create<
+                        Identity: IDesktopPopupSiteBridgeStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        parent: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopPopupSiteBridgeStatics_Impl::Create(
+                                this,
+                                core::mem::transmute_copy(&parent),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopPopupSiteBridgeStatics,
+                            OFFSET,
+                        >(),
+                        Create: Create::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopPopupSiteBridgeStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopPopupSiteBridgeStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Create: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopSiteBridge,
+                IDesktopSiteBridge_Vtbl,
+                0xf0ae8750_905c_50a2_8a12_4545c6245bb4
+            );
+            impl windows_core::RuntimeType for IDesktopSiteBridge {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopSiteBridge",
+                    );
+            }
+            impl IDesktopSiteBridge {
+                pub fn IsEnabled(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsEnabled)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsVisible(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsVisible)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn WindowId(&self) -> windows_core::Result<super::WindowId> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).WindowId)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn Connect<P0>(&self, content: P0) -> windows_core::Result<()>
+                where
+                    P0: windows_core::Param<ContentIsland>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Connect)(
+                            windows_core::Interface::as_raw(self),
+                            content.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Disable(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Disable)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Enable(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Enable)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Hide(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Hide)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveAndResize(
+                    &self,
+                    rect: super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveAndResize)(
+                            windows_core::Interface::as_raw(self),
+                            rect,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveInZOrderAtBottom(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveInZOrderAtBottom)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveInZOrderAtTop(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveInZOrderAtTop)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn MoveInZOrderBelow(
+                    &self,
+                    windowid: super::WindowId,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).MoveInZOrderBelow)(
+                            windows_core::Interface::as_raw(self),
+                            windowid,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Show(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Show)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDesktopSiteBridge {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopSiteBridge";
+            }
+            pub trait IDesktopSiteBridge_Impl: windows_core::IUnknownImpl {
+                fn IsEnabled(&self) -> windows_core::Result<bool>;
+                fn IsVisible(&self) -> windows_core::Result<bool>;
+                fn WindowId(&self) -> windows_core::Result<super::WindowId>;
+                fn Connect(
+                    &self,
+                    content: windows_core::Ref<ContentIsland>,
+                ) -> windows_core::Result<()>;
+                fn Disable(&self) -> windows_core::Result<()>;
+                fn Enable(&self) -> windows_core::Result<()>;
+                fn Hide(&self) -> windows_core::Result<()>;
+                fn MoveAndResize(
+                    &self,
+                    rect: &super::super::super::Windows::Graphics::RectInt32,
+                ) -> windows_core::Result<()>;
+                fn MoveInZOrderAtBottom(&self) -> windows_core::Result<()>;
+                fn MoveInZOrderAtTop(&self) -> windows_core::Result<()>;
+                fn MoveInZOrderBelow(&self, windowId: &super::WindowId)
+                -> windows_core::Result<()>;
+                fn Show(&self) -> windows_core::Result<()>;
+            }
+            impl IDesktopSiteBridge_Vtbl {
+                pub const fn new<Identity: IDesktopSiteBridge_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn IsEnabled<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopSiteBridge_Impl::IsEnabled(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsVisible<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopSiteBridge_Impl::IsVisible(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn WindowId<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopSiteBridge_Impl::WindowId(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Connect<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        content: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::Connect(
+                                this,
+                                core::mem::transmute_copy(&content),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn Disable<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::Disable(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Enable<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::Enable(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Hide<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::Hide(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveAndResize<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        rect: super::super::super::Windows::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::MoveAndResize(
+                                this,
+                                core::mem::transmute(&rect),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveInZOrderAtBottom<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::MoveInZOrderAtBottom(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveInZOrderAtTop<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::MoveInZOrderAtTop(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn MoveInZOrderBelow<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        windowid: super::WindowId,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::MoveInZOrderBelow(
+                                this,
+                                core::mem::transmute(&windowid),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn Show<
+                        Identity: IDesktopSiteBridge_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDesktopSiteBridge_Impl::Show(this).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopSiteBridge,
+                            OFFSET,
+                        >(),
+                        IsEnabled: IsEnabled::<Identity, OFFSET>,
+                        IsVisible: IsVisible::<Identity, OFFSET>,
+                        WindowId: WindowId::<Identity, OFFSET>,
+                        Connect: Connect::<Identity, OFFSET>,
+                        Disable: Disable::<Identity, OFFSET>,
+                        Enable: Enable::<Identity, OFFSET>,
+                        Hide: Hide::<Identity, OFFSET>,
+                        MoveAndResize: MoveAndResize::<Identity, OFFSET>,
+                        MoveInZOrderAtBottom: MoveInZOrderAtBottom::<Identity, OFFSET>,
+                        MoveInZOrderAtTop: MoveInZOrderAtTop::<Identity, OFFSET>,
+                        MoveInZOrderBelow: MoveInZOrderBelow::<Identity, OFFSET>,
+                        Show: Show::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopSiteBridge as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopSiteBridge_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub IsEnabled: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub IsVisible: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub WindowId: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::WindowId,
+                ) -> windows_core::HRESULT,
+                pub Connect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+                pub Disable:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Enable:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Hide:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub MoveAndResize: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::super::Windows::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
+                pub MoveInZOrderAtBottom:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub MoveInZOrderAtTop:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub MoveInZOrderBelow: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::WindowId,
+                )
+                    -> windows_core::HRESULT,
+                pub Show:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopSiteBridgeFactory,
+                IDesktopSiteBridgeFactory_Vtbl,
+                0xd94ee1ff_3af1_54d0_9311_652b29c57c5b
+            );
+            impl windows_core::RuntimeType for IDesktopSiteBridgeFactory {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopSiteBridgeFactory",
+                    );
+            }
+            impl windows_core::RuntimeName for IDesktopSiteBridgeFactory {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopSiteBridgeFactory";
+            }
+            pub trait IDesktopSiteBridgeFactory_Impl: windows_core::IUnknownImpl {}
+            impl IDesktopSiteBridgeFactory_Vtbl {
+                pub const fn new<Identity: IDesktopSiteBridgeFactory_Impl, const OFFSET: isize>()
+                -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopSiteBridgeFactory,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopSiteBridgeFactory as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopSiteBridgeFactory_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IDesktopSiteBridgeStatics,
+                IDesktopSiteBridgeStatics_Vtbl,
+                0xe0b38daf_9cd4_50c5_83ee_c76e3cf34eba
+            );
+            impl windows_core::RuntimeType for IDesktopSiteBridgeStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Content.IDesktopSiteBridgeStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IDesktopSiteBridgeStatics {
+                const NAME: &'static str = "Microsoft.UI.Content.IDesktopSiteBridgeStatics";
+            }
+            pub trait IDesktopSiteBridgeStatics_Impl: windows_core::IUnknownImpl {
+                fn IsSupported(&self) -> windows_core::Result<bool>;
+            }
+            impl IDesktopSiteBridgeStatics_Vtbl {
+                pub const fn new<Identity: IDesktopSiteBridgeStatics_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn IsSupported<
+                        Identity: IDesktopSiteBridgeStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDesktopSiteBridgeStatics_Impl::IsSupported(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDesktopSiteBridgeStatics,
+                            OFFSET,
+                        >(),
+                        IsSupported: IsSupported::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDesktopSiteBridgeStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDesktopSiteBridgeStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub IsSupported: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct PopupAnchor(pub i32);
+            impl PopupAnchor {
+                pub const None: Self = Self(0);
+                pub const TopLevelWindow: Self = Self(1);
+                pub const ParentIsland: Self = Self(2);
+            }
+            impl windows_core::imp::TypeKind for PopupAnchor {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for PopupAnchor {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Content.PopupAnchor;i4)",
+                    );
+            }
+        }
+        pub mod Dispatching {
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DispatcherExitDeferral(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DispatcherExitDeferral,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for DispatcherExitDeferral {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDispatcherExitDeferral>();
+            }
+            unsafe impl windows_core::Interface for DispatcherExitDeferral {
+                type Vtable = <IDispatcherExitDeferral as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDispatcherExitDeferral as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DispatcherExitDeferral {
+                type Target = IDispatcherExitDeferral;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DispatcherExitDeferral {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.DispatcherExitDeferral";
+            }
+            unsafe impl Send for DispatcherExitDeferral {}
+            unsafe impl Sync for DispatcherExitDeferral {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DispatcherQueue(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DispatcherQueue,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl DispatcherQueue {
+                pub fn GetForCurrentThread() -> windows_core::Result<Self> {
+                    Self::IDispatcherQueueStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).GetForCurrentThread)(
+                            windows_core::Interface::as_raw(this),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IDispatcherQueueStatics<
+                    R,
+                    F: FnOnce(&IDispatcherQueueStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DispatcherQueue,
+                        IDispatcherQueueStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for DispatcherQueue {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDispatcherQueue>();
+            }
+            unsafe impl windows_core::Interface for DispatcherQueue {
+                type Vtable = <IDispatcherQueue as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IDispatcherQueue as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DispatcherQueue {
+                type Target = IDispatcherQueue;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DispatcherQueue {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.DispatcherQueue";
+            }
+            unsafe impl Send for DispatcherQueue {}
+            unsafe impl Sync for DispatcherQueue {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DispatcherQueueController(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DispatcherQueueController,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl DispatcherQueueController {
+                pub fn CreateOnDedicatedThread() -> windows_core::Result<Self> {
+                    Self::IDispatcherQueueControllerStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateOnDedicatedThread)(
+                            windows_core::Interface::as_raw(this),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                pub fn CreateOnCurrentThread() -> windows_core::Result<Self> {
+                    Self::IDispatcherQueueControllerStatics(|this| unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(this).CreateOnCurrentThread)(
+                            windows_core::Interface::as_raw(this),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    })
+                }
+                fn IDispatcherQueueControllerStatics<
+                    R,
+                    F: FnOnce(&IDispatcherQueueControllerStatics) -> windows_core::Result<R>,
+                >(
+                    callback: F,
+                ) -> windows_core::Result<R> {
+                    static SHARED: windows_core::imp::FactoryCache<
+                        DispatcherQueueController,
+                        IDispatcherQueueControllerStatics,
+                    > = windows_core::imp::FactoryCache::new();
+                    SHARED.call(callback)
+                }
+            }
+            impl windows_core::RuntimeType for DispatcherQueueController {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDispatcherQueueController>();
+            }
+            unsafe impl windows_core::Interface for DispatcherQueueController {
+                type Vtable = <IDispatcherQueueController as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDispatcherQueueController as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DispatcherQueueController {
+                type Target = IDispatcherQueueController;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DispatcherQueueController {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.DispatcherQueueController";
+            }
+            unsafe impl Send for DispatcherQueueController {}
+            unsafe impl Sync for DispatcherQueueController {}
+            windows_core::imp::define_interface!(
+                DispatcherQueueHandler,
+                DispatcherQueueHandler_Vtbl,
+                0x2e0872a9_4e29_5f14_b688_fb96d5f9d5f8
+            );
+            impl windows_core::RuntimeType for DispatcherQueueHandler {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+            }
+            impl DispatcherQueueHandler {
+                pub fn new<F: Fn() + 'static>(invoke: F) -> Self {
+                    let com = windows_core::imp::DelegateBox::<Self, F>::new(
+                        &DispatcherQueueHandlerBox::<F>::VTABLE,
+                        invoke,
+                    );
+                    unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                }
+            }
+            #[repr(C)]
+            pub struct DispatcherQueueHandler_Vtbl {
+                base__: windows_core::IUnknown_Vtbl,
+                Invoke: unsafe extern "system" fn(
+                    this: *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT,
+            }
+            struct DispatcherQueueHandlerBox<F: Fn() + 'static>(
+                core::marker::PhantomData<(fn() -> F,)>,
+            );
+            impl<F: Fn() + 'static> DispatcherQueueHandlerBox<F> {
+                const VTABLE: DispatcherQueueHandler_Vtbl = DispatcherQueueHandler_Vtbl {
+                    base__:
+                        windows_core::IUnknown_Vtbl {
+                            QueryInterface: windows_core::imp::DelegateBox::<
+                                DispatcherQueueHandler,
+                                F,
+                            >::QueryInterface,
+                            AddRef:
+                                windows_core::imp::DelegateBox::<DispatcherQueueHandler, F>::AddRef,
+                            Release:
+                                windows_core::imp::DelegateBox::<DispatcherQueueHandler, F>::Release,
+                        },
+                    Invoke: Self::Invoke,
+                };
+                unsafe extern "system" fn Invoke(
+                    this: *mut core::ffi::c_void,
+                ) -> windows_core::HRESULT {
+                    unsafe {
+                        let this = &mut *(this as *mut *mut core::ffi::c_void
+                            as *mut windows_core::imp::DelegateBox<DispatcherQueueHandler, F>);
+                        (this.invoke)();
+                        windows_core::HRESULT(0)
+                    }
+                }
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct DispatcherQueuePriority(pub i32);
+            impl DispatcherQueuePriority {
+                pub const Low: Self = Self(-10);
+                pub const Normal: Self = Self(0);
+                pub const High: Self = Self(10);
+            }
+            impl windows_core::imp::TypeKind for DispatcherQueuePriority {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for DispatcherQueuePriority {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Dispatching.DispatcherQueuePriority;i4)",
+                    );
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DispatcherQueueShutdownStartingEventArgs(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DispatcherQueueShutdownStartingEventArgs,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for DispatcherQueueShutdownStartingEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        IDispatcherQueueShutdownStartingEventArgs,
+                    >();
+            }
+            unsafe impl windows_core::Interface for DispatcherQueueShutdownStartingEventArgs {
+                type Vtable =
+                    <IDispatcherQueueShutdownStartingEventArgs as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDispatcherQueueShutdownStartingEventArgs as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DispatcherQueueShutdownStartingEventArgs {
+                type Target = IDispatcherQueueShutdownStartingEventArgs;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DispatcherQueueShutdownStartingEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Dispatching.DispatcherQueueShutdownStartingEventArgs";
+            }
+            unsafe impl Send for DispatcherQueueShutdownStartingEventArgs {}
+            unsafe impl Sync for DispatcherQueueShutdownStartingEventArgs {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct DispatcherQueueTimer(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                DispatcherQueueTimer,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            impl windows_core::RuntimeType for DispatcherQueueTimer {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IDispatcherQueueTimer>();
+            }
+            unsafe impl windows_core::Interface for DispatcherQueueTimer {
+                type Vtable = <IDispatcherQueueTimer as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID =
+                    <IDispatcherQueueTimer as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for DispatcherQueueTimer {
+                type Target = IDispatcherQueueTimer;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for DispatcherQueueTimer {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.DispatcherQueueTimer";
+            }
+            unsafe impl Send for DispatcherQueueTimer {}
+            unsafe impl Sync for DispatcherQueueTimer {}
+            #[repr(transparent)]
+            #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+            pub struct DispatcherRunOptions(pub u32);
+            impl DispatcherRunOptions {
+                pub const None: Self = Self(0);
+                pub const ContinueOnQuit: Self = Self(1);
+                pub const QuitOnlyLocalLoop: Self = Self(2);
+            }
+            impl windows_core::imp::TypeKind for DispatcherRunOptions {
+                type TypeKind = windows_core::imp::CopyType;
+            }
+            impl windows_core::RuntimeType for DispatcherRunOptions {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"enum(Microsoft.UI.Dispatching.DispatcherRunOptions;u4)",
+                    );
+            }
+            impl DispatcherRunOptions {
+                pub const fn contains(&self, other: Self) -> bool {
+                    self.0 & other.0 == other.0
+                }
+            }
+            impl core::ops::BitOr for DispatcherRunOptions {
+                type Output = Self;
+                fn bitor(self, other: Self) -> Self {
+                    Self(self.0 | other.0)
+                }
+            }
+            impl core::ops::BitAnd for DispatcherRunOptions {
+                type Output = Self;
+                fn bitand(self, other: Self) -> Self {
+                    Self(self.0 & other.0)
+                }
+            }
+            impl core::ops::BitOrAssign for DispatcherRunOptions {
+                fn bitor_assign(&mut self, other: Self) {
+                    self.0.bitor_assign(other.0);
+                }
+            }
+            impl core::ops::BitAndAssign for DispatcherRunOptions {
+                fn bitand_assign(&mut self, other: Self) {
+                    self.0.bitand_assign(other.0);
+                }
+            }
+            impl core::ops::Not for DispatcherRunOptions {
+                type Output = Self;
+                fn not(self) -> Self {
+                    Self(self.0.not())
+                }
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherExitDeferral,
+                IDispatcherExitDeferral_Vtbl,
+                0x910b5aac_3310_563e_8418_f3005579729e
+            );
+            impl windows_core::RuntimeType for IDispatcherExitDeferral {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherExitDeferral",
+                    );
+            }
+            impl IDispatcherExitDeferral {
+                pub fn Complete(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Complete)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherExitDeferral {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherExitDeferral";
+            }
+            pub trait IDispatcherExitDeferral_Impl: windows_core::IUnknownImpl {
+                fn Complete(&self) -> windows_core::Result<()>;
+            }
+            impl IDispatcherExitDeferral_Vtbl {
+                pub const fn new<Identity: IDispatcherExitDeferral_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn Complete<
+                        Identity: IDispatcherExitDeferral_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherExitDeferral_Impl::Complete(this).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherExitDeferral,
+                            OFFSET,
+                        >(),
+                        Complete: Complete::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherExitDeferral as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherExitDeferral_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Complete:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueue,
+                IDispatcherQueue_Vtbl,
+                0xf6ebf8fa_be1c_5bf6_a467_73da28738ae8
+            );
+            impl windows_core::RuntimeType for IDispatcherQueue {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueue",
+                    );
+            }
+            impl IDispatcherQueue {
+                pub fn CreateTimer(&self) -> windows_core::Result<DispatcherQueueTimer> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).CreateTimer)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn TryEnqueue<P0>(&self, callback: P0) -> windows_core::Result<bool>
+                where
+                    P0: windows_core::Param<DispatcherQueueHandler>,
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).TryEnqueue)(
+                            windows_core::Interface::as_raw(self),
+                            callback.param().abi(),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn TryEnqueueWithPriority<P1>(
+                    &self,
+                    priority: DispatcherQueuePriority,
+                    callback: P1,
+                ) -> windows_core::Result<bool>
+                where
+                    P1: windows_core::Param<DispatcherQueueHandler>,
+                {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).TryEnqueueWithPriority)(
+                            windows_core::Interface::as_raw(self),
+                            priority,
+                            callback.param().abi(),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn ShutdownStarting<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<DispatcherQueue>,
+                            windows_core::Ref<DispatcherQueueShutdownStartingEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        DispatcherQueue,
+                        DispatcherQueueShutdownStartingEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                DispatcherQueue,
+                                DispatcherQueueShutdownStartingEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                DispatcherQueue,
+                                DispatcherQueueShutdownStartingEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).ShutdownStarting)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveShutdownStarting,
+                        ))
+                    }
+                }
+                pub fn ShutdownCompleted<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<DispatcherQueue>,
+                            windows_core::Ref<windows_core::IInspectable>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        DispatcherQueue,
+                        windows_core::IInspectable,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                DispatcherQueue,
+                                windows_core::IInspectable,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                DispatcherQueue,
+                                windows_core::IInspectable,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).ShutdownCompleted)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveShutdownCompleted,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherQueue {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueue";
+            }
+            pub trait IDispatcherQueue_Impl: windows_core::IUnknownImpl {
+                fn CreateTimer(&self) -> windows_core::Result<DispatcherQueueTimer>;
+                fn TryEnqueue(
+                    &self,
+                    callback: windows_core::Ref<DispatcherQueueHandler>,
+                ) -> windows_core::Result<bool>;
+                fn TryEnqueueWithPriority(
+                    &self,
+                    priority: DispatcherQueuePriority,
+                    callback: windows_core::Ref<DispatcherQueueHandler>,
+                ) -> windows_core::Result<bool>;
+                fn ShutdownStarting(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            DispatcherQueue,
+                            DispatcherQueueShutdownStartingEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveShutdownStarting(&self, token: i64) -> windows_core::Result<()>;
+                fn ShutdownCompleted(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            DispatcherQueue,
+                            windows_core::IInspectable,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveShutdownCompleted(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl IDispatcherQueue_Vtbl {
+                pub const fn new<Identity: IDispatcherQueue_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn CreateTimer<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue_Impl::CreateTimer(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryEnqueue<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        callback: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue_Impl::TryEnqueue(
+                                this,
+                                core::mem::transmute_copy(&callback),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn TryEnqueueWithPriority<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        priority: DispatcherQueuePriority,
+                        callback: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue_Impl::TryEnqueueWithPriority(
+                                this,
+                                priority,
+                                core::mem::transmute_copy(&callback),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ShutdownStarting<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue_Impl::ShutdownStarting(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveShutdownStarting<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue_Impl::RemoveShutdownStarting(this, token).into()
+                        }
+                    }
+                    unsafe extern "system" fn ShutdownCompleted<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue_Impl::ShutdownCompleted(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveShutdownCompleted<
+                        Identity: IDispatcherQueue_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue_Impl::RemoveShutdownCompleted(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueue,
+                            OFFSET,
+                        >(),
+                        CreateTimer: CreateTimer::<Identity, OFFSET>,
+                        TryEnqueue: TryEnqueue::<Identity, OFFSET>,
+                        TryEnqueueWithPriority: TryEnqueueWithPriority::<Identity, OFFSET>,
+                        ShutdownStarting: ShutdownStarting::<Identity, OFFSET>,
+                        RemoveShutdownStarting: RemoveShutdownStarting::<Identity, OFFSET>,
+                        ShutdownCompleted: ShutdownCompleted::<Identity, OFFSET>,
+                        RemoveShutdownCompleted: RemoveShutdownCompleted::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueue as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueue_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateTimer: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub TryEnqueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub TryEnqueueWithPriority: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    DispatcherQueuePriority,
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub ShutdownStarting: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveShutdownStarting:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub ShutdownCompleted: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveShutdownCompleted:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueue2,
+                IDispatcherQueue2_Vtbl,
+                0x0cf48751_f1ac_59b8_ba52_6ce7a1444d6f
+            );
+            impl windows_core::RuntimeType for IDispatcherQueue2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueue2",
+                    );
+            }
+            impl IDispatcherQueue2 {
+                pub fn HasThreadAccess(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).HasThreadAccess)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherQueue2 {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueue2";
+            }
+            pub trait IDispatcherQueue2_Impl: windows_core::IUnknownImpl {
+                fn HasThreadAccess(&self) -> windows_core::Result<bool>;
+            }
+            impl IDispatcherQueue2_Vtbl {
+                pub const fn new<Identity: IDispatcherQueue2_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn HasThreadAccess<
+                        Identity: IDispatcherQueue2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue2_Impl::HasThreadAccess(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueue2,
+                            OFFSET,
+                        >(),
+                        HasThreadAccess: HasThreadAccess::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueue2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueue2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub HasThreadAccess: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueue3,
+                IDispatcherQueue3_Vtbl,
+                0x14a7a175_5c27_5a35_b079_21960cf764a8
+            );
+            impl windows_core::RuntimeType for IDispatcherQueue3 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueue3",
+                    );
+            }
+            impl IDispatcherQueue3 {
+                pub fn EnqueueEventLoopExit(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).EnqueueEventLoopExit)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn EnsureSystemDispatcherQueue(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).EnsureSystemDispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn RunEventLoop(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).RunEventLoop)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn RunEventLoopWithOptions<P1>(
+                    &self,
+                    options: DispatcherRunOptions,
+                    deferral: P1,
+                ) -> windows_core::Result<()>
+                where
+                    P1: windows_core::Param<DispatcherExitDeferral>,
+                {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).RunEventLoopWithOptions)(
+                            windows_core::Interface::as_raw(self),
+                            options,
+                            deferral.param().abi(),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn FrameworkShutdownStarting<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<DispatcherQueue>,
+                            windows_core::Ref<DispatcherQueueShutdownStartingEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        DispatcherQueue,
+                        DispatcherQueueShutdownStartingEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                DispatcherQueue,
+                                DispatcherQueueShutdownStartingEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                DispatcherQueue,
+                                DispatcherQueueShutdownStartingEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .FrameworkShutdownStarting)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveFrameworkShutdownStarting,
+                        ))
+                    }
+                }
+                pub fn FrameworkShutdownCompleted<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<DispatcherQueue>,
+                            windows_core::Ref<windows_core::IInspectable>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        DispatcherQueue,
+                        windows_core::IInspectable,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                DispatcherQueue,
+                                windows_core::IInspectable,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                DispatcherQueue,
+                                windows_core::IInspectable,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .FrameworkShutdownCompleted)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveFrameworkShutdownCompleted,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherQueue3 {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueue3";
+            }
+            pub trait IDispatcherQueue3_Impl: windows_core::IUnknownImpl {
+                fn EnqueueEventLoopExit(&self) -> windows_core::Result<()>;
+                fn EnsureSystemDispatcherQueue(&self) -> windows_core::Result<()>;
+                fn RunEventLoop(&self) -> windows_core::Result<()>;
+                fn RunEventLoopWithOptions(
+                    &self,
+                    options: DispatcherRunOptions,
+                    deferral: windows_core::Ref<DispatcherExitDeferral>,
+                ) -> windows_core::Result<()>;
+                fn FrameworkShutdownStarting(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            DispatcherQueue,
+                            DispatcherQueueShutdownStartingEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveFrameworkShutdownStarting(&self, token: i64) -> windows_core::Result<()>;
+                fn FrameworkShutdownCompleted(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            DispatcherQueue,
+                            windows_core::IInspectable,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveFrameworkShutdownCompleted(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl IDispatcherQueue3_Vtbl {
+                pub const fn new<Identity: IDispatcherQueue3_Impl, const OFFSET: isize>() -> Self {
+                    unsafe extern "system" fn EnqueueEventLoopExit<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue3_Impl::EnqueueEventLoopExit(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn EnsureSystemDispatcherQueue<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue3_Impl::EnsureSystemDispatcherQueue(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn RunEventLoop<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue3_Impl::RunEventLoop(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn RunEventLoopWithOptions<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        options: DispatcherRunOptions,
+                        deferral: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue3_Impl::RunEventLoopWithOptions(
+                                this,
+                                options,
+                                core::mem::transmute_copy(&deferral),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn FrameworkShutdownStarting<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue3_Impl::FrameworkShutdownStarting(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveFrameworkShutdownStarting<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue3_Impl::RemoveFrameworkShutdownStarting(this, token)
+                                .into()
+                        }
+                    }
+                    unsafe extern "system" fn FrameworkShutdownCompleted<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueue3_Impl::FrameworkShutdownCompleted(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveFrameworkShutdownCompleted<
+                        Identity: IDispatcherQueue3_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueue3_Impl::RemoveFrameworkShutdownCompleted(this, token)
+                                .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueue3,
+                            OFFSET,
+                        >(),
+                        EnqueueEventLoopExit: EnqueueEventLoopExit::<Identity, OFFSET>,
+                        EnsureSystemDispatcherQueue: EnsureSystemDispatcherQueue::<Identity, OFFSET>,
+                        RunEventLoop: RunEventLoop::<Identity, OFFSET>,
+                        RunEventLoopWithOptions: RunEventLoopWithOptions::<Identity, OFFSET>,
+                        FrameworkShutdownStarting: FrameworkShutdownStarting::<Identity, OFFSET>,
+                        RemoveFrameworkShutdownStarting: RemoveFrameworkShutdownStarting::<
+                            Identity,
+                            OFFSET,
+                        >,
+                        FrameworkShutdownCompleted: FrameworkShutdownCompleted::<Identity, OFFSET>,
+                        RemoveFrameworkShutdownCompleted: RemoveFrameworkShutdownCompleted::<
+                            Identity,
+                            OFFSET,
+                        >,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueue3 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueue3_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub EnqueueEventLoopExit:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub EnsureSystemDispatcherQueue:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub RunEventLoop:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub RunEventLoopWithOptions: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    DispatcherRunOptions,
+                    *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub FrameworkShutdownStarting: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveFrameworkShutdownStarting:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+                pub FrameworkShutdownCompleted: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
+                pub RemoveFrameworkShutdownCompleted:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueueController,
+                IDispatcherQueueController_Vtbl,
+                0xbce8178d_2183_584c_9e5b_f9366f6ae484
+            );
+            impl windows_core::RuntimeType for IDispatcherQueueController {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueueController",
+                    );
+            }
+            impl IDispatcherQueueController {
+                pub fn DispatcherQueue(&self) -> windows_core::Result<DispatcherQueue> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).DispatcherQueue)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+                pub fn ShutdownQueueAsync(
+                    &self,
+                ) -> windows_core::Result<windows_future::IAsyncAction> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).ShutdownQueueAsync)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .and_then(|| windows_core::imp::Type::from_abi(result__))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherQueueController {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueueController";
+            }
+            pub trait IDispatcherQueueController_Impl: windows_core::IUnknownImpl {
+                fn DispatcherQueue(&self) -> windows_core::Result<DispatcherQueue>;
+                fn ShutdownQueueAsync(&self) -> windows_core::Result<windows_future::IAsyncAction>;
+            }
+            impl IDispatcherQueueController_Vtbl {
+                pub const fn new<Identity: IDispatcherQueueController_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn DispatcherQueue<
+                        Identity: IDispatcherQueueController_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueController_Impl::DispatcherQueue(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn ShutdownQueueAsync<
+                        Identity: IDispatcherQueueController_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueController_Impl::ShutdownQueueAsync(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueueController,
+                            OFFSET,
+                        >(),
+                        DispatcherQueue: DispatcherQueue::<Identity, OFFSET>,
+                        ShutdownQueueAsync: ShutdownQueueAsync::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueueController as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueueController_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub DispatcherQueue: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub ShutdownQueueAsync: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueueController2,
+                IDispatcherQueueController2_Vtbl,
+                0x4c68ee2a_1cb1_5591_a3a2_9b590b8f8b9a
+            );
+            impl windows_core::RuntimeType for IDispatcherQueueController2 {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueueController2",
+                    );
+            }
+            impl IDispatcherQueueController2 {
+                pub fn ShutdownQueue(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).ShutdownQueue)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherQueueController2 {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueueController2";
+            }
+            pub trait IDispatcherQueueController2_Impl: windows_core::IUnknownImpl {
+                fn ShutdownQueue(&self) -> windows_core::Result<()>;
+            }
+            impl IDispatcherQueueController2_Vtbl {
+                pub const fn new<
+                    Identity: IDispatcherQueueController2_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn ShutdownQueue<
+                        Identity: IDispatcherQueueController2_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueueController2_Impl::ShutdownQueue(this).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueueController2,
+                            OFFSET,
+                        >(),
+                        ShutdownQueue: ShutdownQueue::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueueController2 as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueueController2_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub ShutdownQueue:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueueControllerStatics,
+                IDispatcherQueueControllerStatics_Vtbl,
+                0xf18d6145_722b_593d_bcf2_a61e713f0037
+            );
+            impl windows_core::RuntimeType for IDispatcherQueueControllerStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueueControllerStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IDispatcherQueueControllerStatics {
+                const NAME: &'static str =
+                    "Microsoft.UI.Dispatching.IDispatcherQueueControllerStatics";
+            }
+            pub trait IDispatcherQueueControllerStatics_Impl: windows_core::IUnknownImpl {
+                fn CreateOnDedicatedThread(
+                    &self,
+                ) -> windows_core::Result<DispatcherQueueController>;
+                fn CreateOnCurrentThread(&self) -> windows_core::Result<DispatcherQueueController>;
+            }
+            impl IDispatcherQueueControllerStatics_Vtbl {
+                pub const fn new<
+                    Identity: IDispatcherQueueControllerStatics_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn CreateOnDedicatedThread<
+                        Identity: IDispatcherQueueControllerStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueControllerStatics_Impl::CreateOnDedicatedThread(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn CreateOnCurrentThread<
+                        Identity: IDispatcherQueueControllerStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueControllerStatics_Impl::CreateOnCurrentThread(
+                                this,
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueueControllerStatics,
+                            OFFSET,
+                        >(),
+                        CreateOnDedicatedThread: CreateOnDedicatedThread::<Identity, OFFSET>,
+                        CreateOnCurrentThread: CreateOnCurrentThread::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueueControllerStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueueControllerStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub CreateOnDedicatedThread: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+                pub CreateOnCurrentThread: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueueShutdownStartingEventArgs,
+                IDispatcherQueueShutdownStartingEventArgs_Vtbl,
+                0x32519be5_072b_5660_a70e_8835c9b8157d
+            );
+            impl windows_core::RuntimeType for IDispatcherQueueShutdownStartingEventArgs {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueueShutdownStartingEventArgs",
+                    );
+            }
+            impl windows_core::RuntimeName for IDispatcherQueueShutdownStartingEventArgs {
+                const NAME: &'static str =
+                    "Microsoft.UI.Dispatching.IDispatcherQueueShutdownStartingEventArgs";
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueueShutdownStartingEventArgs_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueueStatics,
+                IDispatcherQueueStatics_Vtbl,
+                0xcd3382ea_a455_5124_b63a_ca40d34ca23c
+            );
+            impl windows_core::RuntimeType for IDispatcherQueueStatics {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueueStatics",
+                    );
+            }
+            impl windows_core::RuntimeName for IDispatcherQueueStatics {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueueStatics";
+            }
+            pub trait IDispatcherQueueStatics_Impl: windows_core::IUnknownImpl {
+                fn GetForCurrentThread(&self) -> windows_core::Result<DispatcherQueue>;
+            }
+            impl IDispatcherQueueStatics_Vtbl {
+                pub const fn new<Identity: IDispatcherQueueStatics_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn GetForCurrentThread<
+                        Identity: IDispatcherQueueStatics_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueStatics_Impl::GetForCurrentThread(this) {
+                                Ok(ok__) => {
+                                    result__.write(core::mem::transmute_copy(&ok__));
+                                    core::mem::forget(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueueStatics,
+                            OFFSET,
+                        >(),
+                        GetForCurrentThread: GetForCurrentThread::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueueStatics as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueueStatics_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub GetForCurrentThread: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut *mut core::ffi::c_void,
+                )
+                    -> windows_core::HRESULT,
+            }
+            windows_core::imp::define_interface!(
+                IDispatcherQueueTimer,
+                IDispatcherQueueTimer_Vtbl,
+                0xad4d63fd_88fe_541f_ac11_bf2dc1ed2ce5
+            );
+            impl windows_core::RuntimeType for IDispatcherQueueTimer {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Microsoft.UI.Dispatching.IDispatcherQueueTimer",
+                    );
+            }
+            impl IDispatcherQueueTimer {
+                pub fn Interval(&self) -> windows_core::Result<windows_time::TimeSpan> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).Interval)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetInterval(
+                    &self,
+                    value: windows_time::TimeSpan,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetInterval)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn IsRunning(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsRunning)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn IsRepeating(&self) -> windows_core::Result<bool> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).IsRepeating)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetIsRepeating(&self, value: bool) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetIsRepeating)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Start(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Start)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Stop(&self) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Stop)(
+                            windows_core::Interface::as_raw(self),
+                        )
+                        .ok()
+                    }
+                }
+                pub fn Tick<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<DispatcherQueueTimer>,
+                            windows_core::Ref<windows_core::IInspectable>,
+                        ) + 'static,
+                {
+                    let handler: super::super::super::Windows::Foundation::TypedEventHandler<
+                        DispatcherQueueTimer,
+                        windows_core::IInspectable,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::super::Windows::Foundation::TypedEventHandler<
+                                DispatcherQueueTimer,
+                                windows_core::IInspectable,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                DispatcherQueueTimer,
+                                windows_core::IInspectable,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Tick)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveTick,
+                        ))
+                    }
+                }
+            }
+            impl windows_core::RuntimeName for IDispatcherQueueTimer {
+                const NAME: &'static str = "Microsoft.UI.Dispatching.IDispatcherQueueTimer";
+            }
+            pub trait IDispatcherQueueTimer_Impl: windows_core::IUnknownImpl {
+                fn Interval(&self) -> windows_core::Result<windows_time::TimeSpan>;
+                fn SetInterval(&self, value: &windows_time::TimeSpan) -> windows_core::Result<()>;
+                fn IsRunning(&self) -> windows_core::Result<bool>;
+                fn IsRepeating(&self) -> windows_core::Result<bool>;
+                fn SetIsRepeating(&self, value: bool) -> windows_core::Result<()>;
+                fn Start(&self) -> windows_core::Result<()>;
+                fn Stop(&self) -> windows_core::Result<()>;
+                fn Tick(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::super::Windows::Foundation::TypedEventHandler<
+                            DispatcherQueueTimer,
+                            windows_core::IInspectable,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveTick(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl IDispatcherQueueTimer_Vtbl {
+                pub const fn new<Identity: IDispatcherQueueTimer_Impl, const OFFSET: isize>() -> Self
+                {
+                    unsafe extern "system" fn Interval<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut windows_time::TimeSpan,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueTimer_Impl::Interval(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetInterval<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: windows_time::TimeSpan,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueueTimer_Impl::SetInterval(
+                                this,
+                                core::mem::transmute(&value),
+                            )
+                            .into()
+                        }
+                    }
+                    unsafe extern "system" fn IsRunning<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueTimer_Impl::IsRunning(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsRepeating<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueTimer_Impl::IsRepeating(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn SetIsRepeating<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        value: bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueueTimer_Impl::SetIsRepeating(this, value).into()
+                        }
+                    }
+                    unsafe extern "system" fn Start<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueueTimer_Impl::Start(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Stop<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueueTimer_Impl::Stop(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Tick<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match IDispatcherQueueTimer_Impl::Tick(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveTick<
+                        Identity: IDispatcherQueueTimer_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            IDispatcherQueueTimer_Impl::RemoveTick(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IDispatcherQueueTimer,
+                            OFFSET,
+                        >(),
+                        Interval: Interval::<Identity, OFFSET>,
+                        SetInterval: SetInterval::<Identity, OFFSET>,
+                        IsRunning: IsRunning::<Identity, OFFSET>,
+                        IsRepeating: IsRepeating::<Identity, OFFSET>,
+                        SetIsRepeating: SetIsRepeating::<Identity, OFFSET>,
+                        Start: Start::<Identity, OFFSET>,
+                        Stop: Stop::<Identity, OFFSET>,
+                        Tick: Tick::<Identity, OFFSET>,
+                        RemoveTick: RemoveTick::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IDispatcherQueueTimer as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IDispatcherQueueTimer_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+                pub Interval: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut windows_time::TimeSpan,
+                ) -> windows_core::HRESULT,
+                pub SetInterval: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    windows_time::TimeSpan,
+                )
+                    -> windows_core::HRESULT,
+                pub IsRunning: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                ) -> windows_core::HRESULT,
+                pub IsRepeating: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut bool,
+                )
+                    -> windows_core::HRESULT,
+                pub SetIsRepeating: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    bool,
+                )
+                    -> windows_core::HRESULT,
+                pub Start:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Stop:
+                    unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
+                pub Tick: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
+                pub RemoveTick:
+                    unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
+            }
+        }
     }
 }
 pub mod Windows {
@@ -51237,6 +64054,271 @@ pub mod Windows {
                 windows_core::imp::ConstBuffer::from_slice(
                     b"struct(Windows.Foundation.Point;f4;f4)",
                 );
+        }
+        #[repr(transparent)]
+        #[derive(Clone, Debug, Eq, PartialEq)]
+        pub struct TypedEventHandler<TSender, TResult>(
+            windows_core::IUnknown,
+            core::marker::PhantomData<TSender>,
+            core::marker::PhantomData<TResult>,
+        )
+        where
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static;
+        unsafe impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        > windows_core::Interface for TypedEventHandler<TSender, TResult>
+        {
+            type Vtable = TypedEventHandler_Vtbl<TSender, TResult>;
+            const IID: windows_core::GUID =
+                windows_core::GUID::from_signature(<Self as windows_core::RuntimeType>::SIGNATURE);
+        }
+        impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        > windows_core::RuntimeType for TypedEventHandler<TSender, TResult>
+        {
+            const SIGNATURE: windows_core::imp::ConstBuffer = windows_core::imp::ConstBuffer::new()
+                .push_slice(b"pinterface({9de1c534-6ae1-11e0-84e1-18a905bcc53f}")
+                .push_slice(b";")
+                .push_other(TSender::SIGNATURE)
+                .push_slice(b";")
+                .push_other(TResult::SIGNATURE)
+                .push_slice(b")");
+        }
+        impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        > TypedEventHandler<TSender, TResult>
+        {
+            pub fn new<F: Fn(windows_core::Ref<TSender>, windows_core::Ref<TResult>) + 'static>(
+                invoke: F,
+            ) -> Self {
+                let com = windows_core::imp::DelegateBox::<Self, F>::new(
+                    &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                        TSender,
+                        TResult,
+                        F,
+                    >::VTABLE,
+                    invoke,
+                );
+                unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+            }
+        }
+        #[repr(C)]
+        pub struct TypedEventHandler_Vtbl<TSender, TResult>
+        where
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+        {
+            base__: windows_core::IUnknown_Vtbl,
+            Invoke: unsafe extern "system" fn(
+                this: *mut core::ffi::c_void,
+                sender: windows_core::imp::AbiType<TSender>,
+                args: windows_core::imp::AbiType<TResult>,
+            ) -> windows_core::HRESULT,
+            TSender: core::marker::PhantomData<TSender>,
+            TResult: core::marker::PhantomData<TResult>,
+        }
+        pub(crate) struct TypedEventHandlerBox<
+            TSender,
+            TResult,
+            F: Fn(windows_core::Ref<TSender>, windows_core::Ref<TResult>) + 'static,
+        >(core::marker::PhantomData<(TSender, TResult, fn() -> F)>)
+        where
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static;
+        impl<
+            TSender: windows_core::RuntimeType + 'static,
+            TResult: windows_core::RuntimeType + 'static,
+            F: Fn(windows_core::Ref<TSender>, windows_core::Ref<TResult>) + 'static,
+        > TypedEventHandlerBox<TSender, TResult, F>
+        {
+            pub(crate) const VTABLE: TypedEventHandler_Vtbl<TSender, TResult> =
+                TypedEventHandler_Vtbl::<TSender, TResult> {
+                    base__: windows_core::IUnknown_Vtbl {
+                        QueryInterface: windows_core::imp::DelegateBox::<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >::QueryInterface,
+                        AddRef: windows_core::imp::DelegateBox::<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >::AddRef,
+                        Release: windows_core::imp::DelegateBox::<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >::Release,
+                    },
+                    Invoke: Self::Invoke,
+                    TSender: core::marker::PhantomData::<TSender>,
+                    TResult: core::marker::PhantomData::<TResult>,
+                };
+            unsafe extern "system" fn Invoke(
+                this: *mut core::ffi::c_void,
+                sender: windows_core::imp::AbiType<TSender>,
+                args: windows_core::imp::AbiType<TResult>,
+            ) -> windows_core::HRESULT {
+                unsafe {
+                    let this = &mut *(this as *mut *mut core::ffi::c_void
+                        as *mut windows_core::imp::DelegateBox<
+                            TypedEventHandler<TSender, TResult>,
+                            F,
+                        >);
+                    (this.invoke)(
+                        core::mem::transmute_copy(&sender),
+                        core::mem::transmute_copy(&args),
+                    );
+                    windows_core::HRESULT(0)
+                }
+            }
+        }
+        pub mod Collections {
+            windows_core::imp::define_interface!(
+                IPropertySet,
+                IPropertySet_Vtbl,
+                0x8a43ed9f_f4e6_4421_acf9_1dab2986820c
+            );
+            impl windows_core::RuntimeType for IPropertySet {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_interface::<Self>();
+                const NAME: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::from_slice(
+                        b"Windows.Foundation.Collections.IPropertySet",
+                    );
+            }
+            windows_core::imp::interface_hierarchy!(
+                IPropertySet,
+                windows_core::IUnknown,
+                windows_core::IInspectable
+            );
+            windows_core::imp::required_hierarchy!(IPropertySet, windows_collections::IIterable < windows_collections::IKeyValuePair < windows_core::HSTRING, windows_core::IInspectable > >, windows_collections::IMap < windows_core::HSTRING, windows_core::IInspectable >, windows_collections::IObservableMap < windows_core::HSTRING, windows_core::IInspectable >);
+            impl windows_core::RuntimeName for IPropertySet {
+                const NAME: &'static str = "Windows.Foundation.Collections.IPropertySet";
+            }
+            pub trait IPropertySet_Impl: windows_collections::IIterable_Impl<
+                    windows_collections::IKeyValuePair<
+                        windows_core::HSTRING,
+                        windows_core::IInspectable,
+                    >,
+                > + windows_collections::IMap_Impl<windows_core::HSTRING, windows_core::IInspectable>
+                + windows_collections::IObservableMap_Impl<
+                    windows_core::HSTRING,
+                    windows_core::IInspectable,
+                >
+            {
+            }
+            impl IPropertySet_Vtbl {
+                pub const fn new<Identity: IPropertySet_Impl, const OFFSET: isize>() -> Self {
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            IPropertySet,
+                            OFFSET,
+                        >(),
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<IPropertySet as windows_core::Interface>::IID
+                }
+            }
+            #[repr(C)]
+            pub struct IPropertySet_Vtbl {
+                pub base__: windows_core::IInspectable_Vtbl,
+            }
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct PropertySet(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                PropertySet,
+                windows_core::IUnknown,
+                windows_core::IInspectable,
+                IPropertySet
+            );
+            windows_core::imp::required_hierarchy!(PropertySet, windows_collections::IIterable < windows_collections::IKeyValuePair < windows_core::HSTRING, windows_core::IInspectable > >, windows_collections::IMap < windows_core::HSTRING, windows_core::IInspectable >, windows_collections::IObservableMap < windows_core::HSTRING, windows_core::IInspectable >);
+            impl windows_core::RuntimeType for PropertySet {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IPropertySet>();
+            }
+            unsafe impl windows_core::Interface for PropertySet {
+                type Vtable = <IPropertySet as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IPropertySet as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for PropertySet {
+                type Target = IPropertySet;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for PropertySet {
+                const NAME: &'static str = "Windows.Foundation.Collections.PropertySet";
+            }
+            unsafe impl Send for PropertySet {}
+            unsafe impl Sync for PropertySet {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct StringMap(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(StringMap, windows_core::IUnknown, windows_core::IInspectable, windows_collections::IMap < windows_core::HSTRING, windows_core::HSTRING >);
+            windows_core::imp::required_hierarchy!(StringMap, windows_collections::IIterable < windows_collections::IKeyValuePair < windows_core::HSTRING, windows_core::HSTRING > >, windows_collections::IObservableMap < windows_core::HSTRING, windows_core::HSTRING >);
+            impl windows_core::RuntimeType for StringMap {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<
+                        Self,
+                        windows_collections::IMap<windows_core::HSTRING, windows_core::HSTRING>,
+                    >();
+            }
+            unsafe impl windows_core::Interface for StringMap {
+                type Vtable = <windows_collections::IMap<
+                    windows_core::HSTRING,
+                    windows_core::HSTRING,
+                > as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <windows_collections::IMap<
+                    windows_core::HSTRING,
+                    windows_core::HSTRING,
+                > as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for StringMap {
+                type Target =
+                    windows_collections::IMap<windows_core::HSTRING, windows_core::HSTRING>;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for StringMap {
+                const NAME: &'static str = "Windows.Foundation.Collections.StringMap";
+            }
+            unsafe impl Send for StringMap {}
+            unsafe impl Sync for StringMap {}
+            #[repr(transparent)]
+            #[derive(Clone, Debug, Eq, PartialEq)]
+            pub struct ValueSet(windows_core::IUnknown);
+            windows_core::imp::interface_hierarchy!(
+                ValueSet,
+                windows_core::IUnknown,
+                windows_core::IInspectable,
+                IPropertySet
+            );
+            windows_core::imp::required_hierarchy!(ValueSet, windows_collections::IIterable < windows_collections::IKeyValuePair < windows_core::HSTRING, windows_core::IInspectable > >, windows_collections::IMap < windows_core::HSTRING, windows_core::IInspectable >, windows_collections::IObservableMap < windows_core::HSTRING, windows_core::IInspectable >);
+            impl windows_core::RuntimeType for ValueSet {
+                const SIGNATURE: windows_core::imp::ConstBuffer =
+                    windows_core::imp::ConstBuffer::for_class::<Self, IPropertySet>();
+            }
+            unsafe impl windows_core::Interface for ValueSet {
+                type Vtable = <IPropertySet as windows_core::Interface>::Vtable;
+                const IID: windows_core::GUID = <IPropertySet as windows_core::Interface>::IID;
+            }
+            impl core::ops::Deref for ValueSet {
+                type Target = IPropertySet;
+                fn deref(&self) -> &Self::Target {
+                    unsafe { core::mem::transmute(self) }
+                }
+            }
+            impl windows_core::RuntimeName for ValueSet {
+                const NAME: &'static str = "Windows.Foundation.Collections.ValueSet";
+            }
+            unsafe impl Send for ValueSet {}
+            unsafe impl Sync for ValueSet {}
         }
         pub mod Numerics {
             #[repr(C)]
@@ -51323,6 +64405,23 @@ pub mod Windows {
         #[repr(C)]
         pub struct IGeometrySource2D_Vtbl {
             pub base__: windows_core::IInspectable_Vtbl,
+        }
+        #[repr(C)]
+        #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+        pub struct RectInt32 {
+            pub x: i32,
+            pub y: i32,
+            pub width: i32,
+            pub height: i32,
+        }
+        impl windows_core::imp::TypeKind for RectInt32 {
+            type TypeKind = windows_core::imp::CopyType;
+        }
+        impl windows_core::RuntimeType for RectInt32 {
+            const SIGNATURE: windows_core::imp::ConstBuffer =
+                windows_core::imp::ConstBuffer::from_slice(
+                    b"struct(Windows.Graphics.RectInt32;i4;i4;i4;i4)",
+                );
         }
         pub mod Effects {
             windows_core::imp::define_interface!(
@@ -58279,9 +71378,161 @@ pub mod Windows {
                         .map(|| result__)
                     }
                 }
+                pub fn Changed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<CompositionCapabilities>,
+                            windows_core::Ref<windows_core::IInspectable>,
+                        ) + 'static,
+                {
+                    let handler: super::super::Foundation::TypedEventHandler<
+                        CompositionCapabilities,
+                        windows_core::IInspectable,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::Foundation::TypedEventHandler<
+                                CompositionCapabilities,
+                                windows_core::IInspectable,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                CompositionCapabilities,
+                                windows_core::IInspectable,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Changed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveChanged,
+                        ))
+                    }
+                }
             }
             impl windows_core::RuntimeName for ICompositionCapabilities {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionCapabilities";
+            }
+            pub trait ICompositionCapabilities_Impl: windows_core::IUnknownImpl {
+                fn AreEffectsSupported(&self) -> windows_core::Result<bool>;
+                fn AreEffectsFast(&self) -> windows_core::Result<bool>;
+                fn Changed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::Foundation::TypedEventHandler<
+                            CompositionCapabilities,
+                            windows_core::IInspectable,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveChanged(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionCapabilities_Vtbl {
+                pub const fn new<Identity: ICompositionCapabilities_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn AreEffectsSupported<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCapabilities_Impl::AreEffectsSupported(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn AreEffectsFast<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCapabilities_Impl::AreEffectsFast(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Changed<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCapabilities_Impl::Changed(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveChanged<
+                        Identity: ICompositionCapabilities_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionCapabilities_Impl::RemoveChanged(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionCapabilities,
+                            OFFSET,
+                        >(),
+                        AreEffectsSupported: AreEffectsSupported::<Identity, OFFSET>,
+                        AreEffectsFast: AreEffectsFast::<Identity, OFFSET>,
+                        Changed: Changed::<Identity, OFFSET>,
+                        RemoveChanged: RemoveChanged::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionCapabilities as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionCapabilities_Vtbl {
@@ -58296,7 +71547,11 @@ pub mod Windows {
                     *mut bool,
                 )
                     -> windows_core::HRESULT,
-                Changed: usize,
+                pub Changed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
                 pub RemoveChanged:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -59309,9 +72564,161 @@ pub mod Windows {
                         .map(|| result__)
                     }
                 }
+                pub fn Completed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<CompositionBatchCompletedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        CompositionBatchCompletedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Completed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveCompleted,
+                        ))
+                    }
+                }
             }
             impl windows_core::RuntimeName for ICompositionCommitBatch {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionCommitBatch";
+            }
+            pub trait ICompositionCommitBatch_Impl: windows_core::IUnknownImpl {
+                fn IsActive(&self) -> windows_core::Result<bool>;
+                fn IsEnded(&self) -> windows_core::Result<bool>;
+                fn Completed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            CompositionBatchCompletedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveCompleted(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionCommitBatch_Vtbl {
+                pub const fn new<Identity: ICompositionCommitBatch_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn IsActive<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCommitBatch_Impl::IsActive(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsEnded<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCommitBatch_Impl::IsEnded(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn Completed<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionCommitBatch_Impl::Completed(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveCompleted<
+                        Identity: ICompositionCommitBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionCommitBatch_Impl::RemoveCompleted(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionCommitBatch,
+                            OFFSET,
+                        >(),
+                        IsActive: IsActive::<Identity, OFFSET>,
+                        IsEnded: IsEnded::<Identity, OFFSET>,
+                        Completed: Completed::<Identity, OFFSET>,
+                        RemoveCompleted: RemoveCompleted::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionCommitBatch as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionCommitBatch_Vtbl {
@@ -59324,7 +72731,11 @@ pub mod Windows {
                     *mut core::ffi::c_void,
                     *mut bool,
                 ) -> windows_core::HRESULT,
-                Completed: usize,
+                pub Completed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
                 pub RemoveCompleted:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -61951,6 +75362,54 @@ pub mod Windows {
                         b"Windows.UI.Composition.ICompositionGraphicsDevice",
                     );
             }
+            impl ICompositionGraphicsDevice {
+                pub fn RenderingDeviceReplaced<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<CompositionGraphicsDevice>,
+                            windows_core::Ref<RenderingDeviceReplacedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::Foundation::TypedEventHandler<
+                        CompositionGraphicsDevice,
+                        RenderingDeviceReplacedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::Foundation::TypedEventHandler<
+                                CompositionGraphicsDevice,
+                                RenderingDeviceReplacedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                CompositionGraphicsDevice,
+                                RenderingDeviceReplacedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self)
+                            .RenderingDeviceReplaced)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveRenderingDeviceReplaced,
+                        ))
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionGraphicsDevice {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionGraphicsDevice";
             }
@@ -61958,7 +75417,12 @@ pub mod Windows {
             pub struct ICompositionGraphicsDevice_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
                 CreateDrawingSurface: usize,
-                RenderingDeviceReplaced: usize,
+                pub RenderingDeviceReplaced: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                )
+                    -> windows_core::HRESULT,
                 pub RemoveRenderingDeviceReplaced:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -67670,9 +81134,203 @@ pub mod Windows {
                         .ok()
                     }
                 }
+                pub fn Completed<F>(
+                    &self,
+                    handler: F,
+                ) -> windows_core::Result<windows_core::EventRevoker>
+                where
+                    F: Fn(
+                            windows_core::Ref<windows_core::IInspectable>,
+                            windows_core::Ref<CompositionBatchCompletedEventArgs>,
+                        ) + 'static,
+                {
+                    let handler: super::super::Foundation::TypedEventHandler<
+                        windows_core::IInspectable,
+                        CompositionBatchCompletedEventArgs,
+                    > = {
+                        let com = windows_core::imp::DelegateBox::<
+                            super::super::Foundation::TypedEventHandler<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                            >,
+                            F,
+                        >::new(
+                            &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                windows_core::IInspectable,
+                                CompositionBatchCompletedEventArgs,
+                                F,
+                            >::VTABLE,
+                            handler,
+                        );
+                        unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                    };
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        let token__ = (windows_core::Interface::vtable(self).Completed)(
+                            windows_core::Interface::as_raw(self),
+                            windows_core::Interface::as_raw(&handler),
+                            &mut result__,
+                        )
+                        .map(|| result__)?;
+                        Ok(windows_core::EventRevoker::new(
+                            self.clone(),
+                            token__,
+                            windows_core::Interface::vtable(self).RemoveCompleted,
+                        ))
+                    }
+                }
             }
             impl windows_core::RuntimeName for ICompositionScopedBatch {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionScopedBatch";
+            }
+            pub trait ICompositionScopedBatch_Impl: windows_core::IUnknownImpl {
+                fn IsActive(&self) -> windows_core::Result<bool>;
+                fn IsEnded(&self) -> windows_core::Result<bool>;
+                fn End(&self) -> windows_core::Result<()>;
+                fn Resume(&self) -> windows_core::Result<()>;
+                fn Suspend(&self) -> windows_core::Result<()>;
+                fn Completed(
+                    &self,
+                    handler: windows_core::Ref<
+                        super::super::Foundation::TypedEventHandler<
+                            windows_core::IInspectable,
+                            CompositionBatchCompletedEventArgs,
+                        >,
+                    >,
+                ) -> windows_core::Result<i64>;
+                fn RemoveCompleted(&self, token: i64) -> windows_core::Result<()>;
+            }
+            impl ICompositionScopedBatch_Vtbl {
+                pub const fn new<Identity: ICompositionScopedBatch_Impl, const OFFSET: isize>()
+                -> Self {
+                    unsafe extern "system" fn IsActive<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionScopedBatch_Impl::IsActive(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn IsEnded<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        result__: *mut bool,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionScopedBatch_Impl::IsEnded(this) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn End<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::End(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Resume<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::Resume(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Suspend<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::Suspend(this).into()
+                        }
+                    }
+                    unsafe extern "system" fn Completed<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        handler: *mut core::ffi::c_void,
+                        result__: *mut i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            match ICompositionScopedBatch_Impl::Completed(
+                                this,
+                                core::mem::transmute_copy(&handler),
+                            ) {
+                                Ok(ok__) => {
+                                    result__.write(ok__);
+                                    windows_core::HRESULT(0)
+                                }
+                                Err(err) => err.into(),
+                            }
+                        }
+                    }
+                    unsafe extern "system" fn RemoveCompleted<
+                        Identity: ICompositionScopedBatch_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        token: i64,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionScopedBatch_Impl::RemoveCompleted(this, token).into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionScopedBatch,
+                            OFFSET,
+                        >(),
+                        IsActive: IsActive::<Identity, OFFSET>,
+                        IsEnded: IsEnded::<Identity, OFFSET>,
+                        End: End::<Identity, OFFSET>,
+                        Resume: Resume::<Identity, OFFSET>,
+                        Suspend: Suspend::<Identity, OFFSET>,
+                        Completed: Completed::<Identity, OFFSET>,
+                        RemoveCompleted: RemoveCompleted::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionScopedBatch as windows_core::Interface>::IID
+                }
             }
             #[repr(C)]
             pub struct ICompositionScopedBatch_Vtbl {
@@ -67690,7 +81348,11 @@ pub mod Windows {
                     unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
                 pub Suspend:
                     unsafe extern "system" fn(*mut core::ffi::c_void) -> windows_core::HRESULT,
-                Completed: usize,
+                pub Completed: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut core::ffi::c_void,
+                    *mut i64,
+                ) -> windows_core::HRESULT,
                 pub RemoveCompleted:
                     unsafe extern "system" fn(*mut core::ffi::c_void, i64) -> windows_core::HRESULT,
             }
@@ -70493,12 +84155,47 @@ pub mod Windows {
                         b"Windows.UI.Composition.ICompositionTexture",
                     );
             }
+            impl ICompositionTexture {
+                pub fn SourceRect(
+                    &self,
+                ) -> windows_core::Result<super::super::Graphics::RectInt32> {
+                    unsafe {
+                        let mut result__ = core::mem::zeroed();
+                        (windows_core::Interface::vtable(self).SourceRect)(
+                            windows_core::Interface::as_raw(self),
+                            &mut result__,
+                        )
+                        .map(|| result__)
+                    }
+                }
+                pub fn SetSourceRect(
+                    &self,
+                    value: super::super::Graphics::RectInt32,
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).SetSourceRect)(
+                            windows_core::Interface::as_raw(self),
+                            value,
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionTexture {
                 const NAME: &'static str = "Windows.UI.Composition.ICompositionTexture";
             }
             #[repr(C)]
             pub struct ICompositionTexture_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub SourceRect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    *mut super::super::Graphics::RectInt32,
+                ) -> windows_core::HRESULT,
+                pub SetSourceRect: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    super::super::Graphics::RectInt32,
+                )
+                    -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionTextureFactory,
@@ -70984,13 +84681,78 @@ pub mod Windows {
                         b"Windows.UI.Composition.ICompositionVirtualDrawingSurface",
                     );
             }
+            impl ICompositionVirtualDrawingSurface {
+                pub fn Trim(
+                    &self,
+                    rects: &[super::super::Graphics::RectInt32],
+                ) -> windows_core::Result<()> {
+                    unsafe {
+                        (windows_core::Interface::vtable(self).Trim)(
+                            windows_core::Interface::as_raw(self),
+                            rects.len().try_into().unwrap(),
+                            rects.as_ptr(),
+                        )
+                        .ok()
+                    }
+                }
+            }
             impl windows_core::RuntimeName for ICompositionVirtualDrawingSurface {
                 const NAME: &'static str =
                     "Windows.UI.Composition.ICompositionVirtualDrawingSurface";
             }
+            pub trait ICompositionVirtualDrawingSurface_Impl: windows_core::IUnknownImpl {
+                fn Trim(
+                    &self,
+                    rects: &[super::super::Graphics::RectInt32],
+                ) -> windows_core::Result<()>;
+            }
+            impl ICompositionVirtualDrawingSurface_Vtbl {
+                pub const fn new<
+                    Identity: ICompositionVirtualDrawingSurface_Impl,
+                    const OFFSET: isize,
+                >() -> Self {
+                    unsafe extern "system" fn Trim<
+                        Identity: ICompositionVirtualDrawingSurface_Impl,
+                        const OFFSET: isize,
+                    >(
+                        this: *mut core::ffi::c_void,
+                        rects_array_size: u32,
+                        rects: *const super::super::Graphics::RectInt32,
+                    ) -> windows_core::HRESULT {
+                        unsafe {
+                            let this: &Identity =
+                                &*((this as *const *const ()).offset(OFFSET) as *const Identity);
+                            ICompositionVirtualDrawingSurface_Impl::Trim(
+                                this,
+                                core::slice::from_raw_parts(
+                                    core::mem::transmute_copy(&rects),
+                                    rects_array_size as usize,
+                                ),
+                            )
+                            .into()
+                        }
+                    }
+                    Self {
+                        base__: windows_core::IInspectable_Vtbl::new::<
+                            Identity,
+                            ICompositionVirtualDrawingSurface,
+                            OFFSET,
+                        >(),
+                        Trim: Trim::<Identity, OFFSET>,
+                    }
+                }
+                pub fn matches(iid: &windows_core::GUID) -> bool {
+                    iid == &<ICompositionVirtualDrawingSurface as windows_core::Interface>::IID
+                }
+            }
             #[repr(C)]
             pub struct ICompositionVirtualDrawingSurface_Vtbl {
                 pub base__: windows_core::IInspectable_Vtbl,
+                pub Trim: unsafe extern "system" fn(
+                    *mut core::ffi::c_void,
+                    u32,
+                    *const super::super::Graphics::RectInt32,
+                ) -> windows_core::HRESULT,
             }
             windows_core::imp::define_interface!(
                 ICompositionVirtualDrawingSurfaceFactory,
@@ -87835,9 +101597,184 @@ pub mod Windows {
                             .and_then(|| windows_core::imp::Type::from_abi(result__))
                         }
                     }
+                    pub fn CommitNeeded<F>(
+                        &self,
+                        handler: F,
+                    ) -> windows_core::Result<windows_core::EventRevoker>
+                    where
+                        F: Fn(
+                                windows_core::Ref<CompositorController>,
+                                windows_core::Ref<windows_core::IInspectable>,
+                            ) + 'static,
+                    {
+                        let handler: super::super::super::Foundation::TypedEventHandler<
+                            CompositorController,
+                            windows_core::IInspectable,
+                        > = {
+                            let com = windows_core::imp::DelegateBox::<
+                                super::super::super::Foundation::TypedEventHandler<
+                                    CompositorController,
+                                    windows_core::IInspectable,
+                                >,
+                                F,
+                            >::new(
+                                &crate::bindings::Windows::Foundation::TypedEventHandlerBox::<
+                                    CompositorController,
+                                    windows_core::IInspectable,
+                                    F,
+                                >::VTABLE,
+                                handler,
+                            );
+                            unsafe { core::mem::transmute(windows_core::imp::box_new(com)) }
+                        };
+                        unsafe {
+                            let mut result__ = core::mem::zeroed();
+                            let token__ = (windows_core::Interface::vtable(self).CommitNeeded)(
+                                windows_core::Interface::as_raw(self),
+                                windows_core::Interface::as_raw(&handler),
+                                &mut result__,
+                            )
+                            .map(|| result__)?;
+                            Ok(windows_core::EventRevoker::new(
+                                self.clone(),
+                                token__,
+                                windows_core::Interface::vtable(self).RemoveCommitNeeded,
+                            ))
+                        }
+                    }
                 }
                 impl windows_core::RuntimeName for ICompositorController {
                     const NAME: &'static str = "Windows.UI.Composition.Core.ICompositorController";
+                }
+                pub trait ICompositorController_Impl: windows_core::IUnknownImpl {
+                    fn Compositor(&self) -> windows_core::Result<super::Compositor>;
+                    fn Commit(&self) -> windows_core::Result<()>;
+                    fn EnsurePreviousCommitCompletedAsync(
+                        &self,
+                    ) -> windows_core::Result<windows_future::IAsyncAction>;
+                    fn CommitNeeded(
+                        &self,
+                        handler: windows_core::Ref<
+                            super::super::super::Foundation::TypedEventHandler<
+                                CompositorController,
+                                windows_core::IInspectable,
+                            >,
+                        >,
+                    ) -> windows_core::Result<i64>;
+                    fn RemoveCommitNeeded(&self, token: i64) -> windows_core::Result<()>;
+                }
+                impl ICompositorController_Vtbl {
+                    pub const fn new<Identity: ICompositorController_Impl, const OFFSET: isize>()
+                    -> Self {
+                        unsafe extern "system" fn Compositor<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut *mut core::ffi::c_void,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ICompositorController_Impl::Compositor(this) {
+                                    Ok(ok__) => {
+                                        result__.write(core::mem::transmute_copy(&ok__));
+                                        core::mem::forget(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn Commit<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ICompositorController_Impl::Commit(this).into()
+                            }
+                        }
+                        unsafe extern "system" fn EnsurePreviousCommitCompletedAsync<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            result__: *mut *mut core::ffi::c_void,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ICompositorController_Impl::EnsurePreviousCommitCompletedAsync(
+                                    this,
+                                ) {
+                                    Ok(ok__) => {
+                                        result__.write(core::mem::transmute_copy(&ok__));
+                                        core::mem::forget(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn CommitNeeded<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            handler: *mut core::ffi::c_void,
+                            result__: *mut i64,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                match ICompositorController_Impl::CommitNeeded(
+                                    this,
+                                    core::mem::transmute_copy(&handler),
+                                ) {
+                                    Ok(ok__) => {
+                                        result__.write(ok__);
+                                        windows_core::HRESULT(0)
+                                    }
+                                    Err(err) => err.into(),
+                                }
+                            }
+                        }
+                        unsafe extern "system" fn RemoveCommitNeeded<
+                            Identity: ICompositorController_Impl,
+                            const OFFSET: isize,
+                        >(
+                            this: *mut core::ffi::c_void,
+                            token: i64,
+                        ) -> windows_core::HRESULT {
+                            unsafe {
+                                let this: &Identity = &*((this as *const *const ()).offset(OFFSET)
+                                    as *const Identity);
+                                ICompositorController_Impl::RemoveCommitNeeded(this, token).into()
+                            }
+                        }
+                        Self {
+                            base__: windows_core::IInspectable_Vtbl::new::<
+                                Identity,
+                                ICompositorController,
+                                OFFSET,
+                            >(),
+                            Compositor: Compositor::<Identity, OFFSET>,
+                            Commit: Commit::<Identity, OFFSET>,
+                            EnsurePreviousCommitCompletedAsync: EnsurePreviousCommitCompletedAsync::<
+                                Identity,
+                                OFFSET,
+                            >,
+                            CommitNeeded: CommitNeeded::<Identity, OFFSET>,
+                            RemoveCommitNeeded: RemoveCommitNeeded::<Identity, OFFSET>,
+                        }
+                    }
+                    pub fn matches(iid: &windows_core::GUID) -> bool {
+                        iid == &<ICompositorController as windows_core::Interface>::IID
+                    }
                 }
                 #[repr(C)]
                 pub struct ICompositorController_Vtbl {
@@ -87854,7 +101791,12 @@ pub mod Windows {
                             *mut core::ffi::c_void,
                             *mut *mut core::ffi::c_void,
                         ) -> windows_core::HRESULT,
-                    CommitNeeded: usize,
+                    pub CommitNeeded: unsafe extern "system" fn(
+                        *mut core::ffi::c_void,
+                        *mut core::ffi::c_void,
+                        *mut i64,
+                    )
+                        -> windows_core::HRESULT,
                     pub RemoveCommitNeeded: unsafe extern "system" fn(
                         *mut core::ffi::c_void,
                         i64,

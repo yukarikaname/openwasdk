@@ -21,8 +21,8 @@
 mod animation;
 #[cfg(windows)]
 mod animation_group;
-// Generated from metadata by `comptrace generate`; its lints are the generator's to fix.
 #[cfg(windows)]
+// Generated from metadata by `comptrace generate`; its lints are the generator's to fix.
 #[allow(clippy::all)]
 mod bindings;
 #[cfg(windows)]
@@ -37,6 +37,8 @@ mod color_animation;
 mod compositor;
 #[cfg(windows)]
 mod compositor_ext;
+#[cfg(windows)]
+mod content;
 #[cfg(windows)]
 mod easing;
 mod identity;
@@ -63,7 +65,23 @@ const E_POINTER: i32 = 0x8000_4003u32 as i32;
 const CLASS_E_CLASSNOTAVAILABLE: i32 = 0x8004_0111u32 as i32;
 
 /// The runtime classes this DLL answers for.
-const CLASSES: &[&str] = &["Microsoft.UI.Composition.Compositor"];
+///
+/// In the shipped package the Content classes are served by `Microsoft.ui.xaml.dll`, which
+/// carries their activation strings. We serve them here for the composition-only host; this
+/// array is the only place that says which DLL owns them.
+const CLASSES: &[&str] = &[
+    "Microsoft.UI.Composition.Compositor",
+    "Microsoft.UI.Content.ContentIsland",
+    "Microsoft.UI.Content.DesktopChildSiteBridge",
+];
+
+/// What the factory should create for a class name.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Class {
+    Compositor,
+    ContentIsland,
+    DesktopChildSiteBridge,
+}
 
 /// WinRT entry point: return the activation factory for `class`.
 ///
@@ -82,11 +100,17 @@ pub unsafe extern "system" fn DllGetActivationFactory(
     let name = std::mem::ManuallyDrop::new(unsafe {
         std::mem::transmute_copy::<*mut c_void, HSTRING>(&class)
     });
-    if !known(&name.to_string_lossy()) {
+    let name = name.to_string_lossy();
+    if !known(&name) {
         unsafe { *factory = std::ptr::null_mut() };
         return CLASS_E_CLASSNOTAVAILABLE;
     }
-    unsafe { *factory = factory::Factory::create() };
+    let class = match name.as_ref() {
+        "Microsoft.UI.Content.ContentIsland" => Class::ContentIsland,
+        "Microsoft.UI.Content.DesktopChildSiteBridge" => Class::DesktopChildSiteBridge,
+        _ => Class::Compositor,
+    };
+    unsafe { *factory = factory::Factory::create(class) };
     S_OK
 }
 
@@ -117,6 +141,8 @@ mod tests {
     #[test]
     fn the_router_knows_compositor_and_rejects_the_rest() {
         assert!(known("Microsoft.UI.Composition.Compositor"));
+        assert!(known("Microsoft.UI.Content.ContentIsland"));
+        assert!(known("Microsoft.UI.Content.DesktopChildSiteBridge"));
         assert!(!known("Microsoft.UI.Composition.Visual"));
         assert!(!known(""));
     }
