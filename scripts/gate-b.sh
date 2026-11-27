@@ -88,6 +88,10 @@ probe official || official=$?
 # shipped DLL carries; the ones XAML actually imports are all present.
 cargo build -q --target x86_64-pc-windows-gnu -p openudk
 cp "$target/openudk.dll" "$run/Microsoft.Internal.FrameworkUdk.dll"
+# The stand-in run is the one that has to start the engine and measure: with our
+# dispatcher in the manifest, `Application.Start` can actually reach its callback.
+OPENCOMP_XAML_PROBE_START=1 OPENCOMP_XAML_PROBE_ONLY=Application
+export OPENCOMP_XAML_PROBE_START OPENCOMP_XAML_PROBE_ONLY
 standin=0
 probe standin || standin=$?
 

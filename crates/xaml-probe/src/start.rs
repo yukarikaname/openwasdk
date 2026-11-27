@@ -13,10 +13,11 @@ use windows_core::{HSTRING, IUnknown, Interface};
 use windows_sys::Win32::Foundation::HMODULE;
 
 use crate::windows::{IActivationFactory, export, handle};
+use crate::xaml_bindings::Microsoft::UI::Xaml::Controls::UIElementCollection;
 use crate::xaml_bindings::Microsoft::UI::Xaml::Controls::{IStackPanel, IStackPanelFactory};
 use crate::xaml_bindings::Microsoft::UI::Xaml::{
     ApplicationInitializationCallback, IApplicationFactory, IApplicationStatics, IFrameworkElement,
-    IUIElement,
+    IUIElement, UIElement,
 };
 use crate::xaml_bindings::Windows::Foundation::{Rect, Size};
 
@@ -32,6 +33,12 @@ type CreateInstance = unsafe extern "system" fn(
 
 // XAML installs a dispatcher on the calling thread and expects it to be an apartment.
 // A process that never called `RoInitialize` gets whatever the engine picks.
+#[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+unsafe extern "system" {
+    fn GetCurrentProcess() -> *mut c_void;
+    fn TerminateProcess(process: *mut c_void, code: u32) -> i32;
+}
+
 #[link(name = "combase.dll", kind = "raw-dylib", modifiers = "+verbatim")]
 unsafe extern "system" {
     fn RoInitialize(init_type: i32) -> i32;
@@ -100,39 +107,38 @@ fn create_dispatcher() -> Option<i32> {
 
 // `Panel.Children` is a `UIElementCollection`, which implements
 // `Windows.Foundation.Collections.IVector<UIElement>`. windows-bindgen projects every
-// `IVector<T>` through the `windows-collections` crate; the probe does not depend on it,
-// so the two accessors the measurement needs are declared here.
+// `IVector<T>` through the `windows-collections` crate, which the probe does not depend
+// on, so the two accessors the measurement needs are declared here.
 //
-// The slots before `Append` are real IVector methods, not padding: metadata order is
-// `get_ItemAt`, `get_Size`, `GetView`, `IndexOf`, `SetAt`, `InsertAt`, `RemoveAt`,
-// `Append`, which puts `Append` where the engine answers it.
-windows_core::interface_decl! {
-    unsafe trait IPanelChildren(IPanelChildrenVtbl, IPanelChildrenImpl)
-        : windows_core::IUnknown
-        = 0x27a1_b418_56f3_525e_b883_cefe_d905_eed3
-    {
-        unsafe fn children(&self, out: *mut *mut c_void) -> Result<()>;
-    }
+// The vtables start with `IInspectable_Vtbl`, which is six slots: declaring a WinRT
+// interface's base as `IUnknown` puts the first method where `GetIids` sits, and that
+// member answers `S_OK` while writing a pointer that is not an object.
+#[repr(transparent)]
+#[derive(Clone)]
+struct IPanelChildren(IUnknown);
+
+#[repr(C)]
+struct IPanelChildrenVtbl {
+    base__: windows_core::IInspectable_Vtbl,
+    children: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> windows_core::HRESULT,
 }
 
-windows_core::interface_decl! {
-    unsafe trait IVectorUIElement(IVectorUIElementVtbl, IVectorUIElementImpl)
-        : windows_core::IUnknown
-        = 0x9133_37e9_11a1_4345_a3a2_4e7f_956e_222d
-    {
-        unsafe fn item_at(&self, index: u32, out: *mut *mut c_void) -> Result<()>;
-        unsafe fn size(&self, out: *mut u32) -> Result<()>;
-        unsafe fn view(&self, out: *mut *mut c_void) -> Result<()>;
-        unsafe fn index_of(
-            &self,
-            value: *mut c_void,
-            index: *mut u32,
-            found: *mut bool,
-        ) -> Result<()>;
-        unsafe fn set_at(&self, index: u32, value: *mut c_void) -> Result<()>;
-        unsafe fn insert_at(&self, index: u32, value: *mut c_void) -> Result<()>;
-        unsafe fn remove_at(&self, index: u32) -> Result<()>;
-        unsafe fn append(&self, value: *mut c_void) -> Result<()>;
+unsafe impl Interface for IPanelChildren {
+    type Vtable = IPanelChildrenVtbl;
+    const IID: windows_core::GUID =
+        windows_core::GUID::from_u128(0x27a1_b418_56f3_525e_b883_cefe_d905_eed3);
+}
+
+impl IPanelChildren {
+    fn children(&self) -> windows_core::Result<IUnknown> {
+        let mut out: *mut c_void = ptr::null_mut();
+        // Safety: the object is a live `Panel` and `out` is writable.
+        let hr = unsafe { (Interface::vtable(self).children)(Interface::as_raw(self), &mut out) };
+        check("IPanel.Children", hr);
+        if out.is_null() {
+            fail("IPanel.Children result", E_POINTER);
+        }
+        Ok(unsafe { IUnknown::from_raw(out) })
     }
 }
 
@@ -148,7 +154,7 @@ fn check(step: &str, hr: windows_core::HRESULT) {
     }
 }
 
-fn cast<T: Interface>(object: &IUnknown, step: &str) -> T {
+fn cast<T: Interface>(object: &impl Interface, step: &str) -> T {
     object
         .cast::<T>()
         .unwrap_or_else(|error| fail(step, error.code().0))
@@ -185,20 +191,26 @@ fn create_instance(step: &str, factory: *mut c_void, function: CreateInstance) -
 fn activate(get: GetActivationFactory, class: &str) -> IUnknown {
     let factory = activation_factory(get, class);
     let activation: IActivationFactory = cast(&factory, "QueryInterface(IActivationFactory)");
-    let mut raw: *mut c_void = ptr::null_mut();
     let step = format!("{class}.ActivateInstance");
-    unsafe { activation.activate_instance(&mut raw) }
-        .unwrap_or_else(|error| fail(&step, error.code().0));
-    if raw.is_null() {
-        fail(&step, E_POINTER);
-    }
-    unsafe { IUnknown::from_raw(raw) }
+    activation
+        .activate()
+        .unwrap_or_else(|error| fail(&step, error.code().0))
 }
 
 /// The one layout question: a vertical `StackPanel`, `Spacing = 4`, three 10 px high
 /// `Border` children. The panel is expected to want 38 px; the numbers printed are the
 /// ones the engine returns, not that expectation.
+/// Say which step the measurement reached when `OPENCOMP_TRACE` is set.
+///
+/// A call that faults prints nothing of its own; the last mark names it.
+fn mark(step: &str) {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("xaml-probe: measure {step}");
+    }
+}
+
 fn measure(get: GetActivationFactory, app_factory: &IApplicationFactory) {
+    mark("application");
     // The application WinUI's own entry point creates inside this callback. The factory
     // came from the DLL's `DllGetActivationFactory`, so no combase registration is needed.
     let application = create_instance(
@@ -207,9 +219,11 @@ fn measure(get: GetActivationFactory, app_factory: &IApplicationFactory) {
         Interface::vtable(app_factory).CreateInstance,
     );
 
+    mark("stack panel factory");
     let stack_factory = activation_factory(get, "Microsoft.UI.Xaml.Controls.StackPanel");
     let stack_factory: IStackPanelFactory =
         cast(&stack_factory, "QueryInterface(IStackPanelFactory)");
+    mark("stack panel instance");
     let stack = create_instance(
         "IStackPanelFactory.CreateInstance",
         Interface::as_raw(&stack_factory),
@@ -222,30 +236,36 @@ fn measure(get: GetActivationFactory, app_factory: &IApplicationFactory) {
         .SetSpacing(4.0)
         .unwrap_or_else(|error| fail("IStackPanel.Spacing", error.code().0));
 
+    mark("panel children");
     let panel: IPanelChildren = cast(&stack, "QueryInterface(IPanel)");
-    let mut collection: *mut c_void = ptr::null_mut();
-    unsafe { panel.children(&mut collection) }
+    let collection = panel
+        .children()
         .unwrap_or_else(|error| fail("IPanel.Children", error.code().0));
-    if collection.is_null() {
-        fail("IPanel.Children result", E_POINTER);
-    }
-    let children = unsafe { IUnknown::from_raw(collection) };
-    let children: IVectorUIElement = cast(&children, "QueryInterface(IVector<UIElement>)");
+    let collection: UIElementCollection = cast(&collection, "QueryInterface(UIElementCollection)");
+    let children: windows_collections::IVector<UIElement> =
+        cast(&collection, "QueryInterface(IVector<UIElement>)");
 
+    mark("borders");
     let mut first: Option<IUnknown> = None;
     for index in 0..3 {
+        mark("border activate");
         let border = activate(get, "Microsoft.UI.Xaml.Controls.Border");
-        let element: IFrameworkElement = cast(&border, "QueryInterface(IFrameworkElement)");
-        element
+        mark("border height");
+        let framework: IFrameworkElement = cast(&border, "QueryInterface(IFrameworkElement)");
+        framework
             .SetHeight(10.0)
             .unwrap_or_else(|error| fail("IFrameworkElement.Height", error.code().0));
-        unsafe { children.append(Interface::as_raw(&border)) }
+        mark("border append");
+        let element: UIElement = cast(&border, "QueryInterface(UIElement)");
+        children
+            .Append(&element)
             .unwrap_or_else(|error| fail("IVector<UIElement>.Append", error.code().0));
         if index == 0 {
             first = Some(border);
         }
     }
 
+    mark("measure");
     let ui: IUIElement = cast(&stack, "QueryInterface(IUIElement)");
     ui.Measure(Size {
         width: f32::INFINITY,
@@ -352,7 +372,10 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         // The engine called us on its own thread with a core behind it. Build the case,
         // print its numbers, and leave the message loop: there is nothing after this.
         measure(get_factory, &app_factory);
-        std::process::exit(0);
+        // `process::exit` runs the C runtime's teardown, which does not return once the
+        // engine owns threads, and `ExitProcess` waits for them. The probe has its number
+        // and nothing left to say, so the process is ended rather than shut down.
+        unsafe { TerminateProcess(GetCurrentProcess(), 0) };
     });
     eprintln!("xaml-probe: calling Application.Start");
 

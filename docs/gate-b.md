@@ -31,7 +31,8 @@ existing rather than of implementing any of them.
 | `Application` / `Window` factories | ok | ok |
 | `Controls.*` factories, raw | **segmentation fault** | crash |
 | `Application.Start`, hand-written call | returns `S_OK`, no callback | returns `S_OK`, no callback |
-| `Application.Start`, generated bindings | not yet run | **blocks in its message loop** |
+| `Application.Start`, generated bindings | not yet run | callback runs (Wine 11, our dispatcher) |
+| `StackPanel` with `Spacing = 4`, three 10 px children | not yet run | **38 px**, child 10 px |
 
 Two conclusions follow, and both change what the next step is.
 
@@ -162,6 +163,30 @@ installed at all.
 This is inside our scope rather than outside it: `Microsoft.UI.Dispatching` is an App SDK
 namespace, so the answer is a replacement DLL for it, the same way `dcompi.dll` is
 answered by `opencomp.dll`.
+
+## What it took
+
+Four things had to be true before the engine would start, and three of them were our
+bugs rather than Wine's:
+
+1. **A dispatcher.** The SDK's own `Microsoft.UI.Dispatching` server aborts on load
+   under Wine, so `opendispatch` answers that namespace and the activation manifest
+   points at it. `CreateOnCurrentThread` then answers `S_OK`.
+2. **An apartment.** `Application.Start` needs one; without `RoInitialize` it returns
+   `CO_E_NOTINITIALIZED`.
+3. **The process policy question.** XAML asks `AppPolicyGetWindowingModel`; Wine's
+   `kernel32` forwards it to a `kernelbase` function that aborts on call. The probe
+   rewrites the engine's import slot at load time (`shim.rs`) and answers
+   `ClassicDesktop`, because we do not patch Wine.
+4. **Correct vtables.** `IActivationFactory`, `IPanel` and `IVector<UIElement>` were
+   declared with an `IUnknown` base, which puts the first method where **`GetIids`**
+   sits. `GetIids` answers `S_OK` and writes an array, so every "the class activated"
+   result was a successful call to the wrong function. The vtables now start with
+   `IInspectable`, and collection access goes through the generated
+   `windows_collections::IVector<UIElement>` rather than a hand-written IID.
+
+`XamlCheckProcessRequirements` returns different values between runs (`0xfa9b2008`,
+`0xfa9e2008`) and does not gate the start, so its return is not treated as an HRESULT.
 
 ## What the next step is
 

@@ -14,6 +14,9 @@ path = "src/main.rs"
 # The probe is Windows-target code: it loads the DLL and calls through its vtables. The
 # generated bindings in `src/xaml_bindings.rs` are Windows-only for the same reason.
 [target.'cfg(windows)'.dependencies]
+# `IVector<UIElement>` is projected through this crate; without it the collection's
+# `Append` would be a hand-written vtable, and the parameterized IID is not guessable.
+windows-collections = "0.100"
 windows-core = "0.100"
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",

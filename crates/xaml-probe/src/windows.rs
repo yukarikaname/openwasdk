@@ -99,18 +99,48 @@ const CLASSES: &[Entry] = &[
     },
 ];
 
-// `IActivationFactory` is not a runtime class, so it is not in the metadata. Declaring it here
-// is what a C++/WinRT client gets from `winrt/Windows.Foundation.h`; the IID and the vtable slot
-// are the ABI's, only the method name follows Rust's spelling.
-windows_core::interface_decl! {
-    unsafe trait IActivationFactory(IActivationFactoryVtbl, IActivationFactoryImpl)
-        : windows_core::IUnknown
-        = 0x0000_0035_0000_0000_c000_0000_0000_0046
-    {
-        unsafe fn activate_instance(
-            &self,
-            instance: *mut *mut core::ffi::c_void,
-        ) -> Result<()>;
+// `IActivationFactory` is not a runtime class, so it is not in the metadata. The vtable is
+// written out rather than declared with `interface_decl!`: that macro's `IInspectable` base
+// does not compile against this windows-core, and an `IUnknown` base puts `ActivateInstance`
+// where `GetIids` sits -- which answers `S_OK` and writes an empty array, so every "the class
+// activated" result looked successful and meant nothing.
+#[repr(transparent)]
+#[derive(Clone)]
+pub(crate) struct IActivationFactory(windows_core::IUnknown);
+
+#[repr(C)]
+pub(crate) struct IActivationFactoryVtbl {
+    base__: windows_core::IInspectable_Vtbl,
+    activate_instance:
+        unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> windows_core::HRESULT,
+}
+
+// Safety: the layout is `IInspectable` followed by `ActivateInstance`, which is the ABI.
+unsafe impl windows_core::Interface for IActivationFactory {
+    type Vtable = IActivationFactoryVtbl;
+    const IID: windows_core::GUID =
+        windows_core::GUID::from_u128(0x0000_0035_0000_0000_c000_0000_0000_0046);
+}
+
+impl IActivationFactory {
+    pub(crate) fn activate(&self) -> windows_core::Result<windows_core::IUnknown> {
+        let mut raw: *mut c_void = std::ptr::null_mut();
+        // Safety: the object is a live activation factory and `raw` is writable.
+        let hr = unsafe {
+            (windows_core::Interface::vtable(self).activate_instance)(
+                windows_core::Interface::as_raw(self),
+                &mut raw,
+            )
+        };
+        if hr.0 < 0 {
+            return Err(windows_core::Error::from_hresult(hr));
+        }
+        if raw.is_null() {
+            return Err(windows_core::Error::from_hresult(windows_core::HRESULT(
+                0x8000_4003u32 as i32,
+            )));
+        }
+        Ok(unsafe { windows_core::IUnknown::from_raw(raw) })
     }
 }
 
@@ -246,14 +276,16 @@ fn activate(factory: IUnknown, factory_ptr: usize, check: Check) -> Outcome {
             hr: E_NOINTERFACE,
         };
     };
-    let mut raw: *mut c_void = ptr::null_mut();
-    if let Err(error) = unsafe { activation.activate_instance(&mut raw) } {
-        return Outcome {
-            factory: factory_ptr,
-            instance: 0,
-            hr: error.code().0,
-        };
-    }
+    let raw = match activation.activate() {
+        Ok(instance) => windows_core::Interface::into_raw(instance),
+        Err(error) => {
+            return Outcome {
+                factory: factory_ptr,
+                instance: 0,
+                hr: error.code().0,
+            };
+        }
+    };
     if raw.is_null() {
         return Outcome {
             factory: factory_ptr,
