@@ -379,7 +379,12 @@ pub fn run(out: Option<PathBuf>) -> i32 {
     // documented answer: `MddBootstrapInitialize(majorMinor, versionTag, minVersion)`.
     // Its own failure is reported and not treated as fatal, because it is a separate
     // question from whether XAML then works.
-    if let Some(bootstrap) = bootstrap_hr(path.parent().unwrap_or(Path::new("."))) {
+    // Opt-in: Wine 9's `combase` has no `RoOriginateErrorW`, and the bootstrapper calls
+    // it to report its own failure, which aborts the process before the check runs. On
+    // Windows the check passes without the bootstrapper anyway.
+    let bootstrap = std::env::var_os("GATE_B_BOOTSTRAP")
+        .and_then(|_| bootstrap_hr(path.parent().unwrap_or(Path::new("."))));
+    if let Some(bootstrap) = bootstrap {
         eprintln!(
             "layout-probe: MddBootstrapInitialize hr=0x{:08x}",
             bootstrap as u32
