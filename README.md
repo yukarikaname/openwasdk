@@ -99,6 +99,26 @@ validates the ABI code; linking needs a Windows toolchain.
 through whatever backend the host has: Metal on macOS, Vulkan or D3D12
 elsewhere. A machine without a GPU skips those tests.
 
+## Seeing it draw
+
+Two examples use no WinRT at all, so they run on any of the three hosts:
+
+```sh
+# a tree with a clip and a translucent row, written as a PPM
+cargo run -p opencomp-core --example scene -- /tmp/scene.ppm
+
+# the same tree in a window, on the swapchain path the ABI will present through
+cargo run -p opencomp-core --example window
+
+# for a machine with nobody watching, exit after three frames and report the format
+OPENCOMP_FRAMES=3 cargo run -p opencomp-core --example window
+```
+
+`opencomp` builds the same tree from the other side: a client activates the
+class, calls `CreateContainerVisual` and `CreateSpriteVisual`, inserts children
+and sets a clip, and the shell hands the result to this renderer. Its tests do
+exactly that, which is why they need a Windows host to run.
+
 ## Layout
 
 ```
