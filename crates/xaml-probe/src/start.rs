@@ -15,20 +15,16 @@ use windows_sys::Win32::Foundation::HMODULE;
 use crate::windows::{IActivationFactory, export, handle};
 use crate::xaml_bindings::Microsoft::UI::Xaml::Controls::UIElementCollection;
 use crate::xaml_bindings::Microsoft::UI::Xaml::Controls::{IStackPanel, IStackPanelFactory};
-use crate::xaml_bindings::Microsoft::UI::Xaml::Media::ISolidColorBrush;
 use crate::xaml_bindings::Microsoft::UI::Xaml::{
     ApplicationInitializationCallback, IApplicationFactory, IApplicationStatics, IFrameworkElement,
-    IUIElement, IWindow, UIElement,
+    IUIElement, UIElement,
 };
 use crate::xaml_bindings::Windows::Foundation::{Rect, Size};
-use crate::xaml_bindings::Windows::UI::Color;
-use windows_sys::Win32::UI::WindowsAndMessaging::{
-    DispatchMessageW, MSG, PM_REMOVE, PeekMessageW, TranslateMessage,
-};
 
-const E_POINTER: i32 = 0x8000_4003u32 as i32;
+pub(crate) const E_POINTER: i32 = 0x8000_4003u32 as i32;
 
-type GetActivationFactory = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
+pub(crate) type GetActivationFactory =
+    unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
 type CreateInstance = unsafe extern "system" fn(
     *mut c_void,
     *mut c_void,
@@ -120,10 +116,10 @@ fn create_dispatcher() -> Option<i32> {
 // member answers `S_OK` while writing a pointer that is not an object.
 #[repr(transparent)]
 #[derive(Clone)]
-struct IPanelChildren(IUnknown);
+pub(crate) struct IPanelChildren(IUnknown);
 
 #[repr(C)]
-struct IPanelChildrenVtbl {
+pub(crate) struct IPanelChildrenVtbl {
     base__: windows_core::IInspectable_Vtbl,
     children: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> windows_core::HRESULT,
     put_background: unsafe extern "system" fn(*mut c_void, *mut c_void) -> windows_core::HRESULT,
@@ -136,7 +132,7 @@ unsafe impl Interface for IPanelChildren {
 }
 
 impl IPanelChildren {
-    fn set_background(&self, brush: &IUnknown) -> windows_core::HRESULT {
+    pub(crate) fn set_background(&self, brush: &IUnknown) -> windows_core::HRESULT {
         // Safety: both pointers are live for the call.
         unsafe {
             (Interface::vtable(self).put_background)(
@@ -159,25 +155,25 @@ impl IPanelChildren {
 }
 
 /// A failed step names itself and its HRESULT; there is no JSON line in that case.
-fn fail(step: &str, hr: i32) -> ! {
+pub(crate) fn fail(step: &str, hr: i32) -> ! {
     eprintln!("xaml-probe: {step} hr=0x{:08x}", hr as u32);
     std::process::exit(1);
 }
 
-fn check(step: &str, hr: windows_core::HRESULT) {
+pub(crate) fn check(step: &str, hr: windows_core::HRESULT) {
     if hr.0 < 0 {
         fail(step, hr.0);
     }
 }
 
-fn cast<T: Interface>(object: &impl Interface, step: &str) -> T {
+pub(crate) fn cast<T: Interface>(object: &impl Interface, step: &str) -> T {
     object
         .cast::<T>()
         .unwrap_or_else(|error| fail(step, error.code().0))
 }
 
 /// Ask the engine's own `DllGetActivationFactory` for one class.
-fn activation_factory(get: GetActivationFactory, class: &str) -> IUnknown {
+pub(crate) fn activation_factory(get: GetActivationFactory, class: &str) -> IUnknown {
     let name = HSTRING::from(class);
     let mut raw: *mut c_void = ptr::null_mut();
     let hr = unsafe { get(handle(&name), &mut raw) };
@@ -219,102 +215,10 @@ fn activate(get: GetActivationFactory, class: &str) -> IUnknown {
 /// Say which step the measurement reached when `OPENCOMP_TRACE` is set.
 ///
 /// A call that faults prints nothing of its own; the last mark names it.
-fn mark(step: &str) {
+pub(crate) fn mark(step: &str) {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!("xaml-probe: measure {step}");
     }
-}
-
-/// Show a window with a painted background and pump it.
-///
-/// This is Gate B's end state: the engine creates its own window and hosts content, and
-/// the question is whether anything of ours presents into it. The frame counter comes
-/// from the `opencomp.dll` the engine actually loaded, not from a linked copy.
-fn show(get: GetActivationFactory) {
-    mark("window");
-    let factory = activation_factory(get, "Microsoft.UI.Xaml.Window");
-    let activation: IActivationFactory = cast(&factory, "IActivationFactory");
-    let window: IWindow = cast(
-        &activation
-            .activate()
-            .unwrap_or_else(|error| fail("Window.ActivateInstance", error.code().0)),
-        "QueryInterface(IWindow)",
-    );
-
-    mark("window content");
-    let grid_factory = activation_factory(get, "Microsoft.UI.Xaml.Controls.Grid");
-    let grid_activation: IActivationFactory = cast(&grid_factory, "IActivationFactory");
-    let grid = grid_activation
-        .activate()
-        .unwrap_or_else(|error| fail("Grid.ActivateInstance", error.code().0));
-    let panel: IPanelChildren = cast(&grid, "QueryInterface(IPanel)");
-    let brush_factory = activation_factory(get, "Microsoft.UI.Xaml.Media.SolidColorBrush");
-    let brush_activation: IActivationFactory = cast(&brush_factory, "IActivationFactory");
-    let brush = brush_activation
-        .activate()
-        .unwrap_or_else(|error| fail("SolidColorBrush.ActivateInstance", error.code().0));
-    let color: ISolidColorBrush = cast(&brush, "QueryInterface(ISolidColorBrush)");
-    color
-        .SetColor(Color {
-            a: 255,
-            r: 220,
-            g: 60,
-            b: 60,
-        })
-        .unwrap_or_else(|error| fail("SolidColorBrush.Color", error.code().0));
-    check("IPanel.Background", panel.set_background(&brush));
-
-    let element: UIElement = cast(&grid, "QueryInterface(UIElement)");
-    window
-        .SetContent(&element)
-        .unwrap_or_else(|error| fail("Window.Content", error.code().0));
-
-    mark("window activate");
-    window
-        .Activate()
-        .unwrap_or_else(|error| fail("Window.Activate", error.code().0));
-
-    match window.Bounds() {
-        Ok(bounds) => eprintln!(
-            "xaml-probe: window bounds {}x{} at {},{}",
-            bounds.width, bounds.height, bounds.x, bounds.y
-        ),
-        Err(error) => eprintln!("xaml-probe: Window.Bounds hr=0x{:08x}", error.code().0),
-    }
-
-    mark("window pump");
-    let mut message = MSG::default();
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-    while std::time::Instant::now() < deadline {
-        // Safety: `message` lives on this stack frame.
-        while unsafe { PeekMessageW(&mut message, std::ptr::null_mut(), 0, 0, PM_REMOVE) } != 0 {
-            unsafe {
-                let _ = TranslateMessage(&message);
-                DispatchMessageW(&message);
-            }
-        }
-        std::thread::sleep(std::time::Duration::from_millis(16));
-    }
-    eprintln!(
-        "xaml-probe: frames presented by opencomp.dll: {}",
-        frames_presented()
-    );
-}
-
-/// The frame counter of the compositor the engine loaded, if the file is beside it.
-fn frames_presented() -> u64 {
-    let Some(path) = std::env::var_os("XAML_DLL") else {
-        return 0;
-    };
-    let path = std::path::PathBuf::from(path).with_file_name("opencomp.dll");
-    let Some(module) = crate::windows::load(&path) else {
-        return 0;
-    };
-    let Some(entry) = crate::windows::export(module, "opencomp_frames_presented") else {
-        return 0;
-    };
-    let frames: unsafe extern "system" fn() -> u64 = unsafe { std::mem::transmute(entry) };
-    unsafe { frames() }
 }
 
 fn measure(get: GetActivationFactory, app_factory: &IApplicationFactory) {
@@ -481,7 +385,7 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         // print its numbers, and leave the message loop: there is nothing after this.
         measure(get_factory, &app_factory);
         if std::env::var_os("OPENCOMP_XAML_PROBE_WINDOW").is_some() {
-            show(get_factory);
+            crate::window::show(get_factory);
         }
         // `process::exit` runs the C runtime's teardown, which does not return once the
         // engine owns threads, and `ExitProcess` waits for them. The probe has its number

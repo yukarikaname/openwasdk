@@ -27,3 +27,6 @@ mod shim;
 
 #[cfg(windows)]
 mod start;
+
+#[cfg(windows)]
+mod window;
