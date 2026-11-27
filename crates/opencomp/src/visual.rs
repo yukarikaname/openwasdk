@@ -1,138 +1,81 @@
+//! `ContainerVisual` and `SpriteVisual`: the two leaves a tree is made of.
+//!
+//! The properties the renderer understands live on the shared node; the rest of `IVisual`
+//! (rotation, transforms, anchors) is accepted by the ABI and ignored, which is all a first frame
+//! needs. A client that sets them gets a consistent tree, just not the transform.
+
+use std::sync::Mutex;
+
 use crate::bindings::Microsoft::UI::Composition::{
-    CompositionBackfaceVisibility, CompositionBorderMode, CompositionClip,
-    CompositionCompositeMode, ContainerVisual, IContainerVisual, IContainerVisual_Impl, IVisual,
-    IVisual_Impl, VisualCollection,
+    CompositionBrush, ContainerVisual, ICompositionColorBrush, ICompositionObject,
+    IContainerVisual, IContainerVisual_Impl, ISpriteVisual, ISpriteVisual_Impl, IVisual,
+    SpriteVisual, VisualCollection,
 };
+use crate::node::{self, Node, NodeRef};
+use crate::object::prelude::*;
+use crate::object::{composition_object, visual_trait};
 use windows_core::{Error, HRESULT, Interface, Result};
 
-const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
+const E_FAIL: HRESULT = HRESULT(0x8000_4005u32 as i32);
 
-fn not_implemented<T>() -> Result<T> {
-    Err(Error::from_hresult(E_NOTIMPL))
+#[windows_core::implement(ICompositionObject, IContainerVisual, IVisual)]
+pub struct ContainerVisualObject {
+    node: NodeRef,
 }
 
-#[windows_core::implement(IContainerVisual, IVisual)]
-pub struct ContainerVisualObject;
+#[windows_core::implement(ICompositionObject, ISpriteVisual, IVisual)]
+pub struct SpriteVisualObject {
+    node: NodeRef,
+    brush: Mutex<Option<CompositionBrush>>,
+}
 
-pub fn create() -> Result<super::bindings::Microsoft::UI::Composition::ContainerVisual> {
-    let object: IContainerVisual = ContainerVisualObject.into();
+composition_object!(ContainerVisualObject_Impl);
+composition_object!(SpriteVisualObject_Impl);
+visual_trait!(ContainerVisualObject_Impl);
+visual_trait!(SpriteVisualObject_Impl);
+
+impl IContainerVisual_Impl for ContainerVisualObject_Impl {
+    fn Children(&self) -> Result<VisualCollection> {
+        crate::collection::create(self.node.clone())
+    }
+}
+
+impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
+    fn Brush(&self) -> Result<CompositionBrush> {
+        match self.brush.lock().unwrap().clone() {
+            Some(brush) => Ok(brush),
+            None => Err(Error::from_hresult(E_FAIL)),
+        }
+    }
+
+    fn SetBrush(&self, value: windows_core::Ref<CompositionBrush>) -> Result<()> {
+        let color = value
+            .as_ref()
+            .and_then(|brush| brush.cast::<ICompositionColorBrush>().ok())
+            .and_then(|brush| brush.Color().ok())
+            .map_or([0.0; 4], crate::brush::to_rgba);
+        self.node.lock().unwrap().color = color;
+        *self.brush.lock().unwrap() = value.cloned();
+        Ok(())
+    }
+}
+
+/// A `ContainerVisual` with no children.
+pub fn container() -> Result<ContainerVisual> {
+    let node = Node::new();
+    let object: IContainerVisual = ContainerVisualObject { node: node.clone() }.into();
+    node::publish(&object, &node);
     object.cast()
 }
 
-#[allow(unused_variables)]
-impl IContainerVisual_Impl for ContainerVisualObject_Impl {
-    fn Children(&self) -> windows_core::Result<VisualCollection> {
-        not_implemented()
+/// A `SpriteVisual` with no brush, which draws nothing until one is set.
+pub fn sprite() -> Result<SpriteVisual> {
+    let node = Node::new();
+    let object: ISpriteVisual = SpriteVisualObject {
+        node: node.clone(),
+        brush: Mutex::new(None),
     }
-}
-
-#[allow(unused_variables)]
-impl IVisual_Impl for ContainerVisualObject_Impl {
-    fn AnchorPoint(&self) -> windows_core::Result<windows_numerics::Vector2> {
-        not_implemented()
-    }
-    fn SetAnchorPoint(&self, value: &windows_numerics::Vector2) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn BackfaceVisibility(&self) -> windows_core::Result<CompositionBackfaceVisibility> {
-        not_implemented()
-    }
-    fn SetBackfaceVisibility(
-        &self,
-        value: CompositionBackfaceVisibility,
-    ) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn BorderMode(&self) -> windows_core::Result<CompositionBorderMode> {
-        not_implemented()
-    }
-    fn SetBorderMode(&self, value: CompositionBorderMode) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn CenterPoint(&self) -> windows_core::Result<windows_numerics::Vector3> {
-        not_implemented()
-    }
-    fn SetCenterPoint(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Clip(&self) -> windows_core::Result<CompositionClip> {
-        not_implemented()
-    }
-    fn SetClip(&self, value: windows_core::Ref<CompositionClip>) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn CompositeMode(&self) -> windows_core::Result<CompositionCompositeMode> {
-        not_implemented()
-    }
-    fn SetCompositeMode(&self, value: CompositionCompositeMode) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn IsVisible(&self) -> windows_core::Result<bool> {
-        not_implemented()
-    }
-    fn SetIsVisible(&self, value: bool) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Offset(&self) -> windows_core::Result<windows_numerics::Vector3> {
-        not_implemented()
-    }
-    fn SetOffset(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Opacity(&self) -> windows_core::Result<f32> {
-        not_implemented()
-    }
-    fn SetOpacity(&self, value: f32) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Orientation(
-        &self,
-    ) -> windows_core::Result<crate::bindings::Windows::Foundation::Numerics::Quaternion> {
-        not_implemented()
-    }
-    fn SetOrientation(
-        &self,
-        value: &crate::bindings::Windows::Foundation::Numerics::Quaternion,
-    ) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Parent(&self) -> windows_core::Result<ContainerVisual> {
-        not_implemented()
-    }
-    fn RotationAngle(&self) -> windows_core::Result<f32> {
-        not_implemented()
-    }
-    fn SetRotationAngle(&self, value: f32) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn RotationAngleInDegrees(&self) -> windows_core::Result<f32> {
-        not_implemented()
-    }
-    fn SetRotationAngleInDegrees(&self, value: f32) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn RotationAxis(&self) -> windows_core::Result<windows_numerics::Vector3> {
-        not_implemented()
-    }
-    fn SetRotationAxis(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Scale(&self) -> windows_core::Result<windows_numerics::Vector3> {
-        not_implemented()
-    }
-    fn SetScale(&self, value: &windows_numerics::Vector3) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn Size(&self) -> windows_core::Result<windows_numerics::Vector2> {
-        not_implemented()
-    }
-    fn SetSize(&self, value: &windows_numerics::Vector2) -> windows_core::Result<()> {
-        not_implemented()
-    }
-    fn TransformMatrix(&self) -> windows_core::Result<windows_numerics::Matrix4x4> {
-        not_implemented()
-    }
-    fn SetTransformMatrix(&self, value: &windows_numerics::Matrix4x4) -> windows_core::Result<()> {
-        not_implemented()
-    }
+    .into();
+    node::publish(&object, &node);
+    object.cast()
 }

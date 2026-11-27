@@ -15,9 +15,16 @@
 )]
 
 #[cfg(windows)]
-pub mod bindings;
+mod bindings;
+#[cfg(windows)]
+mod brush;
+#[cfg(windows)]
+mod collection;
 #[cfg(windows)]
 mod compositor;
+mod node;
+#[cfg(windows)]
+mod object;
 #[cfg(windows)]
 mod visual;
 

@@ -29,16 +29,16 @@ impl ICompositor_Impl for Compositor_Impl {
         not_implemented()
     }
     fn CreateColorBrush(&self) -> windows_core::Result<CompositionColorBrush> {
-        not_implemented()
+        crate::brush::create()
     }
     fn CreateColorBrushWithColor(
         &self,
         color: &crate::bindings::Windows::UI::Color,
     ) -> windows_core::Result<CompositionColorBrush> {
-        not_implemented()
+        crate::brush::create_with(*color)
     }
     fn CreateContainerVisual(&self) -> windows_core::Result<ContainerVisual> {
-        crate::visual::create()
+        crate::visual::container()
     }
     fn CreateCubicBezierEasingFunction(
         &self,
@@ -108,7 +108,7 @@ impl ICompositor_Impl for Compositor_Impl {
         not_implemented()
     }
     fn CreateSpriteVisual(&self) -> windows_core::Result<SpriteVisual> {
-        not_implemented()
+        crate::visual::sprite()
     }
     fn CreateSurfaceBrush(&self) -> windows_core::Result<CompositionSurfaceBrush> {
         not_implemented()
