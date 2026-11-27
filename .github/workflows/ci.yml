@@ -153,8 +153,22 @@ jobs:
           # A GUI client under a software backend can hang; a runner that waits for
           # the job timeout tells nobody anything. Ninety seconds is generous for ten
           # frames and makes a hang a red step with a log instead.
-          OPENCOMP_FRAMES=10 timeout 90 xvfb-run -a "$wine" \
-            target/x86_64-pc-windows-gnu/debug/opencomp-client.exe
+          exe=target/x86_64-pc-windows-gnu/debug/opencomp-client.exe
+          set +e
+          OPENCOMP_TRACE=1 OPENCOMP_FRAMES=10 timeout 90 xvfb-run -a "$wine" "$exe" \
+            > client.log 2>&1
+          status=$?
+          set -e
+          cat client.log
+          if [ "$status" -ne 0 ]; then
+            # Wine prints the faulting address; the executable carries DWARF, so the
+            # name of the function is one command away instead of a guess.
+            fault=$(sed -n 's/.*at address \([0-9A-Fa-f]*\).*/\1/p' client.log | head -1)
+            if [ -n "$fault" ]; then
+              x86_64-w64-mingw32-addr2line -f -C -e "$exe" "0x$fault" || true
+            fi
+            exit "$status"
+          fi
 
       # The flat C layer XAML imports by name. A missing export is a load failure,
       # so check one conversion and one stub, not just that the crate compiled.

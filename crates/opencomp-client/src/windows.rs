@@ -96,6 +96,7 @@ pub fn run() -> i32 {
 
 /// A 320x240 window of the built-in STATIC class, shown.
 fn window() -> HWND {
+    trace("CreateWindowExW");
     let hwnd = match unsafe {
         CreateWindowExW(
             WINDOW_EX_STYLE(0),
@@ -338,7 +339,19 @@ fn handle(name: &HSTRING) -> *mut c_void {
     unsafe { std::mem::transmute_copy(name) }
 }
 
+/// Print every step when `OPENCOMP_TRACE` is set.
+///
+/// stdout is block-buffered when it is a pipe, so a crash loses every `println!`
+/// that came before it; stderr is not, and a trace is what turns "page fault" into
+/// "the page fault happened at this call".
+fn trace(name: &str) {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp-client: {name}");
+    }
+}
+
 fn step<T>(name: &str, result: windows_core::Result<T>) -> T {
+    trace(name);
     match result {
         Ok(value) => value,
         Err(error) => fail(name, error.code().0),
@@ -346,12 +359,14 @@ fn step<T>(name: &str, result: windows_core::Result<T>) -> T {
 }
 
 fn check(name: &str, result: windows_core::HRESULT) {
+    trace(name);
     if result.0 < 0 {
         fail(name, result.0);
     }
 }
 
 fn owned<T: Interface>(name: &str, raw: *mut c_void) -> T {
+    trace(name);
     if raw.is_null() {
         fail(name, E_POINTER);
     }
