@@ -426,6 +426,11 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         // print its numbers, and leave the message loop: there is nothing after this.
         measure(get_factory, &app_factory);
         if std::env::var_os("OPENCOMP_XAML_PROBE_WINDOW").is_some() {
+            // The engine's core is built from the handler the message core calls back,
+            // and our stand-in never calls it; one delivery is the whole difference.
+            if let Some(hr) = crate::shim::deliver_core_ui() {
+                eprintln!("xaml-probe: CoreUIDeliver hr=0x{:08x}", hr as u32);
+            }
             crate::window::show(get_factory);
         }
         // `process::exit` runs the C runtime's teardown, which does not return once the

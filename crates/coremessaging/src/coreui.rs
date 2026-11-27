@@ -267,6 +267,8 @@ unsafe extern "system" fn add_handler(
     if registration.is_null() {
         return E_POINTER;
     }
+    HANDLER.store(handler, Ordering::Release);
+    CONTEXT.store(context, Ordering::Release);
     // The last argument is the registration itself, not a place for one: the caller
     // releases it through the vtable it finds at that address. The object is a struct
     // whose first field is that vtable.
@@ -321,6 +323,30 @@ unsafe extern "system" fn small_slot_6(
         eprintln!("coremessaging: small object slot 6 called with {first:?} {second:?}");
     }
     E_NOTIMPL
+}
+
+/// The handler the engine registered, and the context it wants passed back.
+static HANDLER: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+static CONTEXT: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// Deliver one message to the registered handler, the way the message core would.
+///
+/// Nothing here has a message to deliver: the probe pumps the window procedure itself.
+/// What the engine does have is this handler, and its own core is built from that
+/// callback, so the probe asks for one delivery at the point where it used to fail.
+#[unsafe(no_mangle)]
+pub extern "system" fn CoreUIDeliver() -> i32 {
+    let handler = HANDLER.load(Ordering::Acquire);
+    if handler.is_null() {
+        return 0x8000_4001u32 as i32; // E_NOTIMPL: nothing was registered
+    }
+    if traced() {
+        eprintln!("coremessaging: CoreUIDeliver");
+    }
+    type Handler = unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32;
+    let handler: Handler = unsafe { std::mem::transmute(handler) };
+    let context = CONTEXT.load(Ordering::Acquire);
+    unsafe { handler(context, ptr::null_mut(), ptr::null_mut()) }
 }
 
 /// The registration's `IUnknown`: nothing removes it, and the engine only releases it.

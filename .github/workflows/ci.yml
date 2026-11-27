@@ -107,6 +107,9 @@ jobs:
           # Also ask the engine to start and measure: the one JSON line the callback
           # prints on the platform it was built for is the baseline for what Wine does.
           OPENCOMP_XAML_PROBE_START=1 ./xaml-probe.exe
+          # The window path on the platform where the engine's own composition core
+          # exists: the baseline our compositor is measured against.
+          OPENCOMP_TRACE=1 OPENCOMP_XAML_PROBE_WINDOW=1 ./xaml-probe.exe || true
 
       # The engine's input core is a private conversation between the UDK layer and the
       # system `coremessaging.dll`. Here the object exists, so this run wraps it in a proxy

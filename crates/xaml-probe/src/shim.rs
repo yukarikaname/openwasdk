@@ -271,6 +271,17 @@ pub(crate) fn entry(library: &[u8], name: &[u8]) -> Option<*mut c_void> {
     (!found.is_null()).then_some(found)
 }
 
+/// Ask our messaging stand-in to deliver one message to the handler the engine registered.
+///
+/// The engine builds its core from that callback, so a probe that only answers the
+/// registration never gets one.
+pub fn deliver_core_ui() -> Option<i32> {
+    let entry = entry(b"opencoremsg.dll\0", b"CoreUIDeliver\0")?;
+    type Deliver = unsafe extern "system" fn() -> i32;
+    let deliver: Deliver = unsafe { std::mem::transmute(entry) };
+    Some(unsafe { deliver() })
+}
+
 /// The imports a DLL needs answered before it can be used at all.
 const LATE_ENTRIES: &[Entry] = &[
     Entry {
