@@ -4,8 +4,13 @@
 //! nobody runs a message loop on our behalf. So the bridge starts a thread that
 //! snapshots the island's tree and draws it at about sixty hertz. There is no commit
 //! to wait for, which is how the lifted compositor behaves.
+//!
+//! The device and the swapchain are made **inside** that thread: under Wine they can
+//! take seconds on a software backend, and `Show` is called on a client's UI thread,
+//! which must not inherit that delay.
 
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, Receiver, RecvTimeoutError};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -17,6 +22,10 @@ use crate::node::{self, NodeRef};
 
 /// The frame interval. A slower tree only costs a snapshot per tick.
 const INTERVAL: Duration = Duration::from_millis(16);
+
+/// How long `stop` waits for the frame loop before leaving the thread to the process
+/// exit. A present that never returns must not keep a client alive.
+const STOP_TIMEOUT: Duration = Duration::from_secs(2);
 
 /// Where the window is and whether frames are still wanted.
 struct Shared {
@@ -35,10 +44,6 @@ impl Shared {
         }
     }
 
-    fn stop(&self) {
-        self.stop.store(true, Ordering::Relaxed);
-    }
-
     fn stopped(&self) -> bool {
         self.stop.load(Ordering::Relaxed)
     }
@@ -48,29 +53,32 @@ impl Shared {
 pub struct Window {
     shared: Arc<Shared>,
     thread: Option<JoinHandle<()>>,
+    /// Signalled when the frame loop returns.
+    finished: Receiver<()>,
 }
 
 impl Window {
-    /// Start presenting `root` on `hwnd`, which the caller keeps alive.
-    ///
-    /// Returns `None` when no device can be created for the window; the bridge then
-    /// reports nothing rather than pretending a frame will appear.
+    /// Present `root` on `hwnd`, which the caller keeps alive.
     pub fn start(root: NodeRef, hwnd: u64, size: (u32, u32)) -> Option<Self> {
-        let presenter = Presenter::new(hwnd, size.0, size.1)?;
         let shared = Arc::new(Shared {
             size: Mutex::new(size),
             stop: AtomicBool::new(false),
         });
+        let (finished, done) = mpsc::channel();
         let thread = {
             let shared = shared.clone();
             std::thread::Builder::new()
                 .name("opencomp-present".into())
-                .spawn(move || frame_loop(presenter, root, shared))
+                .spawn(move || {
+                    frame_loop(root, hwnd, shared);
+                    let _ = finished.send(());
+                })
                 .ok()?
         };
         Some(Self {
             shared,
             thread: Some(thread),
+            finished: done,
         })
     }
 
@@ -82,11 +90,16 @@ impl Window {
         self.shared.set_size(width, height);
     }
 
-    /// Stop presenting and wait for the thread.
+    /// Stop presenting. Waits for the loop, but not forever.
     pub fn stop(&mut self) {
-        self.shared.stop();
+        self.shared.stop.store(true, Ordering::Relaxed);
         if let Some(thread) = self.thread.take() {
-            let _ = thread.join();
+            match self.finished.recv_timeout(STOP_TIMEOUT) {
+                Ok(()) | Err(RecvTimeoutError::Disconnected) => {
+                    let _ = thread.join();
+                }
+                Err(RecvTimeoutError::Timeout) => {}
+            }
         }
     }
 }
@@ -97,7 +110,12 @@ impl Drop for Window {
     }
 }
 
-fn frame_loop(mut presenter: Presenter, root: NodeRef, shared: Arc<Shared>) {
+fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>) {
+    let (width, height) = shared.size();
+    let Some(mut presenter) = Presenter::new(hwnd, width, height) else {
+        eprintln!("opencomp: no device for this window; nothing will be presented");
+        return;
+    };
     let mut current = presenter.size();
     while !shared.stopped() {
         let (width, height) = shared.size();

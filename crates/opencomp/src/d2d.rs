@@ -34,7 +34,7 @@ use windows::Win32::Graphics::Dxgi::Common::{
     DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC,
 };
 use windows::Win32::Graphics::Dxgi::{
-    CreateDXGIFactory2, DXGI_CREATE_FACTORY_FLAGS, DXGI_PRESENT, DXGI_SCALING_STRETCH,
+    CreateDXGIFactory2, DXGI_CREATE_FACTORY_FLAGS, DXGI_PRESENT_DO_NOT_WAIT, DXGI_SCALING_STRETCH,
     DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
     IDXGIDevice, IDXGIFactory2, IDXGISurface, IDXGISwapChain1,
 };
@@ -389,8 +389,11 @@ impl Presenter {
 
     /// Hand the drawn back buffer to the window.
     pub fn present_frame(&mut self) -> bool {
+        // No vsync wait and no blocking: a compositor paces itself, and under Wine's
+        // software backend `Present(1, ..)` can wait on a vertical blank that Xvfb
+        // never sends, which hangs the frame loop and whatever joins it.
         // Safety: the frame was drawn; DXGI takes it from here.
-        let presented = unsafe { self.swapchain.Present(1, DXGI_PRESENT(0)).is_ok() };
+        let presented = unsafe { self.swapchain.Present(0, DXGI_PRESENT_DO_NOT_WAIT) }.is_ok();
         if presented {
             FRAMES.fetch_add(1, Ordering::Relaxed);
         }
