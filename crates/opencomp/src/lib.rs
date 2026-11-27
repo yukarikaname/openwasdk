@@ -27,6 +27,8 @@ mod clip;
 mod collection;
 #[cfg(windows)]
 mod compositor;
+#[cfg(windows)]
+mod easing;
 mod node;
 #[cfg(windows)]
 mod object;
@@ -318,6 +320,19 @@ mod abi {
         };
         assert_eq!(pixel(4, 4), [255, 0, 0, 255]);
         assert_eq!(pixel(12, 12), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn an_easing_function_keeps_its_control_points() {
+        let compositor = compositor();
+        let easing = compositor
+            .CreateCubicBezierEasingFunction(Vector2 { x: 0.1, y: 0.2 }, Vector2 { x: 0.8, y: 0.9 })
+            .unwrap();
+        let easing: crate::bindings::Microsoft::UI::Composition::ICubicBezierEasingFunction =
+            easing.cast().unwrap();
+        assert_eq!(easing.ControlPoint1().unwrap(), Vector2 { x: 0.1, y: 0.2 });
+        assert_eq!(easing.ControlPoint2().unwrap(), Vector2 { x: 0.8, y: 0.9 });
+        assert!(compositor.CreateLinearEasingFunction().is_ok());
     }
 
     #[test]

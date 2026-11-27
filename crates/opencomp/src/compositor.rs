@@ -45,7 +45,7 @@ impl ICompositor_Impl for Compositor_Impl {
         controlPoint1: &windows_numerics::Vector2,
         controlPoint2: &windows_numerics::Vector2,
     ) -> windows_core::Result<CubicBezierEasingFunction> {
-        not_implemented()
+        crate::easing::cubic_bezier(*controlPoint1, *controlPoint2)
     }
     fn CreateEffectFactory(
         &self,
@@ -88,7 +88,7 @@ impl ICompositor_Impl for Compositor_Impl {
         crate::clip::create_with([leftInset, topInset, rightInset, bottomInset])
     }
     fn CreateLinearEasingFunction(&self) -> windows_core::Result<LinearEasingFunction> {
-        not_implemented()
+        crate::easing::linear()
     }
     fn CreatePropertySet(&self) -> windows_core::Result<CompositionPropertySet> {
         not_implemented()
