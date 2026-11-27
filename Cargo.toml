@@ -1,6 +1,17 @@
 [workspace]
 resolver = "3"
-members = ["crates/comptrace", "crates/opencomp", "crates/opencomp-client", "crates/opencomp-core", "crates/openudk", "crates/openxaml", "crates/xaml-probe", "crates/xbf", "crates/xwinui"]
+members = [
+    "crates/comptrace",
+    "crates/layout-probe",
+    "crates/opencomp",
+    "crates/opencomp-client",
+    "crates/opencomp-core",
+    "crates/openudk",
+    "crates/openxaml",
+    "crates/xaml-probe",
+    "crates/xbf",
+    "crates/xwinui",
+]
 
 [workspace.package]
 version = "0.1.0"

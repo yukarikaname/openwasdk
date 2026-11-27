@@ -1,0 +1,22 @@
+[package]
+name = "layout-probe"
+description = "Ask the real Microsoft.ui.xaml.dll what a StackPanel with spacing measures"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "layout-probe"
+path = "src/main.rs"
+
+# The probe loads a Windows DLL and calls its vtables. The non-Windows main only
+# says so, so the crate builds everywhere and is checked on every runner.
+
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.100"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+] }
