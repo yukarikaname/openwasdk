@@ -138,7 +138,9 @@ macro_rules! composition_object {
             ) -> windows_core::Result<
                 $crate::bindings::Microsoft::UI::Composition::CompositionPropertySet,
             > {
-                $crate::propertyset::create()
+                // The node is the object's stable identity: an interface pointer is only as
+                // stable as the caller's, and this one has to survive being asked for again.
+                $crate::propertyset::for_key(::std::sync::Arc::as_ptr(&self.node) as usize)
             }
             fn StartAnimation(
                 &self,
@@ -186,7 +188,7 @@ macro_rules! composition_object {
             ) -> windows_core::Result<
                 $crate::bindings::Microsoft::UI::Composition::CompositionPropertySet,
             > {
-                $crate::propertyset::create()
+                $crate::propertyset::for_key(self as *const Self as usize)
             }
             fn StartAnimation(
                 &self,
