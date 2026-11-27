@@ -41,38 +41,53 @@ compiled XAML and the Wine host stay as they are.
 
 ## How much of it is implemented
 
-Counted from the code, not estimated. Method numbers come from the `*_Impl` methods
-behind every `#[implement(..)]` type, minus the ones that answer `E_NOTIMPL`; the
-denominators are the metadata counts in [`docs/winui-anatomy.md`](docs/winui-anatomy.md).
+There are two paths to running WinUI 3 here, and a number without its path is a
+misleading number:
+
+- **Gates B-D**: Microsoft's own `Microsoft.ui.xaml.dll` runs on top of our layers
+  (`opencomp`, `opendispatch`, `openudk`). Every XAML runtime class is Microsoft's code;
+  our obligation is the ABI underneath it.
+- **Milestone 5**: `openxaml` replaces that DLL. There we implement the classes.
+
+### The layers beneath the official engine
+
+Counted from the code: the `*_Impl` methods behind every `#[implement(..)]` type, minus
+the ones that answer `E_NOTIMPL`; denominators from the metadata in
+[`docs/winui-anatomy.md`](docs/winui-anatomy.md).
 
 | surface | implemented | of | |
 | --- | ---: | ---: | ---: |
-| Composition ABI methods answered | 197 | 326 | **60%** |
+| Composition ABI methods | 232 | 326 | **71%** |
+| `Microsoft.UI.Dispatching` classes | 5 | 5 | **100%** |
 | FrameworkUdk C exports | 22 | 149 | **15%** |
+| App SDK classes with an activation entry | 1033 | 1033 | **100%** (generated) |
 | XBF node kinds mapped to an element tree | 30 | 39 | **77%** |
-| App SDK classes with an activation entry | 1033 | 1033 | **100%** (generated, not implemented) |
+| XBF value kinds | 11 | 11 | **100%** |
+| Acceptance gates | A | A-D | **25%** |
+| Tests | 186 | - | - |
+
+Fifty-eight composition interface types are implemented; the engine imports 73, and the
+intersection is not measurable without the binary, so no percentage is claimed for it.
+The 94 composition methods that still answer `E_NOTIMPL` are listed with the subsystem
+each needs in [`docs/opencomp-stubs.md`](docs/opencomp-stubs.md): lights and effects need
+a second renderer path, expressions need an evaluator, commits needed a clock (being
+added), z-order belongs to the host window manager.
+
+### Replacing the engine: `openxaml`
+
+| surface | implemented | of | |
+| --- | ---: | ---: | ---: |
 | XAML element kinds | 4 | 91 Reactor builds | **4%** |
 | XAML runtime classes | 4 | 900 | **0.4%** |
-| Acceptance gates | A | A-D | **25%** |
-| Tests | 129 | -- | -- |
+| Dependency properties | 18 | - | - |
 
-What the percentages mean in practice:
+`StackPanel`, `Border`, `Grid` and `TextBlock` are enough to check our layout rules
+against the real engine's numbers; they are not enough to run an application, and they
+do not need to be until milestone 5. Until then the classes come from Microsoft's DLL,
+which is the whole point of Gate B.
 
-- **Composition is the finished layer.** 73 interfaces are everything the XAML engine
-  asks of it; 58 of them are implemented as Rust objects here, counting only the ones
-  the engine actually imports is not possible without the DLL in hand, and the eight a
-  first frame needs are exercised end to end: window, island, bridge, swapchain, D2D
-  target, frame. The 129 methods that still answer `E_NOTIMPL` are paths XAML has not
-  reached.
-- **`openudk` looks worse than it is**: the six real exports are the window
-  conversions a first frame needs, and the other 143 return `FALSE` or `E_NOTIMPL`
-  until something asks for them by name.
-- **The XAML numbers are the honest ones.** Four element kinds and 18 properties can
-  lay out a `StackPanel` of `Border`s, which is enough to check our layout against
-  the real engine -- not enough to run an application.
-- **Gate A is green on Windows and under Wine** (16 ms to the first frame on a
-  Windows runner, 2.8 s on Wine's software rasterizer). Gates B-D are the work the
-  ladder describes.
+The 186 tests run on three hosts: Windows, macOS, and Wine (where the Windows-shaped
+code gets a second runtime).
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
 What this project does **not** do — the boundary against Wine, DXVK and
