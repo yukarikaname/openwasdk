@@ -1,0 +1,8 @@
+/target/
+/.cache/
+/dist/
+/build/
+*.msix
+*.msixbundle
+*.appx
+*.pfx

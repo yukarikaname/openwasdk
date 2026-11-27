@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Line limit
+        run: |
+          bad=0
+          for file in $(find crates -name '*.rs'); do
+            case "$file" in
+              # Generated from metadata; its length is not hand-written.
+              */bindings.rs) continue ;;
+            esac
+            lines=$(wc -l < "$file")
+            if [ "$lines" -gt 500 ]; then
+              echo "$file: $lines lines"
+              bad=1
+            fi
+          done
+          exit $bad
+
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # The artifact is a Windows DLL. Checking it from Linux and macOS is what catches a
+          # cfg or a dependency that only compiles for the host.
+          targets: x86_64-pc-windows-msvc
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.os }}
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Check the Windows artifact
+        run: cargo check --workspace --all-targets --target x86_64-pc-windows-msvc

@@ -1,0 +1,22 @@
+[package]
+name = "opencomp"
+description = "ABI-compatible Microsoft.UI.Composition runtime"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+windows-core = "0.100"
+
+# The generated bindings use these; they are Windows-target code.
+[target.'cfg(windows)'.dependencies]
+windows-collections = "0.100"
+windows-future = "0.100"
+windows-numerics = "0.100"
+windows-reference = "0.100"
+windows-time = "0.100"
