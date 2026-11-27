@@ -30,7 +30,8 @@ existing rather than of implementing any of them.
 | `XamlCheckProcessRequirements` | `0x00000000` | `0xfa9b2008` |
 | `Application` / `Window` factories | ok | ok |
 | `Controls.*` factories, raw | **segmentation fault** | crash |
-| `Application.Start` | not yet run | returns `S_OK` without running the callback |
+| `Application.Start`, hand-written call | returns `S_OK`, no callback | returns `S_OK`, no callback |
+| `Application.Start`, generated bindings | not yet run | **blocks in its message loop** |
 
 Two conclusions follow, and both change what the next step is.
 
@@ -71,10 +72,11 @@ will have to be ours rather than Wine's.
 
 ## What the next step is
 
-`Application.Start`, called through **generated bindings**. The activation table is
-built (`xwinui activation`), so the remaining defect is in the probe: `Start` returns
-immediately -- on Wine and on Windows -- instead of running its callback, which is what
-a wrong hand-written vtable does. `crates/xaml-probe` already carries
-`IApplicationStatics::Start` and `ApplicationInitializationCallback` from the
-generator, so the measurement belongs there, not in `layout-probe`'s hand-written
-slots, and `layout-probe` should be retired once it has moved.
+The callback `Application.Start` is supposed to run. The call itself is now right --
+through the generated vtable slot and the generated delegate it blocks in the engine's
+message loop under Wine, where the hand-written call returned immediately on both hosts
+-- but the callback has not been observed. WinUI's generated entry point creates the
+`Application` object *inside* that callback, so the next thing to try is doing the
+same: create the application, give it a window, and see whether the engine then calls
+back. `layout-probe` is the same experiment with hand-written slots and should be
+retired once this works.
