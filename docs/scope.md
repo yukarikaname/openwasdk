@@ -86,6 +86,27 @@ and the App SDK package ships `win-arm64` and `win-arm64ec` binaries, so a chain
 with no Rosetta is possible if our DLLs are built for `aarch64` too. On macOS the
 x64 binaries need Rosetta, which is the only reason it came up.
 
+## Why not native
+
+Three routes exist for running a WinUI 3 application outside Windows, and only one
+of them is this project:
+
+| route | what it runs | what it costs | who already does it |
+| --- | --- | --- | --- |
+| Wine + our App SDK layer | **unmodified** Windows binaries | the App SDK's own DLLs, nothing below them | nobody |
+| a native framework, applications recompiled | applications written against it | a whole XAML runtime, control set, backend and per-language projection | Uno Platform (Apache-2.0) |
+| a native Windows | everything, unmodified | win32k, user32, combase, d3d11, d2d1 | nobody, at Darling's scale |
+
+The second route is not a cheaper version of the first: it changes the subject
+from "run this binary" to "build against us", and it duplicates a project that
+already exists. The third is Wine's job.
+
+What survives from the native idea is the **portable core**: the tree, the
+flatten into a draw list and the animation sampler have no GPU and no OS in them.
+That is why `opencomp-core` builds without wgpu, why the Windows backend is D3D11
+(the device XAML hands over), and why a second backend stays possible without a
+second set of semantics. It is not a promise to run applications natively.
+
 ## The acceptance ladder
 
 The goal is not "our tests pass", it is "an unmodified application runs". Each
