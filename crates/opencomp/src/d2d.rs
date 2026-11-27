@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::d2d_gradient::GradientCache;
-use opencomp_core::{Draw, TextureId, srgb_from_linear};
+use opencomp_core::{Draw, Shape, TextureId, srgb_from_linear};
 use windows::Win32::Foundation::HWND;
 use windows::Win32::Graphics::Direct2D::Common::{
     D2D_RECT_F, D2D1_ALPHA_MODE_IGNORE, D2D1_ALPHA_MODE_STRAIGHT, D2D1_COLOR_F, D2D1_PIXEL_FORMAT,
@@ -20,8 +20,8 @@ use windows::Win32::Graphics::Direct2D::Common::{
 use windows::Win32::Graphics::Direct2D::{
     D2D1_BITMAP_OPTIONS_CANNOT_DRAW, D2D1_BITMAP_OPTIONS_NONE, D2D1_BITMAP_OPTIONS_TARGET,
     D2D1_BITMAP_PROPERTIES1, D2D1_DEVICE_CONTEXT_OPTIONS_NONE, D2D1_FACTORY_TYPE_SINGLE_THREADED,
-    D2D1_INTERPOLATION_MODE_LINEAR, D2D1_ROUNDED_RECT, D2D1CreateFactory, ID2D1Bitmap1, ID2D1Brush,
-    ID2D1DeviceContext, ID2D1Factory1, ID2D1SolidColorBrush,
+    D2D1_INTERPOLATION_MODE_LINEAR, D2D1CreateFactory, ID2D1Bitmap1, ID2D1DeviceContext,
+    ID2D1Factory1, ID2D1SolidColorBrush,
 };
 use windows::Win32::Graphics::Direct3D::{
     D3D_DRIVER_TYPE_HARDWARE, D3D_DRIVER_TYPE_WARP, D3D_FEATURE_LEVEL_10_0, D3D_FEATURE_LEVEL_10_1,
@@ -116,6 +116,7 @@ pub struct Presenter {
     device: ID3D11Device,
     context: ID3D11DeviceContext,
     d2d: ID2D1DeviceContext,
+    factory: ID2D1Factory1,
     brush: ID2D1SolidColorBrush,
     target: Option<ID2D1Bitmap1>,
     bitmaps: HashMap<TextureId, ID2D1Bitmap1>,
@@ -221,6 +222,7 @@ impl Presenter {
             device,
             context,
             d2d,
+            factory: d2d_factory,
             brush,
             target: None,
             bitmaps: HashMap::new(),
@@ -358,33 +360,6 @@ impl Presenter {
         Some([pixel[2], pixel[1], pixel[0], pixel[3]])
     }
 
-    /// Fill the draw's rectangle with `brush`, rounded when the radius asks for it.
-    fn fill(&self, draw: &Draw, brush: &ID2D1Brush, scale: f32) {
-        let (left, top) = (draw.corners[0][0] * scale, draw.corners[0][1] * scale);
-        let (right, bottom) = (draw.corners[2][0] * scale, draw.corners[2][1] * scale);
-        // D2D has one radius for all four corners; the largest wins.
-        let radius = draw.radius.iter().copied().fold(0.0, f32::max) * scale;
-        let rect = D2D_RECT_F {
-            left,
-            top,
-            right,
-            bottom,
-        };
-        // Safety: the context is alive and `brush` was made by it.
-        unsafe {
-            if radius > 0.0 {
-                let rounded = D2D1_ROUNDED_RECT {
-                    rect,
-                    radiusX: radius,
-                    radiusY: radius,
-                };
-                self.d2d.FillRoundedRectangle(&rounded, brush);
-            } else {
-                self.d2d.FillRectangle(&rect, brush);
-            }
-        }
-    }
-
     /// Draw the list and present it.
     pub fn present(&mut self, draws: &[Draw]) -> bool {
         self.draw(draws) && self.present_frame()
@@ -407,14 +382,20 @@ impl Presenter {
                     continue;
                 }
                 self.d2d.PushAxisAlignedClip(&bounds, Default::default());
-                if let Some(gradient) = draw.gradient.as_ref() {
+                if matches!(draw.shape, Some(Shape::Line { .. })) {
+                    // A line is a stroke, so it takes the solid colour rather than a fill
+                    // brush: the ABI has no gradient stroke here and the draw list carries the
+                    // line's width, not its own ramp transform.
+                    self.brush.SetColor(&color(draw.color));
+                    crate::d2d_shape::stroke(&self.d2d, draw, &self.brush, scale);
+                } else if let Some(gradient) = draw.gradient.as_ref() {
                     // A gradient with no stops asks for a picture that is not there. Painting
                     // the flat colour instead would show a paint the client had replaced.
                     if gradient.is_drawable()
                         && let Some(brush) = self.gradients.brush(gradient)
                     {
                         self.gradients.paint(&brush, gradient, draw, scale);
-                        self.fill(draw, brush.base(), scale);
+                        crate::d2d_shape::fill(&self.d2d, &self.factory, draw, brush.base(), scale);
                     }
                 } else if let Some(bitmap) = draw.image.and_then(|id| self.bitmaps.get(&id)) {
                     let (left, top) = (draw.corners[0][0] * scale, draw.corners[0][1] * scale);
@@ -442,7 +423,7 @@ impl Presenter {
                     );
                 } else {
                     self.brush.SetColor(&color(draw.color));
-                    self.fill(draw, &self.brush, scale);
+                    crate::d2d_shape::fill(&self.d2d, &self.factory, draw, &self.brush, scale);
                 }
                 self.d2d.PopAxisAlignedClip();
             }

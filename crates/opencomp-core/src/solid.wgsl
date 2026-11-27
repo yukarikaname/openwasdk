@@ -27,6 +27,14 @@ struct Vertex {
     @location(7) gradient_a: vec2<f32>,
     // The ramp's end or radius, in local units.
     @location(8) gradient_b: vec2<f32>,
+    // -1 for a rectangle or rounded rectangle, 0 for an ellipse, 1 for a line.
+    @location(9) shape_kind: f32,
+    // The ellipse centre or the line's start, in local units.
+    @location(10) shape_a: vec2<f32>,
+    // The ellipse radii or the line's end, in local units.
+    @location(11) shape_b: vec2<f32>,
+    // The line's stroke width, in local units; zero elsewhere.
+    @location(12) shape_width: f32,
 };
 
 struct Varying {
@@ -40,6 +48,10 @@ struct Varying {
     @location(5) @interpolate(flat) gradient_kind: f32,
     @location(6) @interpolate(flat) gradient_a: vec2<f32>,
     @location(7) @interpolate(flat) gradient_b: vec2<f32>,
+    @location(8) @interpolate(flat) shape_kind: f32,
+    @location(9) @interpolate(flat) shape_a: vec2<f32>,
+    @location(10) @interpolate(flat) shape_b: vec2<f32>,
+    @location(11) @interpolate(flat) shape_width: f32,
 };
 
 @group(0) @binding(0) var source: texture_2d<f32>;
@@ -57,6 +69,10 @@ fn vs_main(vertex: Vertex) -> Varying {
     result.gradient_kind = vertex.gradient_kind;
     result.gradient_a = vertex.gradient_a;
     result.gradient_b = vertex.gradient_b;
+    result.shape_kind = vertex.shape_kind;
+    result.shape_a = vertex.shape_a;
+    result.shape_b = vertex.shape_b;
+    result.shape_width = vertex.shape_width;
     return result;
 }
 
@@ -73,6 +89,23 @@ fn rounded_box(p: vec2<f32>, half_size: vec2<f32>, radius: vec4<f32>) -> f32 {
     }
     let q = abs(p) - (half_size - vec2<f32>(r));
     return length(max(q, vec2<f32>(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}
+
+// The signed distance from `p` to an axis-aligned ellipse. The first-order approximation is
+// exact on the outline, which is the only place the coverage band looks.
+fn ellipse(p: vec2<f32>, center: vec2<f32>, radius: vec2<f32>) -> f32 {
+    let r = max(radius, vec2<f32>(0.0001, 0.0001));
+    let d = p - center;
+    let k0 = length(d / r);
+    let k1 = length(d / (r * r));
+    return k0 * (k0 - 1.0) / max(k1, 0.0001);
+}
+
+// The signed distance from `p` to a segment stroked `width` wide, with flat ends.
+fn segment(p: vec2<f32>, start: vec2<f32>, end: vec2<f32>, width: f32) -> f32 {
+    let span = end - start;
+    let h = clamp(dot(p - start, span) / max(dot(span, span), 0.0001), 0.0, 1.0);
+    return length(p - start - span * h) - width * 0.5;
 }
 
 @fragment
@@ -106,12 +139,19 @@ fn fs_main(v: Varying) -> @location(0) vec4<f32> {
     let color = texel * v.color;
 
     // A square keeps the hard edge this pipeline always had; the distance would otherwise
-    // soften the four corners a square does not have.
-    if (all(v.radius == vec4<f32>(0.0))) {
+    // soften the four corners a square does not have. A shape always measures its own outline;
+    // otherwise only a rounded rectangle needs one.
+    var d = 0.0;
+    if (v.shape_kind > 0.5) {
+        d = segment(v.local, v.shape_a, v.shape_b, v.shape_width);
+    } else if (v.shape_kind > -0.5) {
+        d = ellipse(v.local, v.shape_a, v.shape_b);
+    } else if (any(v.radius != vec4<f32>(0.0))) {
+        d = rounded_box(v.local - v.half_size, v.half_size, v.radius);
+    } else {
         return color;
     }
 
-    let d = rounded_box(v.local - v.half_size, v.half_size, v.radius);
     // The distance moves by `fwidth(d)` per device pixel, so half of that either side of the
     // outline is one pixel of coverage. No extension is needed: fwidth is core WGSL.
     let band = max(0.5 * fwidth(d), 0.0001);

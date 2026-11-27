@@ -15,6 +15,9 @@ use opencomp_core::{Keyframes, Visual as CoreVisual};
 use windows_core::Interface;
 use windows_numerics::{Vector2, Vector3};
 
+#[cfg(windows)]
+use crate::bindings::Microsoft::UI::Composition::CompositionShape;
+
 /// A node in the live tree. Shared between the COM object, its parent and any snapshot in flight.
 pub type NodeRef = Arc<Mutex<Node>>;
 
@@ -45,6 +48,10 @@ pub struct Node {
     /// The gradient a gradient brush attached; resolved against the node's size per frame.
     #[cfg(windows)]
     pub gradient: Option<crate::gradient::Spec>,
+    /// The shapes a `ShapeVisual` draws, shared with its `Shapes` collection. A plain visual
+    /// has none.
+    #[cfg(windows)]
+    pub shapes: Option<Arc<Mutex<Vec<CompositionShape>>>>,
     pub animations: Vec<Running>,
     pub children: Vec<NodeRef>,
 }
@@ -126,6 +133,8 @@ impl Node {
             surface: None,
             #[cfg(windows)]
             gradient: None,
+            #[cfg(windows)]
+            shapes: None,
             animations: Vec::new(),
             children: Vec::new(),
         }
@@ -178,7 +187,7 @@ pub fn snapshot_in_at(node: &NodeRef, parent: Vector2, now: f32) -> Option<CoreV
 }
 
 fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<CoreVisual> {
-    let (mut visual, size, children) = {
+    let (mut visual, size, children, _shapes) = {
         let node = node.lock().unwrap();
         if !node.visible {
             return None;
@@ -229,6 +238,7 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<
             gradient: None,
             uv: [0.0, 0.0, 1.0, 1.0],
             radius: node.radius,
+            shape: None,
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
         };
@@ -239,11 +249,26 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<
         } else {
             Vec::new()
         };
-        (visual, size, children)
+        #[cfg(windows)]
+        let shapes = node.shapes.clone();
+        #[cfg(not(windows))]
+        let shapes = ();
+        (visual, size, children, shapes)
     };
     for child in &children {
         if let Some(child) = snapshot_at(child, size, depth + 1, now) {
             visual.children.push(child);
+        }
+    }
+    // A shape visual paints its shapes over its children; each shape is a draw of its own,
+    // the same way a sprite is, so the transform and paint live in one node.
+    #[cfg(windows)]
+    if let Some(shapes) = _shapes {
+        let shapes = shapes.lock().unwrap().clone();
+        for shape in &shapes {
+            if let Some(child) = crate::shape::visual(shape, size) {
+                visual.children.push(child);
+            }
         }
     }
     Some(visual)

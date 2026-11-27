@@ -37,9 +37,17 @@ struct Vertex {
     gradient_a: [f32; 2],
     /// The ramp's end or radius, in the node's own units.
     gradient_b: [f32; 2],
+    /// -1 for a rectangle or rounded rectangle, 0 for an ellipse, 1 for a line.
+    shape_kind: f32,
+    /// The ellipse centre or the line's start, in the node's own units.
+    shape_a: [f32; 2],
+    /// The ellipse radii or the line's end, in the node's own units.
+    shape_b: [f32; 2],
+    /// The line's stroke width, in the node's own units; zero elsewhere.
+    shape_width: f32,
 }
 
-const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 9] = wgpu::vertex_attr_array![
+const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 13] = wgpu::vertex_attr_array![
     0 => Float32x2,
     1 => Float32x4,
     2 => Float32x2,
@@ -48,7 +56,11 @@ const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 9] = wgpu::vertex_attr_array![
     5 => Float32x4,
     6 => Float32,
     7 => Float32x2,
-    8 => Float32x2
+    8 => Float32x2,
+    9 => Float32,
+    10 => Float32x2,
+    11 => Float32x2,
+    12 => Float32
 ];
 
 const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
@@ -387,6 +399,13 @@ fn quad(draw: &Draw, scale: f32, size: (u32, u32)) -> [Vertex; 6] {
         },
         None => (-1.0, [0.0; 2], [0.0; 2]),
     };
+    // A shape replaces the rectangle's corner rounding with its own outline; the quad still
+    // covers the node's rectangle and the fragment stage discards the pixels outside.
+    let (shape_kind, shape_a, shape_b, shape_width) = match draw.shape {
+        Some(crate::Shape::Ellipse { center, radius }) => (0.0, center, radius, 0.0),
+        Some(crate::Shape::Line { start, end, width }) => (1.0, start, end, width),
+        None => (-1.0, [0.0; 2], [0.0; 2], 0.0),
+    };
     let at = |index: usize| Vertex {
         position: to_clip(draw.corners[index]),
         color,
@@ -397,6 +416,10 @@ fn quad(draw: &Draw, scale: f32, size: (u32, u32)) -> [Vertex; 6] {
         gradient_kind,
         gradient_a,
         gradient_b,
+        shape_kind,
+        shape_a,
+        shape_b,
+        shape_width,
     };
     [at(0), at(1), at(2), at(0), at(2), at(3)]
 }

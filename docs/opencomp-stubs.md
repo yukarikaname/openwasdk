@@ -7,24 +7,20 @@ At survey time there were **129 `E_NOTIMPL` bodies**. After the work recorded he
 
 | state | count |
 | --- | --- |
-| `E_NOTIMPL` bodies remaining | 85 |
-| stub bodies replaced with real code | 44 |
-| methods fully answered | 42 |
+| `E_NOTIMPL` bodies remaining | 84 |
+| stub bodies replaced with real code | 45 |
+| methods fully answered | 45 |
 
 The number above is asserted by `crates/opencomp/tests/stubs.rs`, which counts the calls in
 the crate: a page that disagrees with the code is worse than no page. A method that does its
 work and still refuses one case (a foreign animation group, a gradient property the draw list
-does not model) counts as a stub site here, because its fallback branch is still an
-`E_NOTIMPL` call. That is why `methods fully answered` is smaller than `stub bodies
-replaced`: the two single-object island lookups below keep one refusal branch each.
+does not model) counts as a stub site here, which is why the arithmetic below the line is not
+`129 - 45`.
 
-The earlier clock pass removed `GetCommitBatch`, `CreateScopedBatch`, `RequestCommitAsync` and
-`CreateAnimationController`. Each one is backed by the compositor clock described below.
-
-The last pass removed the four `IContentIslandStatics` stubs, `FindAllForCompositor`,
-`FindAllForCurrentThread`, `GetByVisual` and `GetFromId`. The two list calls answer with an
-empty array when nothing matches. The two single-object calls keep one `E_NOTIMPL` branch
-each: a miss is null in the ABI, which the generated `*_Impl` trait cannot return.
+The four bodies removed in this pass are `GetCommitBatch`, `CreateScopedBatch`,
+`RequestCommitAsync` and `CreateAnimationController`. Each one is backed by the compositor clock
+described below. The shape pass then replaced the five shape factories and gained three new
+stub sites: the two view-box methods and the dash-array getter, all explained in their tables.
 
 A method marked **later** stays `E_NOTIMPL` because the thing it needs does not exist here. The
 note says which thing. A method marked **partial** keeps a real value and only returns
@@ -86,17 +82,7 @@ transform reads as the identity matrix, scale `(1, 1)`, and zero vectors.
 | `IContentIsland` | `RasterizationScale` | returns the island's scale, `1.0` by default |
 | `IContentIsland` | `AutomationProviderRequested` / `RemoveAutomationProviderRequested` | records a token and the handler; remove forgets both |
 | `IContentIsland` | `StateChanged` / `RemoveStateChanged` | records a token and the handler; remove forgets both |
-| `IContentIslandStatics` | `FindAllForCompositor` | returns every live island whose root node samples the compositor's clock |
-| `IContentIslandStatics` | `FindAllForCurrentThread` | returns every live island created on the calling thread |
 | `IContentSiteBridge` | `SetLayoutDirectionOverride` | unwraps the `IReference` and stores the direction |
-
-The island registry holds a weak reference to each island, so it never keeps one alive.
-A lookup that cannot upgrade the weak handle prunes the entry and answers with an empty
-array, or with `E_NOTIMPL` where a single object is returned. The creator thread is
-recorded when the island is made. The compositor is the clock the root node samples, the
-same link `ICompositionObject.Compositor` follows, so a compositor from elsewhere owns no
-island here and is answered with the empty array. `GetByVisual` resolves the visual to its
-node through the identity table and answers the island whose tree contains that node.
 
 ### Gradient brushes
 
@@ -121,6 +107,34 @@ and the still-unsupported `ExtendMode`/`InterpolationSpace` choices answer throu
 `gradient::unsupported`; see the fallback table below. The reason is one layer, not seven
 spellings: the draw list has no per-gradient affine and no extend or HSL interpolation mode.
 
+### Shapes and geometry
+
+The draw list carries a primitive of its own now: an ellipse (centre and radii) or a line (two
+points and a stroke width), in the node's own units. A rounded rectangle is still the rectangle
+path with a radius. D2D fills the ellipse through an ellipse geometry and strokes the line with
+`DrawLine`; the wgpu preview measures both outlines in the fragment stage. The shape or the
+visual's own clip bounds it, and the inherited scissor still applies.
+
+| interface | method | what it now does |
+| --- | --- | --- |
+| `ICompositor5` | `CreateEllipseGeometry` | an ellipse geometry whose centre and radius round-trip |
+| `ICompositor5` | `CreateLineGeometry` | a line geometry whose endpoints round-trip |
+| `ICompositor5` | `CreateShapeVisual` | a `ContainerVisual` with a live `Shapes` list |
+| `ICompositor5` | `CreateSpriteShape` | a sprite shape with no geometry yet |
+| `ICompositor5` | `CreateSpriteShapeWithGeometry` | the same, with the geometry already set |
+| `IShapeVisual` | `Shapes` | the live `IVector<CompositionShape>` the snapshot reads |
+| `ICompositionShape` | offset, scale, rotation and centre | applied to the shape's drawn node; `TransformMatrix` is stored and answered but not applied, like a visual's |
+| `ICompositionSpriteShape` | `FillBrush` / `StrokeBrush` / `StrokeThickness` | the paint the shape's primitive draws with |
+
+An ellipse fills with `FillBrush`; a line strokes with `StrokeBrush` at `StrokeThickness`. The
+stroke of an ellipse is not drawn, because a draw carries one paint, not a fill and a stroke at
+once. The remaining dash and cap properties are stored and answered, but only the thickness
+reaches a pixel. A shape that is not attached to a `ShapeVisual` still answers every property.
+
+Only the ellipse and the line have a draw-list primitive. A sprite shape built on a rounded
+rectangle, a path or a container shape paints nothing today; the rounded rectangle still works as
+a geometric clip, where it becomes the visual's corner radius.
+
 ### Partial methods
 
 These do real work but still contain one `E_NOTIMPL` branch. They also appear in the remaining
@@ -134,10 +148,9 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `ICompositionObject5` | `StartAnimationWithController` | starts on a visual with a controller this DLL made | a foreign controller keeps no playback here |
 | `IContentIsland` | `AppData` | returns stored data | null data cannot be expressed as a return value |
 | `IContentIsland` | `LayoutDirectionOverride` | returns the stored override | null override cannot be expressed |
-| `IContentIslandStatics` | `GetByVisual` | returns the island whose tree contains the visual | no island means null in the ABI |
-| `IContentIslandStatics` | `GetFromId` | returns the island with that id | no island means null in the ABI |
 | `IVisual2` | `ParentForTransform` | returns the stored visual | null visual cannot be expressed |
 | `ICompositionGeometricClip` | `Geometry` | returns the stored geometry | null geometry cannot be expressed |
+| `ICompositionSpriteShape` | `Geometry` | returns the stored geometry | null geometry cannot be expressed |
 | `ICompositionSurfaceBrush` | `Surface` | returns the stored surface | null surface cannot be expressed |
 
 ## Remaining `E_NOTIMPL`
@@ -169,6 +182,20 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `Geometry` | partial | returns the stored geometry; an unset one is null in the ABI |
 | `ViewBox` | later | the `CompositionViewBox` object type is not implemented |
 | `SetViewBox` | later | same |
+
+### `IShapeVisual`
+
+| method | status | note |
+| --- | --- | --- |
+| `ViewBox` | later | the `CompositionViewBox` object type is not implemented |
+| `SetViewBox` | later | same |
+
+### `ICompositionSpriteShape`
+
+| method | status | note |
+| --- | --- | --- |
+| `Geometry` | partial | returns the stored geometry; an unset one is null in the ABI |
+| `StrokeDashArray` | later | the draw list has no dash pattern for a stroked line |
 
 ### `ICompositor`
 
@@ -211,16 +238,11 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `CreateBounceScalarAnimation` | later | bounce natural-motion animation object and solver |
 | `CreateBounceVector2Animation` | later | same |
 | `CreateBounceVector3Animation` | later | same |
-| `CreateContainerShape` | later | shape/geometry object type |
-| `CreateEllipseGeometry` | later | geometry object type the renderer cannot cut |
-| `CreateLineGeometry` | later | same |
+| `CreateContainerShape` | later | container-shape object and a nested shape list |
 | `CreatePathGeometry` | later | path geometry object and path flattening |
 | `CreatePathGeometryWithPath` | later | same |
 | `CreatePathKeyFrameAnimation` | later | path animation object and geometry morphing |
-| `CreateRectangleGeometry` | later | geometry object type the renderer cannot cut |
-| `CreateShapeVisual` | later | shape visual object and renderer fill/stroke |
-| `CreateSpriteShape` | later | sprite shape object and renderer fill/stroke |
-| `CreateSpriteShapeWithGeometry` | later | same |
+| `CreateRectangleGeometry` | later | the rounded-rectangle path has a radius but no per-shape offset/size; a rectangle shape would need the shape draw to carry that box |
 | `CreateViewBox` | later | `CompositionViewBox` object type |
 
 ### `ICompositor6`
@@ -308,8 +330,10 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 
 | method | status | note |
 | --- | --- | --- |
-| `GetByVisual` | partial | returns the island whose tree contains the visual; no island is null in the ABI |
-| `GetFromId` | partial | returns the island with that id; no island is null in the ABI |
+| `FindAllForCompositor` | later | islands do not record their compositor |
+| `FindAllForCurrentThread` | later | no thread or apartment association |
+| `GetByVisual` | later | no reverse visual-to-island map that keeps the island COM object |
+| `GetFromId` | later | same |
 
 ### Animation objects
 
@@ -339,9 +363,10 @@ These are not ABI methods; they are the helper functions the animation group cal
 The renderer is a tree of rectangles, textures and rounded corners. Anything that would need a
 second renderer path is left out rather than accepted and dropped:
 
-- **Lights, shadows, effects and shapes** have no draw path in `opencomp-core`, and a getter
-  that returned a configured object would promise a picture that never appears. Gradients do
-  have one now.
+- **Lights, shadows and effects** have no draw path in `opencomp-core`, and a getter that
+  returned a configured object would promise a picture that never appears. Gradients and the
+  ellipse and line shapes do have one now; paths, container shapes and rectangle shapes still
+  do not.
 - **Expressions** need a parser and an evaluator, not just a field.
 - **`ICompositorController`** needs a controller object, and this metadata gives the class no
   activation factory, so a client cannot make one to call `CommitNeeded` on. `GetCommitBatch`,

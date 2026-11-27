@@ -52,6 +52,8 @@ mod d2d;
 #[cfg(windows)]
 mod d2d_gradient;
 #[cfg(windows)]
+mod d2d_shape;
+#[cfg(windows)]
 mod easing;
 #[cfg(windows)]
 mod geometry;
@@ -69,6 +71,10 @@ mod object;
 mod present;
 #[cfg(windows)]
 mod propertyset;
+#[cfg(windows)]
+mod shape;
+#[cfg(windows)]
+mod shape_collection;
 #[cfg(windows)]
 mod step_easing;
 

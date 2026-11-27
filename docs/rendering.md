@@ -12,12 +12,17 @@ calls into the same tree.
 ## The shape of a frame
 
 Each frame flattens the root `Visual` (`flatten_root`) into a `Vec<Draw>`: one record per visible
-rectangle, in draw order — parent first, children in collection order, later children on top. A
+node, in draw order — parent first, children in collection order, later children on top. A
 `Draw` carries four canvas-space corners, a scissor, a straight RGBA colour and optionally a
 bitmap uv rectangle or a gradient. Flattening composes the transform from the root down,
 multiplies opacity into the colour's alpha and intersects the clip into the scissor. A gradient
 draw uses the colour's alpha as its opacity and ignores its rgb. A visual is skipped when its
 size, effective alpha or colour alpha is zero; a draw whose scissor misses the target is dropped.
+
+A draw can also carry a `Shape`: an ellipse (centre and radii) or a line (two points and a
+stroke width), in the node's own units. The quad still covers the node's rectangle and the
+fragment stage discards the pixels outside the outline, so a rotated shape keeps its local
+geometry. Otherwise the rectangle is the primitive, rounded by the four corner radii.
 
 `Renderer::render` builds one vertex buffer for the whole frame — six vertices, two triangles per
 `Draw`, clip-space position plus colour per vertex — then issues one `draw` per rectangle with the
@@ -110,8 +115,8 @@ No MSAA (`MultisampleState::default()` is one sample), no depth buffer, no times
 
 ## What is missing
 
-The renderer has one primitive — a transformed rectangle — painted four ways: a flat colour,
-a rounded rectangle, a textured rectangle or a gradient. So:
+The renderer has one quad — a transformed rectangle — painted several ways: a flat colour, a
+rounded rectangle, an ellipse, a stroked line, a textured rectangle or a gradient. So:
 
 | feature | state |
 | --- | --- |
@@ -119,7 +124,8 @@ a rounded rectangle, a textured rectangle or a gradient. So:
 | bitmaps | present: a visual names a texture id and a uv rectangle; a host uploads `Rgba8UnormSrgb` bytes |
 | composition surfaces | present as CPU bitmaps: `CompositionDrawingSurface` + `CompositionSurfaceBrush`, with no D2D interop |
 | rounded corners | present, per corner, shaped by a distance in the fragment stage |
-| ellipses, paths, arbitrary geometry | absent; the geometry factories answer `E_NOTIMPL` |
+| ellipses and lines | present as draw-list shapes, anti-aliased by the same distance; the Windows path fills the ellipse and strokes the line with D2D |
+| paths, arbitrary geometry, rectangle/container shapes | absent; the remaining geometry factories answer `E_NOTIMPL` |
 | effects, shadows, lights, backdrop | absent |
 | gradient brushes | present: linear and radial, stops sorted by offset, interpolated in sRGB |
 | layers, masks, nine-grid, 3D | absent |

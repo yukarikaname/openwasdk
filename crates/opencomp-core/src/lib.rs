@@ -22,7 +22,7 @@ pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
 pub use gradient::{Gradient, GradientShape, GradientStop, RAMP_ENTRIES};
 pub use texture_id::{TextureId, WHITE};
-pub use tree::{Draw, Rect, Visual};
+pub use tree::{Draw, Rect, Shape, Visual};
 
 #[cfg(feature = "preview")]
 pub use host::Host;
@@ -100,6 +100,39 @@ mod tests {
         let pixels = renderer.render_to_pixels();
         assert_eq!(pixel(&pixels, 16, 5, 5), [255, 0, 0, 255]);
         assert_eq!(pixel(&pixels, 16, 10, 10), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn a_shape_visual_draws_its_ellipse_outline() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.set_root(Visual::rect(16.0, 16.0, [1.0, 0.0, 0.0, 1.0]).with_shape(
+            Shape::Ellipse {
+                center: [8.0, 8.0],
+                radius: [8.0, 8.0],
+            },
+        ));
+        let pixels = renderer.render_to_pixels();
+        assert_eq!(pixel(&pixels, 16, 8, 8), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 0, 0), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn a_line_shape_strokes_only_its_width() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.set_root(
+            Visual::rect(16.0, 16.0, [1.0, 0.0, 0.0, 1.0]).with_shape(Shape::Line {
+                start: [2.0, 8.0],
+                end: [14.0, 8.0],
+                width: 4.0,
+            }),
+        );
+        let pixels = renderer.render_to_pixels();
+        assert_eq!(pixel(&pixels, 16, 8, 8), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 8, 2), [0, 0, 255, 255]);
     }
 
     #[test]

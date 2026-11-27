@@ -135,10 +135,10 @@ impl comp::ICompositor5_Impl for crate::compositor::Compositor_Impl {
         not_implemented()
     }
     fn CreateEllipseGeometry(&self) -> windows_core::Result<comp::CompositionEllipseGeometry> {
-        not_implemented()
+        crate::geometry::ellipse()
     }
     fn CreateLineGeometry(&self) -> windows_core::Result<comp::CompositionLineGeometry> {
-        not_implemented()
+        crate::geometry::line()
     }
     fn CreatePathGeometry(&self) -> windows_core::Result<comp::CompositionPathGeometry> {
         not_implemented()
@@ -161,16 +161,16 @@ impl comp::ICompositor5_Impl for crate::compositor::Compositor_Impl {
         crate::geometry::rounded_rectangle()
     }
     fn CreateShapeVisual(&self) -> windows_core::Result<comp::ShapeVisual> {
-        not_implemented()
+        crate::visual::shape(self.state.clock.clone())
     }
     fn CreateSpriteShape(&self) -> windows_core::Result<comp::CompositionSpriteShape> {
-        not_implemented()
+        crate::shape::sprite_shape(None)
     }
     fn CreateSpriteShapeWithGeometry(
         &self,
-        _geometry: windows_core::Ref<comp::CompositionGeometry>,
+        geometry: windows_core::Ref<comp::CompositionGeometry>,
     ) -> windows_core::Result<comp::CompositionSpriteShape> {
-        not_implemented()
+        crate::shape::sprite_shape(geometry.cloned())
     }
     fn CreateViewBox(&self) -> windows_core::Result<comp::CompositionViewBox> {
         not_implemented()

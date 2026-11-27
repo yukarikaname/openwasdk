@@ -11,6 +11,22 @@
 use crate::TextureId;
 use crate::gradient::Gradient;
 
+/// A primitive a node paints instead of its rectangle, in the node's own units.
+///
+/// A rounded rectangle is the default path and stays a rectangle with radii; only the two
+/// shapes a backend cannot spell that way get a variant here.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Shape {
+    /// An ellipse centred on `center` with one radius per axis.
+    Ellipse { center: [f32; 2], radius: [f32; 2] },
+    /// A segment stroked `width` units wide, with flat ends.
+    Line {
+        start: [f32; 2],
+        end: [f32; 2],
+        width: f32,
+    },
+}
+
 /// A rectangle in canvas pixels: origin, then size.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rect {
@@ -60,6 +76,8 @@ pub struct Visual {
     /// Corner radii clockwise from the top-left, in the node's own units. Zero is a square
     /// corner, and a radius past half the shorter side is clamped.
     pub radius: [f32; 4],
+    /// A primitive painted inside the node's rectangle; `None` fills the rectangle itself.
+    pub shape: Option<Shape>,
     pub children: Vec<Visual>,
 }
 
@@ -78,6 +96,7 @@ impl Default for Visual {
             gradient: None,
             uv: [0.0, 0.0, 1.0, 1.0],
             radius: [0.0; 4],
+            shape: None,
             children: Vec::new(),
         }
     }
@@ -130,6 +149,12 @@ impl Visual {
     /// Round all four corners by the same radius, in the node's own units.
     pub fn rounded(mut self, radius: f32) -> Self {
         self.radius = [radius; 4];
+        self
+    }
+
+    /// Painted as `shape` inside this node's rectangle instead of as a filled rectangle.
+    pub fn with_shape(mut self, shape: Shape) -> Self {
+        self.shape = Some(shape);
         self
     }
 
@@ -262,6 +287,8 @@ pub struct Draw {
     pub size: [f32; 2],
     /// The four corner radii, in the node's own units and clamped to half the shorter side.
     pub radius: [f32; 4],
+    /// The primitive to paint inside `corners`; `None` fills the rectangle itself.
+    pub shape: Option<Shape>,
 }
 
 /// Flatten a root tree, whose parent space is the canvas, into draw order.
@@ -307,6 +334,7 @@ fn flatten(visual: &Visual, parent: Affine, opacity: f32, clip: Option<Rect>, ou
             uv: visual.uv,
             size: visual.size,
             radius: visual.radius.map(|radius| radius.clamp(0.0, limit)),
+            shape: visual.shape,
         });
     }
 
@@ -370,6 +398,21 @@ mod tests {
         // The flat colour keeps only its alpha; the ramp is what the backend paints.
         assert_eq!(draws[0].color, [1.0, 0.0, 0.0, 1.0]);
         assert_eq!(draws[0].gradient.as_ref(), Some(&gradient));
+    }
+
+    #[test]
+    fn a_shape_reaches_the_draw_list_as_a_shape() {
+        let shape = Shape::Ellipse {
+            center: [4.0, 4.0],
+            radius: [3.0, 2.0],
+        };
+        let visual = crate::Visual::rect(8.0, 8.0, [1.0, 0.0, 0.0, 1.0]).with_shape(shape);
+        let draws = visual.draws();
+        assert_eq!(draws.len(), 1);
+        // The colour is still the paint; the primitive is what carries the outline.
+        assert_eq!(draws[0].shape, Some(shape));
+        assert_eq!(draws[0].color, [1.0, 0.0, 0.0, 1.0]);
+        assert_eq!(draws[0].radius, [0.0; 4]);
     }
 
     #[test]

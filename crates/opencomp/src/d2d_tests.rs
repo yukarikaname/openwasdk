@@ -1,7 +1,7 @@
 //! The presenter's tests: a real window, a real device, and the pixels it drew.
 
 use super::*;
-use opencomp_core::{Gradient, GradientShape, GradientStop, Rect};
+use opencomp_core::{Gradient, GradientShape, GradientStop, Rect, Shape};
 use windows::Win32::UI::WindowsAndMessaging::{
     CreateWindowExW, DestroyWindow, WS_OVERLAPPEDWINDOW,
 };
@@ -40,6 +40,7 @@ fn draws() -> Vec<Draw> {
         uv: [0.0, 0.0, 1.0, 1.0],
         size: [64.0, 64.0],
         radius: [8.0; 4],
+        shape: None,
     }]
 }
 
@@ -124,6 +125,7 @@ fn a_linear_gradient_runs_from_dark_to_light() {
         uv: [0.0, 0.0, 1.0, 1.0],
         size: [64.0, 64.0],
         radius: [0.0; 4],
+        shape: None,
     }];
     assert!(presenter.draw(&draws));
     let dark = presenter.read_pixel(4, 32).expect("pixel");
@@ -135,6 +137,47 @@ fn a_linear_gradient_runs_from_dark_to_light() {
     assert!(
         light[0] > 195 && light[1] > 195 && light[2] > 195,
         "end of the ramp was {light:?}"
+    );
+    unsafe {
+        let _ = DestroyWindow(hwnd);
+    }
+}
+
+#[test]
+fn an_ellipse_paints_its_inside_and_leaves_the_corner() {
+    let hwnd = window();
+    let Some(mut presenter) = Presenter::new(hwnd.0 as u64, 64, 64) else {
+        unsafe {
+            let _ = DestroyWindow(hwnd);
+        }
+        return;
+    };
+    // A red ellipse of radius 24 about the centre of the 64x64 surface.
+    let draws = vec![Draw {
+        corners: [[0.0, 0.0], [64.0, 0.0], [64.0, 64.0], [0.0, 64.0]],
+        scissor: Rect::new(0.0, 0.0, 64.0, 64.0),
+        color: [1.0, 0.0, 0.0, 1.0],
+        image: None,
+        gradient: None,
+        uv: [0.0, 0.0, 1.0, 1.0],
+        size: [64.0, 64.0],
+        radius: [0.0; 4],
+        shape: Some(Shape::Ellipse {
+            center: [32.0, 32.0],
+            radius: [24.0, 24.0],
+        }),
+    }];
+    assert!(presenter.draw(&draws));
+    let centre = presenter.read_pixel(32, 32).expect("pixel");
+    assert!(
+        centre[0] > 240 && centre[1] < 16 && centre[2] < 16,
+        "{centre:?}"
+    );
+    // The corner is outside the ellipse and keeps the clear colour.
+    let corner = presenter.read_pixel(1, 1).expect("pixel");
+    assert!(
+        corner[0] < 16 && corner[1] < 16 && corner[2] < 16,
+        "{corner:?}"
     );
     unsafe {
         let _ = DestroyWindow(hwnd);

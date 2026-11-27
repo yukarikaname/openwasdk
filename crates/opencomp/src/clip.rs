@@ -1,9 +1,9 @@
 //! `InsetClip` and `CompositionGeometricClip`: the two shapes a visual can be clipped to.
 //!
-//! The insets of an inset clip are copied into the visual when the clip is attached, the same
-//! shortcut the brush takes. A geometric clip keeps the geometry it was built with; a rounded
-//! rectangle is the one geometry the renderer understands, so it becomes the visual's corner
-//! radius and its rectangle becomes the clip the children inherit.
+//! A geometric clip keeps the geometry it was built with; a rounded
+//! rectangle is the one geometry the renderer understands as a clip, so it becomes the visual's
+//! corner radius and its rectangle becomes the clip the children inherit. An ellipse or a line
+//! draws through a `ShapeVisual`, not as a clip.
 //!
 //! A clip whose insets are all zero clips nothing, which is what a client gets before it sets
 //! them.

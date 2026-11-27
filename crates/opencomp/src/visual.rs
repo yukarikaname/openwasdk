@@ -8,9 +8,10 @@
 use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    CompositionBrush, CompositionShadow, ContainerVisual, ICompositionColorBrush,
-    ICompositionObject, ICompositionSurfaceBrush, IContainerVisual, IContainerVisual_Impl,
-    ISpriteVisual, ISpriteVisual_Impl, IVisual, SpriteVisual, VisualCollection,
+    CompositionBrush, CompositionShadow, CompositionViewBox, ContainerVisual,
+    ICompositionColorBrush, ICompositionObject, ICompositionSurfaceBrush, IContainerVisual,
+    IContainerVisual_Impl, IShapeVisual, IShapeVisual_Impl, ISpriteVisual, ISpriteVisual_Impl,
+    IVisual, ShapeVisual, SpriteVisual, VisualCollection,
 };
 use crate::node::{self, Node, NodeRef};
 use crate::object::prelude::*;
@@ -54,14 +55,59 @@ pub struct SpriteVisualObject {
     parent_for_transform: Mutex<Option<Visual>>,
 }
 
+/// A `ContainerVisual` that also paints a list of shapes.
+#[windows_core::implement(
+    ICompositionObject,
+    ICompositionObject2,
+    ICompositionObject4,
+    ICompositionObject5,
+    IContainerVisual,
+    IVisual,
+    IVisual2,
+    IVisual3,
+    IVisual4,
+    IShapeVisual
+)]
+pub struct ShapeVisualObject {
+    node: NodeRef,
+    clip: Mutex<Option<CompositionClip>>,
+    parent_for_transform: Mutex<Option<Visual>>,
+}
+
 composition_object!(ContainerVisualObject_Impl, node);
 composition_object!(SpriteVisualObject_Impl, node);
+composition_object!(ShapeVisualObject_Impl, node);
 visual_trait!(ContainerVisualObject_Impl);
 visual_trait!(SpriteVisualObject_Impl);
-
+visual_trait!(ShapeVisualObject_Impl);
 impl IContainerVisual_Impl for ContainerVisualObject_Impl {
     fn Children(&self) -> Result<VisualCollection> {
         crate::collection::create(self.node.clone())
+    }
+}
+
+impl IContainerVisual_Impl for ShapeVisualObject_Impl {
+    fn Children(&self) -> Result<VisualCollection> {
+        crate::collection::create(self.node.clone())
+    }
+}
+
+impl IShapeVisual_Impl for ShapeVisualObject_Impl {
+    fn Shapes(
+        &self,
+    ) -> Result<crate::bindings::Microsoft::UI::Composition::CompositionShapeCollection> {
+        let shapes = self.node.lock().unwrap().shapes.clone();
+        crate::shape_collection::collection(shapes.unwrap_or_default())
+    }
+
+    // A view box maps the shapes' coordinates into the visual's; the renderer has no
+    // coordinate conversion, so nothing reads one.
+    fn ViewBox(&self) -> Result<CompositionViewBox> {
+        crate::object::not_implemented()
+    }
+
+    fn SetViewBox(&self, _value: windows_core::Ref<CompositionViewBox>) -> Result<()> {
+        crate::object::not_implemented()
     }
 }
 
@@ -149,6 +195,20 @@ pub fn sprite(clock: std::sync::Arc<crate::clock::Clock>) -> Result<SpriteVisual
         node: node.clone(),
         clip: Mutex::new(None),
         brush: Mutex::new(None),
+        parent_for_transform: Mutex::new(None),
+    }
+    .into();
+    node::publish(&object, &node);
+    object.cast()
+}
+
+/// A `ShapeVisual` with no shapes, which paints nothing until its list has one.
+pub fn shape(clock: std::sync::Arc<crate::clock::Clock>) -> Result<ShapeVisual> {
+    let node = Node::with_clock(clock);
+    node.lock().unwrap().shapes = Some(std::sync::Arc::new(Mutex::new(Vec::new())));
+    let object: IShapeVisual = ShapeVisualObject {
+        node: node.clone(),
+        clip: Mutex::new(None),
         parent_for_transform: Mutex::new(None),
     }
     .into();
