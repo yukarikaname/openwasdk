@@ -105,6 +105,18 @@ pub struct Presenter {
 impl Presenter {
     /// Build the device, the swapchain and the D2D context for `hwnd`.
     pub fn new(hwnd: u64, width: u32, height: u32) -> Option<Self> {
+        match Self::create(hwnd, width, height) {
+            Ok(presenter) => Some(presenter),
+            Err(stage) => {
+                // A bridge that cannot present still answers S_OK, so this line is the only
+                // signal a client gets about the device.
+                eprintln!("opencomp: no presenter: {stage} failed");
+                None
+            }
+        }
+    }
+
+    fn create(hwnd: u64, width: u32, height: u32) -> Result<Self, &'static str> {
         let (width, height) = (width.max(1), height.max(1));
         let mut device = None;
         let mut context = None;
@@ -126,13 +138,13 @@ impl Presenter {
                 None,
                 Some(&mut context),
             )
-            .ok()?;
         }
-        let device: ID3D11Device = device?;
-        let context: ID3D11DeviceContext = context?;
+        .map_err(|_| "D3D11CreateDevice")?;
+        let device: ID3D11Device = device.ok_or("D3D11 device")?;
+        let context: ID3D11DeviceContext = context.ok_or("D3D11 context")?;
 
-        let factory: IDXGIFactory2 =
-            unsafe { CreateDXGIFactory2(DXGI_CREATE_FACTORY_FLAGS(0)) }.ok()?;
+        let factory: IDXGIFactory2 = unsafe { CreateDXGIFactory2(DXGI_CREATE_FACTORY_FLAGS(0)) }
+            .map_err(|_| "CreateDXGIFactory2")?;
         let desc = DXGI_SWAP_CHAIN_DESC1 {
             Width: width,
             Height: height,
@@ -153,16 +165,18 @@ impl Presenter {
         let swapchain = unsafe {
             factory.CreateSwapChainForHwnd(&device, HWND(hwnd as *mut _), &desc, None, None)
         }
-        .ok()?;
+        .map_err(|_| "CreateSwapChainForHwnd")?;
 
         let d2d_factory: ID2D1Factory1 =
-            unsafe { D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, None) }.ok()?;
-        let dxgi_device: IDXGIDevice = device.cast().ok()?;
-        let d2d_device = unsafe { d2d_factory.CreateDevice(&dxgi_device) }.ok()?;
-        let d2d =
-            unsafe { d2d_device.CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE) }.ok()?;
-        let brush =
-            unsafe { d2d.CreateSolidColorBrush(&color([1.0, 1.0, 1.0, 1.0]), None) }.ok()?;
+            unsafe { D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, None) }
+                .map_err(|_| "D2D1CreateFactory")?;
+        let dxgi_device: IDXGIDevice = device.cast().map_err(|_| "IDXGIDevice")?;
+        let d2d_device = unsafe { d2d_factory.CreateDevice(&dxgi_device) }
+            .map_err(|_| "ID2D1Factory1::CreateDevice")?;
+        let d2d = unsafe { d2d_device.CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE) }
+            .map_err(|_| "CreateDeviceContext")?;
+        let brush = unsafe { d2d.CreateSolidColorBrush(&color([1.0, 1.0, 1.0, 1.0]), None) }
+            .map_err(|_| "CreateSolidColorBrush")?;
         let mut presenter = Self {
             swapchain,
             device,
@@ -174,8 +188,10 @@ impl Presenter {
             size: (width, height),
             scale: 1.0,
         };
-        presenter.bind_target()?;
-        Some(presenter)
+        presenter
+            .bind_target()
+            .ok_or("CreateBitmapFromDxgiSurface")?;
+        Ok(presenter)
     }
 
     pub fn size(&self) -> (u32, u32) {

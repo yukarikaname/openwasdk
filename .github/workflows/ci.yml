@@ -63,6 +63,12 @@ jobs:
       - name: Test
         run: cargo test --workspace
 
+      # A crash in a test takes the captured output with it, so the gate is rerun with
+      # `--nocapture`: its last mark on stderr names the call that faulted.
+      - name: Rerun the gate with output
+        if: failure()
+        run: cargo test -p opencomp --test gate_a -- --nocapture --test-threads=1
+
       # The wgpu preview and its renderer tests are behind a feature, so the run
       # above skips them.
       - name: Test the preview renderer
@@ -142,7 +148,7 @@ jobs:
           echo "running $test_exe"
           # `timeout` inside `xvfb-run`: wrapping the wrapper leaves wine alive when the
           # wrapper is killed, and the step then waits for the job timeout anyway.
-          xvfb-run -a timeout -k 5 300 "$wine" "$test_exe" --test-threads=1 || code=$?
+          xvfb-run -a timeout -k 5 300 "$wine" "$test_exe" --test-threads=1 --nocapture || code=$?
           if [ "${code:-0}" = 124 ] || [ "${code:-0}" = 137 ]; then
             echo "the test run was killed after the timeout; see the log above"
           fi

@@ -112,11 +112,14 @@ impl Drop for Window {
 
 fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>) {
     let (width, height) = shared.size();
+    eprintln!("opencomp: frame thread started for a {width}x{height} window");
     let Some(mut presenter) = Presenter::new(hwnd, width, height) else {
         eprintln!("opencomp: no device for this window; nothing will be presented");
         return;
     };
+    eprintln!("opencomp: presenter ready");
     let mut current = presenter.size();
+    let mut reported = false;
     while !shared.stopped() {
         let (width, height) = shared.size();
         if (width, height) != current {
@@ -130,7 +133,11 @@ fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>) {
         if let Some(tree) = node::snapshot_in(&root, parent) {
             let draws = tree.draws();
             upload_surfaces(&mut presenter, &root);
-            presenter.present(&draws);
+            let presented = presenter.present(&draws);
+            if presented && !reported {
+                reported = true;
+                eprintln!("opencomp: first frame presented");
+            }
         }
         std::thread::sleep(INTERVAL);
     }

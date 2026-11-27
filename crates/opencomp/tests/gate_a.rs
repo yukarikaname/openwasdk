@@ -3,6 +3,10 @@
 //! The client binary runs the same path, but a panic there is a page fault with no
 //! symbol. As a test it is a Rust panic with a backtrace, and it runs both on Windows
 //! and under Wine in CI, which is where the graphics stack differs.
+//!
+//! Every step is marked on stderr. A crash takes the test's captured output with it,
+//! so the CI job reruns this test with `--nocapture` and the last mark names the call
+//! that faulted.
 
 #![cfg(windows)]
 
@@ -28,6 +32,11 @@ use windows_numerics::Vector2;
 
 const WIDTH: i32 = 160;
 const HEIGHT: i32 = 120;
+
+/// Say where the test is. Unbuffered, so a fault does not take it along.
+fn mark(step: &str) {
+    eprintln!("gate_a: {step}");
+}
 
 fn handle(name: &HSTRING) -> *mut c_void {
     unsafe { std::mem::transmute_copy(name) }
@@ -79,15 +88,19 @@ fn window() -> HWND {
 
 #[test]
 fn a_window_presents_a_frame() {
+    mark("window");
     let hwnd = window();
+    mark("compositor");
     let compositor = compositor();
 
     // A root that fills the island, with one red sprite in it.
+    mark("container");
     let root = compositor.CreateContainerVisual().expect("container");
     let visual: IVisual2 = root.cast().expect("IVisual2");
     visual
         .SetRelativeSizeAdjustment(Vector2 { x: 1.0, y: 1.0 })
         .expect("relative size");
+    mark("sprite");
     let sprite = compositor.CreateSpriteVisual().expect("sprite");
     let sprite_visual: IVisual = sprite.cast().expect("IVisual");
     sprite_visual
@@ -119,10 +132,12 @@ fn a_window_presents_a_frame() {
     let root_visual: opencomp::bindings::Microsoft::UI::Composition::Visual =
         root.cast().expect("Visual");
 
+    mark("island statics");
     let island_statics: IContentIslandStatics = factory("Microsoft.UI.Content.ContentIsland")
         .cast()
         .expect("statics");
     let mut island_raw: *mut c_void = std::ptr::null_mut();
+    mark("ContentIsland::Create");
     // Safety: the out pointer is ours and the statics object is alive.
     let island = unsafe {
         (Interface::vtable(&island_statics).Create)(
@@ -131,14 +146,17 @@ fn a_window_presents_a_frame() {
             &mut island_raw,
         )
     };
+    mark("island created");
     assert!(island.0 >= 0, "ContentIsland::Create = {:#x}", island.0);
     assert!(!island_raw.is_null(), "no island");
 
+    mark("bridge statics");
     let bridge_statics: IDesktopChildSiteBridgeStatics =
         factory("Microsoft.UI.Content.DesktopChildSiteBridge")
             .cast()
             .expect("statics");
     let mut raw: *mut c_void = std::ptr::null_mut();
+    mark("DesktopChildSiteBridge::Create");
     // Safety: the window outlives the bridge, which is dropped before it.
     let result = unsafe {
         (Interface::vtable(&bridge_statics).Create)(
@@ -167,14 +185,18 @@ fn a_window_presents_a_frame() {
         width: WIDTH,
         height: HEIGHT,
     };
+    mark("MoveAndResize");
     bridge.MoveAndResize(rect).expect("resize");
+    mark("Connect");
     bridge
         .Connect(&unsafe {
             opencomp::bindings::Microsoft::UI::Content::ContentIsland::from_raw(island_raw)
         })
         .expect("connect");
     bridge.MoveAndResize(rect).expect("resize after connect");
+    mark("Show");
     bridge.Show().expect("show");
+    mark("waiting for a frame");
 
     // The presenter thread creates the device, the swapchain and the D2D target before
     // its first frame; on a CI runner that is not 160 ms of work. Wait for the first
@@ -192,10 +214,13 @@ fn a_window_presents_a_frame() {
         std::thread::sleep(Duration::from_millis(16));
     }
 
+    mark("Hide");
     bridge.Hide().expect("hide");
     let presented = opencomp::frames_presented();
+    mark("DestroyWindow");
     unsafe {
         let _ = DestroyWindow(hwnd);
     }
     assert!(presented > 0, "no frame reached the window");
+    mark("done");
 }
