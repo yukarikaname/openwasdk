@@ -142,6 +142,14 @@ compiles XAML to XBF at run time, which gives us a corpus to diff against
 Step 2 is the cost: 1,008 methods, each backed by a dependency property. Step 3
 is the risk: it needs the Content gap closed, and that behaviour is unwritten.
 
+## A caveat on the tool survey
+
+The XBF facts above were read from files fetched by path (`dxaml/xcp/tools/DumpXbf`,
+`dxaml/xcp/core/Parser`, `StableXbfIndexes.g.h`). The survey of *other* XBF tooling names the
+projects that could be reached and checked one by one (`WalkingCat/XbfDump`,
+`TeamGnome/XbfDecompiler`, `0x5bfa/XbfKit`, `riverar/xbfdump`); it is not a proven-exhaustive
+list, and Uno's XBF handling is unverified rather than absent.
+
 ## Unknowns
 
 1. Who calls `XamlCheckProcessRequirements`, `OverrideXamlMetadataProvider` and
