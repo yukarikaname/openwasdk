@@ -158,6 +158,30 @@ The remaining 2,144 unresolved identifiers are used only inside
 `Microsoft.ui.xaml.dll`. Their neighbours include `IDWrite*`, `ID2D1*` and
 XAML's own internal interfaces; they do not constrain `opencomp`.
 
+## What each DLL needs to load
+
+The import tables say which graphics stack each layer actually uses, which is not
+obvious from the names:
+
+| DLL | Imports | Graphics |
+| --- | --- | --- |
+| `Microsoft.ui.xaml.dll` | 33 | `DWrite.dll`, `d2d1.dll`, `d3d11.dll`, `UxTheme.dll`, `urlmon.dll` |
+| `dcompi.dll` | 54 | `dcomp.dll`, `d2d1.dll`, `d3d11.dll`, `dxgi.dll`, `marshal.dll`, `wuceffectsi.dll` |
+| `dwmcorei.dll` | 51 | `dcomp.dll`, `d2d1.dll`, `d3d11.dll`, `dxgi.dll`, `D3DCOMPILER_47.dll`, `WindowsCodecs.dll` |
+| `DwmSceneI.dll` | 29 | `d2d1.dll`, `d3d11.dll`, `dxgi.dll` |
+| `marshal.dll` | 11 | `Microsoft.UI.Composition.OSSupport.dll`, `ntdll.dll` |
+| `Microsoft.UI.Xaml.Internal.dll` | 5 | nothing: CRT and `KERNEL32` |
+
+Three consequences:
+
+- XAML draws with D2D and DWrite directly, not only through composition surfaces.
+  Text and shapes come out of XAML as pixels, which is why a replacement needs
+  those libraries even if it never implements a surface brush.
+- The renderer compiles its shaders at run time: `D3DCOMPILER_47.dll` is linked
+  by the compositor core, so Wine needs that DLL as well as D3D11.
+- `Microsoft.UI.Xaml.Internal.dll` is self-contained apart from the CRT, which
+  fits what it turned out to be: a text layout engine.
+
 ## The flat C layer
 
 `Microsoft.ui.xaml.dll` imports 33 DLLs. Two of them are not WinRT servers:
