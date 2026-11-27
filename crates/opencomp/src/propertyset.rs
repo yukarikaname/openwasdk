@@ -45,9 +45,10 @@ pub struct PropertySetObject {
 /// object's implementation. `ICompositionObject.Properties` has to be the same store
 /// every time it is read, or a value written through one call is lost to the next.
 type Shared = Arc<Mutex<HashMap<String, Value>>>;
-static SETS: OnceLock<Mutex<Vec<(usize, Weak<Mutex<HashMap<String, Value>>>)>>> = OnceLock::new();
+type Entry = (usize, Weak<Mutex<HashMap<String, Value>>>);
+static SETS: OnceLock<Mutex<Vec<Entry>>> = OnceLock::new();
 
-fn sets() -> &'static Mutex<Vec<(usize, Weak<Mutex<HashMap<String, Value>>>)>> {
+fn sets() -> &'static Mutex<Vec<Entry>> {
     SETS.get_or_init(|| Mutex::new(Vec::new()))
 }
 

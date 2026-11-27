@@ -25,15 +25,30 @@ fn not_implemented<T>() -> Result<T> {
     ICompositorWithRadialGradient,
     ICompositorWithVisualSurface
 )]
-pub struct Compositor;
+pub struct Compositor {
+    state: std::sync::Mutex<State>,
+}
+
+/// The two pieces of state the compositor itself keeps. Everything else is created
+/// per object, so this stays small.
+#[derive(Default)]
+pub struct State {
+    pub comment: String,
+    pub playback_rate: f32,
+}
 
 /// The object as `IInspectable`, which is what `IActivationFactory::ActivateInstance` returns.
 pub fn instance() -> Result<windows_core::IInspectable> {
-    let compositor: ICompositor = Compositor.into();
+    let compositor: ICompositor = Compositor {
+        state: std::sync::Mutex::new(State {
+            comment: String::new(),
+            playback_rate: 1.0,
+        }),
+    }
+    .into();
     compositor.cast()
 }
 
-#[allow(unused_variables)]
 impl ICompositor_Impl for Compositor_Impl {
     fn CreateColorKeyFrameAnimation(&self) -> windows_core::Result<ColorKeyFrameAnimation> {
         crate::color_animation::color()
@@ -59,7 +74,7 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn CreateEffectFactory(
         &self,
-        graphicsEffect: windows_core::Ref<
+        _graphicsEffect: windows_core::Ref<
             crate::bindings::Windows::Graphics::Effects::IGraphicsEffect,
         >,
     ) -> windows_core::Result<CompositionEffectFactory> {
@@ -67,10 +82,10 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn CreateEffectFactoryWithProperties(
         &self,
-        graphicsEffect: windows_core::Ref<
+        _graphicsEffect: windows_core::Ref<
             crate::bindings::Windows::Graphics::Effects::IGraphicsEffect,
         >,
-        animatableProperties: windows_core::Ref<
+        _animatableProperties: windows_core::Ref<
             windows_collections::IIterable<windows_core::HSTRING>,
         >,
     ) -> windows_core::Result<CompositionEffectFactory> {
@@ -81,7 +96,7 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn CreateExpressionAnimationWithExpression(
         &self,
-        expression: &windows_core::HSTRING,
+        _expression: &windows_core::HSTRING,
     ) -> windows_core::Result<ExpressionAnimation> {
         not_implemented()
     }
@@ -113,7 +128,7 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn CreateScopedBatch(
         &self,
-        batchType: CompositionBatchTypes,
+        _batchType: CompositionBatchTypes,
     ) -> windows_core::Result<CompositionScopedBatch> {
         not_implemented()
     }
@@ -125,7 +140,7 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn CreateSurfaceBrushWithSurface(
         &self,
-        surface: windows_core::Ref<ICompositionSurface>,
+        _surface: windows_core::Ref<ICompositionSurface>,
     ) -> windows_core::Result<CompositionSurfaceBrush> {
         not_implemented()
     }
@@ -140,7 +155,7 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn GetCommitBatch(
         &self,
-        batchType: CompositionBatchTypes,
+        _batchType: CompositionBatchTypes,
     ) -> windows_core::Result<CompositionCommitBatch> {
         not_implemented()
     }
