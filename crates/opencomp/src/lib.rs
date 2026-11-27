@@ -89,7 +89,6 @@ pub mod surface;
 #[cfg(windows)]
 mod visual;
 
-mod classes;
 mod factory;
 
 use std::ffi::c_void;
