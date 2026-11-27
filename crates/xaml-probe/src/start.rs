@@ -25,8 +25,10 @@ pub(crate) const E_POINTER: i32 = 0x8000_4003u32 as i32;
 
 /// The layer `Microsoft.ui.xaml.dll` reaches its input core through.
 const UDK: &str = "Microsoft.Internal.FrameworkUdk.dll";
-/// Our stand-in for the messaging DLL the input core is created from.
-const MESSAGING: &str = "opencoremsg.dll";
+/// The messaging DLL the input core is created from: the App SDK's own.
+const MESSAGING: &str = "CoreMessagingXP.dll";
+/// Our stand-in, used only when `OPENCOMP_COREUI=own` asks for it.
+const OWN_MESSAGING: &str = "opencoremsg.dll";
 
 pub(crate) type GetActivationFactory =
     unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
@@ -374,10 +376,25 @@ pub(crate) fn run(module: HMODULE) -> i32 {
     }
     // The input core is delay-loaded by the UDK layer, so that module is where the
     // resolver has to answer instead of Wine's stub.
-    // The input core is Wine's stub; our messaging DLL answers the delay-loaded name.
-    if let Some(messaging) = crate::windows::load(std::path::Path::new(MESSAGING)) {
-        if let Some(create) = crate::windows::export(messaging, "CoreUICreate") {
+    // The input core is Wine's stub. Our session object answers it; `OPENCOMP_COREUI=xp`
+    // asks the App SDK's own CoreMessaging instead, which runs once its ntdll completion
+    // packet calls are answered and then stops in `NtAlpcConnectPort`, which Wine only
+    // stubs -- so it is not the default.
+    let xp = std::env::var_os("OPENCOMP_COREUI").is_some_and(|value| value == "xp");
+    if xp {
+        if let Some(messaging) = crate::windows::load(std::path::Path::new(MESSAGING)) {
+            for (library, name) in crate::shim::install_late(messaging) {
+                eprintln!("xaml-probe: answered {name} for {library} (messaging)");
+            }
+            if crate::shim::answer_core_ui_with_messaging(messaging) {
+                eprintln!("xaml-probe: CoreUICreate from {MESSAGING}");
+            }
+        }
+    } else {
+        let ours = crate::windows::load(std::path::Path::new(OWN_MESSAGING));
+        if let Some(create) = ours.and_then(|ours| crate::windows::export(ours, "CoreUICreate")) {
             crate::shim::answer_core_ui(create as *mut std::ffi::c_void);
+            eprintln!("xaml-probe: CoreUICreate from {OWN_MESSAGING}");
         }
     }
     if let Some(udk) = crate::windows::load(std::path::Path::new(UDK)) {

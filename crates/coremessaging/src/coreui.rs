@@ -29,6 +29,9 @@ pub(crate) const IID_SESSION: GUID = GUID::from_u128(0x4b2e_dab9_129b_4733_be15_
 /// The interface the item returned by slot 8 answers.
 pub(crate) const IID_ITEM: GUID = GUID::from_u128(0xfcd9_d50d_0902_4a2d_ac94_b95c_3316_f6a0);
 
+/// The interface the message registrar is asked for.
+pub(crate) const IID_REGISTRAR: GUID = GUID::from_u128(0x37a9_4c05_1aa6_4cea_9049_083b_ba05_5cec);
+
 const IID_IUNKNOWN: GUID = GUID::from_u128(0x0000_0000_0000_0000_c000_0000_0000_0046);
 
 const S_OK: i32 = 0;
@@ -78,7 +81,7 @@ fn session_object() -> *mut c_void {
     let created = Box::into_raw(Box::new(Object {
         vtbl: &SESSION_VTBL,
         refs: AtomicU32::new(1),
-        iid: IID_SESSION,
+        iids: [IID_SESSION, GUID::from_u128(0)],
     }))
     .cast::<c_void>();
     match SESSION.compare_exchange(
@@ -101,7 +104,8 @@ fn session_object() -> *mut c_void {
 struct Object {
     vtbl: *const ObjectVtbl,
     refs: AtomicU32,
-    iid: GUID,
+    /// The interfaces besides `IUnknown` this object answers; a zero id answers nothing.
+    iids: [GUID; 2],
 }
 
 #[repr(C)]
@@ -227,7 +231,7 @@ unsafe extern "system" fn get_registrar(
     if traced() {
         eprintln!("coremessaging: session registrar requested");
     }
-    unsafe { *(out as *mut *mut c_void) = small_object(GUID::from_u128(0)) };
+    unsafe { *(out as *mut *mut c_void) = small_object([IID_REGISTRAR, GUID::from_u128(0)]) };
     S_OK
 }
 
@@ -243,7 +247,7 @@ unsafe extern "system" fn get_item(
     if traced() {
         eprintln!("coremessaging: session item requested with {_argument:?}");
     }
-    unsafe { *(out as *mut *mut c_void) = small_object(IID_ITEM) };
+    unsafe { *(out as *mut *mut c_void) = small_object([IID_ITEM, GUID::from_u128(0)]) };
     S_OK
 }
 
@@ -360,14 +364,17 @@ unsafe extern "system" fn registration_release(_this: *mut c_void) -> u32 {
 
 /// A slot no interface reaches: answering `E_NOTIMPL` is enough for the odd one out.
 unsafe extern "system" fn slot_unused(_this: *mut c_void, _a: *mut c_void, _b: *mut c_void) -> i32 {
+    if traced() {
+        eprintln!("coremessaging: small object past its fourth slot");
+    }
     E_NOTIMPL
 }
 
-fn small_object(iid: GUID) -> *mut c_void {
+fn small_object(iids: [GUID; 2]) -> *mut c_void {
     Box::into_raw(Box::new(Object {
         vtbl: &SMALL_VTBL,
         refs: AtomicU32::new(1),
-        iid,
+        iids,
     }))
     .cast()
 }
@@ -382,7 +389,12 @@ unsafe extern "system" fn query_interface(
     }
     let iid = unsafe { *iid };
     let object = unsafe { &*(this as *const Object) };
-    if iid == IID_IUNKNOWN || (iid != GUID::from_u128(0) && iid == object.iid) {
+    let zero = GUID::from_u128(0);
+    let known = object
+        .iids
+        .iter()
+        .any(|known| *known != zero && *known == iid);
+    if iid == IID_IUNKNOWN || known {
         unsafe { add_ref(this) };
         unsafe { *out = this };
         if traced() {

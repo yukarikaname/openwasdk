@@ -182,24 +182,31 @@ fn wine_factory() -> *mut c_void {
         return cached;
     }
     #[cfg(windows)]
-    {
-        let mut factory: *mut c_void = ptr::null_mut();
-        let name = HSTRING::from(CLASS);
-        let Some(get) = wine_entry(b"twinapi.appcore.dll\0", b"DllGetActivationFactory\0") else {
-            return ptr::null_mut();
-        };
-        type GetFactory = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
-        let get: GetFactory = unsafe { std::mem::transmute(get) };
-        let class = unsafe { std::mem::transmute_copy::<HSTRING, *mut c_void>(&name) };
-        let hr = unsafe { get(class, &mut factory) };
-        if hr < 0 || factory.is_null() {
-            return ptr::null_mut();
-        }
-        WINE_FACTORY.store(factory, Ordering::Release);
-        return factory;
-    }
+    let loaded = load_wine_factory();
     #[cfg(not(windows))]
-    ptr::null_mut()
+    let loaded = ptr::null_mut();
+    if !loaded.is_null() {
+        WINE_FACTORY.store(loaded, Ordering::Release);
+    }
+    loaded
+}
+
+/// `twinapi.appcore.dll`'s factory for the same class, asked once per process.
+#[cfg(windows)]
+fn load_wine_factory() -> *mut c_void {
+    let mut factory: *mut c_void = ptr::null_mut();
+    let Some(get) = wine_entry(b"twinapi.appcore.dll\0", b"DllGetActivationFactory\0") else {
+        return ptr::null_mut();
+    };
+    type GetFactory = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
+    let get: GetFactory = unsafe { std::mem::transmute(get) };
+    let name = HSTRING::from(CLASS);
+    let class = unsafe { std::mem::transmute_copy::<HSTRING, *mut c_void>(&name) };
+    let hr = unsafe { get(class, &mut factory) };
+    if hr < 0 {
+        return ptr::null_mut();
+    }
+    factory
 }
 
 /// `GetProcAddress(LoadLibrary(library), name)`, or nothing when either step fails.

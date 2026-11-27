@@ -297,3 +297,25 @@ answered only by guessing, one run at a time. Two ways out, in order of preferen
 
 The measurement is unchanged: it still has not run under Wine. Gate A's frame on Windows
 remains the only end-to-end evidence that the client draws through our compositor.
+
+### The App SDK's own messaging was tried, and stops at ALPC
+
+`CoreMessagingXP.dll` from the same SDK is a complete CoreMessaging, server side included,
+and `CoreMsgCreateSession(0, &session)` returns the object `CoreUICreate` is supposed to
+hand back -- the same session interface and all. That would be Microsoft's own
+implementation instead of ours, so the probe tries it under `OPENCOMP_COREUI=xp`.
+
+It loads and runs. Three ntdll calls Wine only stubs are answered first:
+`NtCreateWaitCompletionPacket` (with an event -- the closest waitable object user mode can
+produce), `NtAssociateWaitCompletionPacket` and `NtCancelWaitCompletionPacket` (accepted,
+never fired, because no packet object exists to fire). Session creation then proceeds and
+stops here:
+
+```
+fixme:alpc:NtAlpcConnectPort ... L"\\BaseNamedObjects\\CoreMessagingRegistrar-324:..."
+err:seh:NtRaiseException Unhandled exception code c0000602
+```
+
+The registrar conversation is ALPC by design, so this route needs an ALPC implementation
+inside Wine and cannot be answered by a shim. It stays in the probe, one environment
+variable away, for the day Wine has one.

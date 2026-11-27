@@ -55,6 +55,13 @@ enum Replacement {
     ActivationFactory,
     /// `GetProcAddress`: one delay-loaded name is answered here instead.
     GetProcAddress,
+    /// `NtCreateWaitCompletionPacket`: the App SDK's messaging DLL calls it at session
+    /// creation, and Wine has no implementation.
+    WaitCompletionPacket,
+    /// `NtAssociateWaitCompletionPacket`: the packet is accepted and never fires.
+    AssociateWaitCompletionPacket,
+    /// `NtCancelWaitCompletionPacket`: nothing was associated, so nothing to cancel.
+    CancelWaitCompletionPacket,
 }
 
 impl Entry {
@@ -71,6 +78,27 @@ impl Entry {
             }
             Replacement::GetProcAddress => {
                 get_proc_address as unsafe extern "system" fn(*mut c_void, *const u8) -> *mut c_void
+                    as *mut c_void
+            }
+            Replacement::WaitCompletionPacket => {
+                wait_completion_packet
+                    as unsafe extern "system" fn(*mut *mut c_void, u32, *mut c_void) -> i32
+                    as *mut c_void
+            }
+            Replacement::AssociateWaitCompletionPacket => {
+                associate_wait_completion_packet
+                    as unsafe extern "system" fn(
+                        *mut c_void,
+                        *mut c_void,
+                        *mut c_void,
+                        *mut c_void,
+                        *mut c_void,
+                        i32,
+                        u8,
+                    ) -> i32 as *mut c_void
+            }
+            Replacement::CancelWaitCompletionPacket => {
+                cancel_wait_completion_packet as unsafe extern "system" fn(*mut c_void, u8) -> i32
                     as *mut c_void
             }
         }
@@ -111,7 +139,10 @@ unsafe extern "system" fn activation_factory(
 /// The engine's own `GetProcAddress`, taken over below.
 static REAL_GET_PROC_ADDRESS: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
 
-/// `CoreUICreate` from our messaging DLL, for the delay-loaded name to land on.
+/// `CoreMsgCreateSession(0, &session)` from the App SDK's own messaging DLL.
+static CORE_MSG_CREATE_SESSION: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// `CoreUICreate` from our own session object, used when the App SDK's is not asked for.
 static CORE_UI_CREATE: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
 
 /// Answer the delay-loaded `CoreUICreate` with `function` instead of Wine's stub.
@@ -119,18 +150,148 @@ pub fn answer_core_ui(function: *mut c_void) {
     CORE_UI_CREATE.store(function, Ordering::Release);
 }
 
-/// Answer the one delay-loaded name, then behave exactly as `kernel32` does.
+/// Answer it with the App SDK's own session, created by `CoreMsgCreateSession(0, &)`.
+///
+/// The runtime ships a complete CoreMessaging, server side included, and its session is
+/// what the engine expects: `CoreUICreate` and `CoreMsgCreateSession` name the same object
+/// from the two generations of the API. Wine cannot run it as shipped -- session creation
+/// calls `NtCreateWaitCompletionPacket`, which ntdll only stubs -- so the call is answered
+/// in [`wait_completion_packet`] and everything above it is Microsoft's code.
+pub fn answer_core_ui_with_messaging(module: HMODULE) -> bool {
+    let Some(export) = crate::windows::export(module, "CoreMsgCreateSession") else {
+        return false;
+    };
+    CORE_MSG_CREATE_SESSION.store(export as *mut c_void, Ordering::Release);
+    true
+}
+
+/// `HRESULT CoreUICreate(void **session)` over `CoreMsgCreateSession(0, session)`.
+unsafe extern "system" fn core_ui_create(session: *mut *mut c_void) -> i32 {
+    type Create = unsafe extern "system" fn(u32, *mut *mut c_void) -> i32;
+    let create: Create =
+        unsafe { std::mem::transmute(CORE_MSG_CREATE_SESSION.load(Ordering::Acquire)) };
+    unsafe { create(0, session) }
+}
+
+/// Answer one delay-loaded name, then behave exactly as `kernel32` does.
 unsafe extern "system" fn get_proc_address(module: *mut c_void, name: *const u8) -> *mut c_void {
     if !name.is_null() && unsafe { name_matches(name, "CoreUICreate") } {
-        let answer = CORE_UI_CREATE.load(Ordering::Acquire);
-        if !answer.is_null() {
-            return answer;
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!(
+                "xaml-probe: GetProcAddress(CoreUICreate) xp={} own={}",
+                !CORE_MSG_CREATE_SESSION.load(Ordering::Acquire).is_null(),
+                !CORE_UI_CREATE.load(Ordering::Acquire).is_null()
+            );
+        }
+        let from_messaging = CORE_MSG_CREATE_SESSION.load(Ordering::Acquire);
+        if !from_messaging.is_null() {
+            return core_ui_create as unsafe extern "system" fn(*mut *mut c_void) -> i32
+                as *mut c_void;
+        }
+        let own = CORE_UI_CREATE.load(Ordering::Acquire);
+        if !own.is_null() {
+            return own;
         }
     }
     type GetProcAddress = unsafe extern "system" fn(*mut c_void, *const u8) -> *mut c_void;
     let real: GetProcAddress =
         unsafe { std::mem::transmute(REAL_GET_PROC_ADDRESS.load(Ordering::Relaxed)) };
     unsafe { real(module, name) }
+}
+
+/// `NtCreateWaitCompletionPacket(handle, access, attributes)`: Wine has no such object.
+///
+/// The messaging DLL waits for completion packets through the thread pool; an event is
+/// the closest waitable object a user-mode stand-in can hand back. Nothing in the session
+/// protocol is known to observe the difference, and this is the only call the DLL makes
+/// that Wine cannot answer.
+unsafe extern "system" fn wait_completion_packet(
+    handle: *mut *mut c_void,
+    _access: u32,
+    _attributes: *mut c_void,
+) -> i32 {
+    #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn CreateEventW(
+            attributes: *mut c_void,
+            manual_reset: i32,
+            initial_state: i32,
+            name: *const u16,
+        ) -> *mut c_void;
+    }
+    if handle.is_null() {
+        return 0xC000_000Du32 as i32; // STATUS_INVALID_PARAMETER
+    }
+    let event = unsafe { CreateEventW(ptr::null_mut(), 1, 0, ptr::null()) };
+    if event.is_null() {
+        return 0xC000_0017u32 as i32; // STATUS_NO_MEMORY
+    }
+    unsafe { *handle = event };
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("xaml-probe: NtCreateWaitCompletionPacket answered with an event");
+    }
+    0
+}
+
+/// `NtAssociateWaitCompletionPacket(packet, port, target, key, context, status, signaled)`:
+/// without a real packet object there is nothing to associate, and the association only
+/// decides when a wait already made completes. It is accepted and never fires.
+unsafe extern "system" fn associate_wait_completion_packet(
+    _packet: *mut c_void,
+    _port: *mut c_void,
+    _target: *mut c_void,
+    _key: *mut c_void,
+    _context: *mut c_void,
+    _status: i32,
+    _signaled: u8,
+) -> i32 {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("xaml-probe: NtAssociateWaitCompletionPacket accepted");
+    }
+    0
+}
+
+/// `NtCancelWaitCompletionPacket(packet, wake)`: nothing was associated.
+unsafe extern "system" fn cancel_wait_completion_packet(_packet: *mut c_void, _wake: u8) -> i32 {
+    0
+}
+
+/// The imports a DLL needs answered before it can be used at all.
+const LATE_ENTRIES: &[Entry] = &[
+    Entry {
+        library: "ntdll.dll",
+        name: "NtCreateWaitCompletionPacket",
+        replacement: Replacement::WaitCompletionPacket,
+        original: None,
+    },
+    Entry {
+        library: "ntdll.dll",
+        name: "NtAssociateWaitCompletionPacket",
+        replacement: Replacement::AssociateWaitCompletionPacket,
+        original: None,
+    },
+    Entry {
+        library: "ntdll.dll",
+        name: "NtCancelWaitCompletionPacket",
+        replacement: Replacement::CancelWaitCompletionPacket,
+        original: None,
+    },
+];
+
+/// Install the entries in `entries` on `module`; see [`install`].
+fn install_from(module: HMODULE, entries: &[Entry]) -> Vec<(&'static str, &'static str)> {
+    let mut installed = Vec::new();
+    for entry in entries {
+        if unsafe { patch(module, entry) } {
+            installed.push((entry.library, entry.name));
+        }
+    }
+    installed
+}
+
+/// Answer the imports a DLL calls before it can be used, such as a wait completion packet.
+pub fn install_late(module: HMODULE) -> Vec<(&'static str, &'static str)> {
+    install_from(module, LATE_ENTRIES)
 }
 
 const ENTRIES: &[Entry] = &[
@@ -160,13 +321,7 @@ const ENTRIES: &[Entry] = &[
 /// than leaving it implicit. A module whose imports cannot be read yields an empty list:
 /// the caller then runs without the patch and reports whatever fails next.
 pub fn install(module: HMODULE) -> Vec<(&'static str, &'static str)> {
-    let mut installed = Vec::new();
-    for entry in ENTRIES {
-        if unsafe { patch(module, entry) } {
-            installed.push((entry.library, entry.name));
-        }
-    }
-    installed
+    install_from(module, ENTRIES)
 }
 
 unsafe fn patch(module: HMODULE, entry: &Entry) -> bool {
