@@ -113,12 +113,16 @@ fn render(root: &Path, output: &Path, files: &[Found]) -> String {
     );
     let mut total = 0;
     for file in files {
+        // `/` on every platform: the report is read by people and compared in CI, and a
+        // Windows checkout would otherwise list `themes\App.xbf` for the same file.
+        // `/` on every platform: the report is read by people and compared in CI, and a
+        // Windows checkout would otherwise list `themes\App.xbf` for the same file.
         let relative = file
             .path
             .strip_prefix(output)
             .unwrap_or(&file.path)
             .to_string_lossy()
-            .into_owned();
+            .replace('\\', "/");
         text.push_str(&format!(
             "  {:<4} {:>10}  {:>10}  {relative}\n",
             file.kind,
