@@ -345,6 +345,17 @@ jobs:
           path: target/appsdk
           key: appsdk-${{ env.SDK_VERSION }}
 
+      # The activation table is the framework package's MSIX, not the NuGet set the DLLs
+      # come from; without it every class activation answers `REGDB_E_CLASSNOTREG` and the
+      # report says nothing about the engine.
+      - uses: actions/cache@v6
+        with:
+          path: target/Microsoft.WindowsAppRuntime.2.msix
+          key: appsdk-framework-${{ env.SDK_VERSION }}
+
+      - name: Fetch the framework MSIX
+        run: cargo run -q -p xwinui -- framework --out target
+
       - name: Install Wine and the gnu linker
         run: |
           sudo apt-get update
