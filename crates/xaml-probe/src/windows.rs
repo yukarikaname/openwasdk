@@ -122,14 +122,6 @@ struct Outcome {
     hr: i32,
 }
 
-/// Gate B's first measurement: hand `Application.Start` a callback and see whether the
-/// engine runs it on the thread it owns. Nothing below that -- a tree, a measure, a
-/// frame -- can happen until this does.
-///
-/// The call goes through the generated `IApplicationStatics::Start`, not a hand-written
-/// slot: the delegate ABI is part of the call, and a wrong slot returns `S_OK` without
-/// running anything, which is exactly what the hand-written probe did on both hosts.
-///
 // XAML installs a dispatcher on the calling thread and expects it to be an apartment.
 // A process that never called `RoInitialize` gets whatever the engine picks.
 #[link(name = "combase.dll", kind = "raw-dylib", modifiers = "+verbatim")]
@@ -137,6 +129,13 @@ unsafe extern "system" {
     fn RoInitialize(init_type: i32) -> i32;
 }
 
+/// Gate B's first measurement: hand `Application.Start` a callback and see whether the
+/// engine runs it on the thread it owns. Nothing below that -- a tree, a measure, a
+/// frame -- can happen until this does.
+///
+/// The call goes through the generated `IApplicationStatics::Start`, not a hand-written
+/// slot: the delegate ABI is part of the call, and a wrong slot returns `S_OK` without
+/// running anything, which is exactly what the hand-written probe did on both hosts.
 fn start_gate(module: HMODULE) -> i32 {
     // Safety: the apartment is process state and this is the first COM call the probe makes.
     let hr = unsafe { RoInitialize(0) };
