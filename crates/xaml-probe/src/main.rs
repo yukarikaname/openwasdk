@@ -23,4 +23,7 @@ mod xaml_bindings;
 mod windows;
 
 #[cfg(windows)]
+mod shim;
+
+#[cfg(windows)]
 mod start;

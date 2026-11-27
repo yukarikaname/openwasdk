@@ -176,9 +176,24 @@ jobs:
       - name: Test under Wine
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y --no-install-recommends wine64 xvfb
-          # Ubuntu's wine64 package does not put a wrapper on PATH.
-          wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
+          # Ubuntu 24.04 ships Wine 9, where `AppPolicyGetWindowingModel`,
+          # `NtAllocateReserveObject` and `RoOriginateErrorW` are stubs that abort when
+          # the App SDK calls them. WineHQ's current stable implements more of them, so
+          # it replaces the distribution package when the repository answers.
+          if curl -sSfL -o /tmp/winehq.key https://dl.winehq.org/wine-builds/winehq.key; then
+            sudo mkdir -pm755 /etc/apt/keyrings
+            sudo install -m644 /tmp/winehq.key /etc/apt/keyrings/winehq-archive.key
+            sudo curl -sSfL -o /etc/apt/sources.list.d/winehq-noble.sources \
+              https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends winehq-stable xvfb
+          else
+            echo "winehq unreachable; using the distribution's wine"
+            sudo apt-get install -y --no-install-recommends wine64 xvfb
+          fi
+          # WineHQ installs under /opt and does not always put a wrapper on PATH.
+          wine=/opt/wine-stable/bin/wine64
+          [ -x "$wine" ] || wine=/usr/lib/wine/wine64
           echo "using $wine"
           export WINEPREFIX="$PWD/target/wine"
           export WINEDLLOVERRIDES="mscoree,mshtml="
@@ -284,8 +299,22 @@ jobs:
       - name: Install Wine and the gnu linker
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            wine64 xvfb gcc-mingw-w64-x86-64 unzip
+          # Ubuntu 24.04 ships Wine 9, where `AppPolicyGetWindowingModel`,
+          # `NtAllocateReserveObject` and `RoOriginateErrorW` are stubs that abort when
+          # the App SDK calls them. WineHQ's current stable implements more of them, so
+          # it replaces the distribution package when the repository answers.
+          if curl -sSfL -o /tmp/winehq.key https://dl.winehq.org/wine-builds/winehq.key; then
+            sudo mkdir -pm755 /etc/apt/keyrings
+            sudo install -m644 /tmp/winehq.key /etc/apt/keyrings/winehq-archive.key
+            sudo curl -sSfL -o /etc/apt/sources.list.d/winehq-noble.sources \
+              https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends winehq-stable xvfb
+          else
+            echo "winehq unreachable; using the distribution's wine"
+            sudo apt-get install -y --no-install-recommends wine64 xvfb
+          fi
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64 unzip
           rustup target add x86_64-pc-windows-gnu
 
       # The report is the point: which exports the DLL answers, which classes it

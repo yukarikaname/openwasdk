@@ -5,13 +5,12 @@
 //! from the rest of the probe are the loader and the export lookup.
 
 use std::ffi::c_void;
-use std::path::PathBuf;
 use std::ptr;
 
 use windows_core::{HSTRING, IUnknown, Interface};
 use windows_sys::Win32::Foundation::HMODULE;
 
-use crate::windows::{export, handle, load};
+use crate::windows::{export, handle};
 use crate::xaml_bindings::Microsoft::UI::Xaml::{
     ApplicationInitializationCallback, IApplicationStatics,
 };
@@ -21,6 +20,11 @@ use crate::xaml_bindings::Microsoft::UI::Xaml::{
 #[link(name = "combase.dll", kind = "raw-dylib", modifiers = "+verbatim")]
 unsafe extern "system" {
     fn RoInitialize(init_type: i32) -> i32;
+    fn RoGetActivationFactory(
+        class: *mut c_void,
+        iid: *const windows_core::GUID,
+        out: *mut *mut c_void,
+    ) -> i32;
 }
 
 /// `IDispatcherQueueControllerStatics`, in metadata order.
@@ -45,43 +49,25 @@ unsafe impl Interface for DispatcherStatics {
         windows_core::GUID::from_u128(0xf18d_6145_722b_593d_bcf2_a61e_713f_0037);
 }
 
-/// The activation factory of `class`, through the DLL's own export rather than combase:
-/// the point is to test this DLL, not the registration of the machine.
-fn class_factory(module: HMODULE, class: &str) -> Option<IUnknown> {
-    let get_factory = export(module, "DllGetActivationFactory")?;
-    // `HRESULT DllGetActivationFactory(HSTRING, IActivationFactory **)`.
-    let get_factory: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32 =
-        unsafe { std::mem::transmute(get_factory) };
-    let name = HSTRING::from(class);
-    let mut raw: *mut c_void = ptr::null_mut();
-    let hr = unsafe { get_factory(handle(&name), &mut raw) };
-    if hr < 0 || raw.is_null() {
-        eprintln!(
-            "xaml-probe: DllGetActivationFactory({class}) hr=0x{:08x}",
-            hr as u32
-        );
-        return None;
-    }
-    Some(unsafe { IUnknown::from_raw(raw) })
-}
 /// Create the dispatcher `Application.Start` needs on the calling thread.
 ///
-/// Start does not make one: `Microsoft.UI.Dispatching.DispatcherQueueController` is
-/// served by `Microsoft.UI.dll`, not by the XAML DLL, which answers
-/// `CLASS_E_CLASSNOTAVAILABLE` for it. An engine that starts without a queue on its
-/// thread waits for one that never delivers.
-fn create_dispatcher(module: HMODULE) -> Option<i32> {
-    let factory = class_factory(module, "Microsoft.UI.Dispatching.DispatcherQueueController")?;
-    let statics: DispatcherStatics = match factory.cast() {
-        Ok(statics) => statics,
-        Err(error) => {
-            eprintln!(
-                "xaml-probe: QueryInterface(IDispatcherQueueControllerStatics) hr=0x{:08x}",
-                error.code().0 as u32
-            );
-            return None;
-        }
-    };
+/// The class is reached through **combase**, which is how an application reaches it and
+/// how the activation manifest decides which DLL serves it -- in our case
+/// `opendispatch.dll` instead of the SDK's `CoreMessagingXP.dll`, which aborts on load
+/// under Wine. Asking a DLL by name was the earlier mistake here.
+fn create_dispatcher() -> Option<i32> {
+    let name = HSTRING::from("Microsoft.UI.Dispatching.DispatcherQueueController");
+    let mut statics: *mut c_void = ptr::null_mut();
+    let hr =
+        unsafe { RoGetActivationFactory(handle(&name), &DispatcherStatics::IID, &mut statics) };
+    if hr < 0 || statics.is_null() {
+        eprintln!(
+            "xaml-probe: RoGetActivationFactory(DispatcherQueueController) hr=0x{:08x}",
+            hr as u32
+        );
+        return Some(hr);
+    }
+    let statics: DispatcherStatics = unsafe { DispatcherStatics::from_raw(statics) };
     let mut controller: *mut c_void = ptr::null_mut();
     let hr = unsafe {
         (Interface::vtable(&statics).create_on_current_thread)(
@@ -125,19 +111,16 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         );
         return 1;
     }
-    // `Microsoft.UI.Dispatching.DispatcherQueueController` is served by
-    // `CoreMessagingXP.dll` -- the SDK's activation table says so, and asking the XAML DLL
-    // or `Microsoft.UI.dll` for it answers `CLASS_E_CLASSNOTAVAILABLE`.
-    let messaging = std::env::var_os("XAML_DLL")
-        .map(|path| PathBuf::from(path).with_file_name("CoreMessagingXP.dll"))
-        .and_then(|path| load(&path));
-    match messaging.map(create_dispatcher) {
-        Some(Some(hr)) => eprintln!(
+    // Wine carries the process-policy questions XAML asks as stubs that abort on call;
+    // the engine's own import slots get our answers before it runs.
+    for (library, name) in crate::shim::install(module) {
+        eprintln!("xaml-probe: answered {name} for {library}");
+    }
+    if let Some(hr) = create_dispatcher() {
+        eprintln!(
             "xaml-probe: DispatcherQueueController.CreateOnCurrentThread hr=0x{:08x}",
             hr as u32
-        ),
-        Some(None) => eprintln!("xaml-probe: no dispatcher controller"),
-        None => eprintln!("xaml-probe: CoreMessagingXP.dll not loadable"),
+        );
     }
     let factory: IUnknown = unsafe { IUnknown::from_raw(raw) };
     let Ok(statics) = factory.cast::<IApplicationStatics>() else {

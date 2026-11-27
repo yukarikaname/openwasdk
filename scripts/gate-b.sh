@@ -16,7 +16,9 @@ set -euo pipefail
 
 sdk=${1:-target/appsdk}
 run=${RUN_DIR:-target/gate-b}
-wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
+# WineHQ installs under /opt and does not always put a wrapper on PATH.
+wine=/opt/wine-stable/bin/wine64
+[ -x "$wine" ] || wine=/usr/lib/wine/wine64
 target=target/x86_64-pc-windows-gnu/debug
 
 if [ ! -f "$sdk/Microsoft.ui.xaml.dll" ] || [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; then
