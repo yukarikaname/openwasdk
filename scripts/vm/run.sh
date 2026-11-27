@@ -27,10 +27,10 @@ qemu-system-aarch64 \
 	-device usb-storage,drive=cd1 \
 	-drive if=none,id=cd1,format=raw,media=cdrom,readonly=on,file="$vm/autounattend.iso" \
 	-device ramfb -display cocoa,show-cursor=on \
-	-nic user,model=virtio-net-pci \
+	-nic user,model="${VM_NIC:-e1000}" \
 	-device virtio-rng-pci \
 	-monitor unix:"$vm/mon.sock",server,nowait \
-	-boot order=d &
+	-boot order="${VM_BOOT:-d}" &
 pid=$!
 # The install media carries `bootfix.bin`: it asks for a key and falls through to PXE if
 # none arrives, so the first minute is spent answering that prompt.
