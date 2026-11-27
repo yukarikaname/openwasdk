@@ -1,10 +1,14 @@
 //! The Windows half of the client: a window, a tree built through the ABI, and the bridge.
 //!
-//! Activation goes through `opencomp::DllGetActivationFactory`, the same entry point the DLL
-//! exports, rather than through the Windows runtime. The factory for a class is then queried for
-//! its statics interface, which is where `ContentIsland` and `DesktopChildSiteBridge` are
-//! created; the generated bindings have no method wrappers for those statics, so the calls go
-//! through the vtable.
+//! Activation goes through the Windows runtime, the way an application reaches a
+//! class: `RoActivateInstance` and `RoGetActivationFactory` ask for the name, and
+//! combase finds the DLL through the activation context built from the manifest
+//! this executable ships beside it. The crate's in-process registration is tried
+//! first, but the runtime documents it for out-of-process exe servers and may
+//! refuse it, so it is not what the client depends on. The factory for a class is
+//! then queried for its statics interface, which is where `ContentIsland` and
+//! `DesktopChildSiteBridge` are created; the generated bindings have no method
+//! wrappers for those statics, so the calls go through the vtable.
 //!
 //! The tree is two sprites in a container whose size is relative to the island: a colour
 //! rectangle with a rounded geometric clip, and a 64x64 checkerboard painted through a surface
@@ -27,6 +31,7 @@ use opencomp::bindings::Windows::Graphics::RectInt32;
 use opencomp::bindings::Windows::UI::Color;
 use windows::Win32::Foundation::HWND;
 use windows::Win32::System::Threading::Sleep;
+use windows::Win32::System::WinRT::{RO_INIT_MULTITHREADED, RoInitialize};
 use windows::Win32::UI::WindowsAndMessaging::{
     CW_USEDEFAULT, CreateWindowExW, DestroyWindow, DispatchMessageW, MSG, PM_REMOVE, PeekMessageW,
     SW_SHOW, ShowWindow, TranslateMessage, WINDOW_EX_STYLE, WS_OVERLAPPEDWINDOW,
@@ -47,8 +52,11 @@ const DEFAULT_FRAMES: u32 = 120;
 
 const E_FAIL: i32 = 0x8000_4005u32 as i32;
 const E_POINTER: i32 = 0x8000_4003u32 as i32;
+const RPC_E_CHANGED_MODE: i32 = 0x8001_0106u32 as i32;
 
 pub fn run() -> i32 {
+    initialize();
+    register();
     let hwnd = window();
     let compositor = compositor();
     let island = island(&compositor);
@@ -96,6 +104,35 @@ pub fn run() -> i32 {
     0
 }
 
+/// Enter an apartment, which activation needs; a host may have chosen one.
+fn initialize() {
+    match unsafe { RoInitialize(RO_INIT_MULTITHREADED) } {
+        Ok(()) => trace("RoInitialize"),
+        Err(error) if error.code().0 == RPC_E_CHANGED_MODE => {
+            trace("RoInitialize(apartment exists)")
+        }
+        Err(error) => fail("RoInitialize", error.code().0),
+    }
+}
+
+/// Ask the runtime to route these class names to this DLL, in-process.
+///
+/// `RoRegisterActivationFactories` is the file-less route, but the runtime
+/// documents it for the exe server of an out-of-process class and can refuse it
+/// for a plain client. That refusal is not fatal here: the manifest beside this
+/// executable is the registration an application ships, and the activation calls
+/// below use it.
+fn register() {
+    trace("RoRegisterActivationFactories");
+    if let Err(error) = opencomp::register() {
+        eprintln!(
+            "opencomp-client: the in-process registration was refused ({:#010x}); \
+             falling back to the manifest beside this executable",
+            error.code().0
+        );
+    }
+}
+
 /// A 320x240 window of the built-in STATIC class, shown.
 fn window() -> HWND {
     trace("CreateWindowExW");
@@ -122,23 +159,28 @@ fn window() -> HWND {
     hwnd
 }
 
-/// The compositor, activated through the export every class in this DLL answers.
+/// The compositor, activated by the runtime under the name it was registered for.
 fn compositor() -> ICompositor {
-    let factory = factory(COMPOSITOR);
-    let activation: windows_core::imp::IGenericFactory =
-        step("QueryInterface(IActivationFactory)", factory.cast());
-    step(
-        "ActivateInstance(Compositor)",
-        activation.ActivateInstance(),
-    )
+    let instance = routed(
+        COMPOSITOR,
+        || opencomp::activate(COMPOSITOR),
+        || {
+            let factory: IUnknown = export(COMPOSITOR);
+            let activation: windows_core::imp::IGenericFactory =
+                step("QueryInterface(IActivationFactory)", factory.cast());
+            step(
+                "ActivateInstance(Compositor)",
+                activation.ActivateInstance(),
+            )
+        },
+    );
+    step("QueryInterface(ICompositor)", instance.cast())
 }
 
 /// The island around a freshly built tree.
 fn island(compositor: &ICompositor) -> ContentIsland {
     let root = tree(compositor);
-    let factory = factory(CONTENT_ISLAND);
-    let statics: IContentIslandStatics =
-        step("QueryInterface(IContentIslandStatics)", factory.cast());
+    let statics: IContentIslandStatics = factory(CONTENT_ISLAND);
 
     // `IContentIslandStatics` has no generated method wrapper; the vtable slot takes a borrowed
     // `Visual`, so the root stays owned here.
@@ -156,11 +198,7 @@ fn island(compositor: &ICompositor) -> ContentIsland {
 
 /// The bridge for `hwnd`; `run` connects the island and sets the rectangle.
 fn bridge(compositor: &ICompositor, hwnd: HWND) -> DesktopChildSiteBridge {
-    let factory = factory(SITE_BRIDGE);
-    let statics: IDesktopChildSiteBridgeStatics = step(
-        "QueryInterface(IDesktopChildSiteBridgeStatics)",
-        factory.cast(),
-    );
+    let statics: IDesktopChildSiteBridgeStatics = factory(SITE_BRIDGE);
 
     let mut raw: *mut c_void = std::ptr::null_mut();
     let result = unsafe {
@@ -326,11 +364,47 @@ fn pump_until_presented(frames: u32) {
     }
 }
 
-/// Ask the DLL for the activation factory of `class`.
-fn factory(class: &str) -> IUnknown {
+/// The activation factory for `class`: the runtime's object when it knows the
+/// name, this DLL's own factory when it does not.
+fn factory<T: Interface>(class: &str) -> T {
+    routed(
+        class,
+        || opencomp::factory_of::<T>(class),
+        || {
+            let unknown = export(class);
+            step("QueryInterface", unknown.cast())
+        },
+    )
+}
+
+/// `runtime`, or the DLL export when the runtime says it does not know `class`.
+///
+/// Wine's combase has `RoRegisterActivationFactories` as a stub that reports
+/// success and keeps nothing, so the registration above is invisible there. The
+/// export hands back the same factory a manifest entry would have given combase;
+/// the fallback says so rather than pretending the runtime found us.
+fn routed<T>(
+    class: &str,
+    runtime: impl FnOnce() -> windows_core::Result<T>,
+    export: impl FnOnce() -> T,
+) -> T {
+    match runtime() {
+        Ok(value) => value,
+        Err(error) if opencomp::unregistered(error.code()) => {
+            eprintln!(
+                "opencomp-client: the runtime has no registration for {class}; using the DLL export"
+            );
+            export()
+        }
+        Err(error) => fail(class, error.code().0),
+    }
+}
+
+/// Ask the DLL itself for the activation factory of `class`.
+fn export(class: &str) -> IUnknown {
     let name = HSTRING::from(class);
     let mut raw: *mut c_void = std::ptr::null_mut();
-    // The parameter is the HSTRING handle itself, which is the pointer inside the HSTRING.
+    // Safety: the parameter is the HSTRING handle itself and `raw` is writable.
     let result = unsafe { opencomp::DllGetActivationFactory(handle(&name), &mut raw) };
     if result < 0 {
         fail(&format!("DllGetActivationFactory({class})"), result);

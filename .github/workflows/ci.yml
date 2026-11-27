@@ -62,6 +62,11 @@ jobs:
         with:
           key: windows
 
+      # Activation is tested through the runtime, which has to load the DLL by
+      # name, so the DLL is built before the tests rather than after them.
+      - name: Build the DLL
+        run: cargo build -p opencomp
+
       - name: Test
         run: cargo test --workspace
 
@@ -75,9 +80,6 @@ jobs:
       # above skips them.
       - name: Test the preview renderer
         run: cargo test -p opencomp-core --features preview
-
-      - name: Build the DLL
-        run: cargo build -p opencomp
 
   test:
     name: Test (${{ matrix.os }})
@@ -166,6 +168,12 @@ jobs:
           export WINEPREFIX="$PWD/target/wine"
           export WINEDLLOVERRIDES="mscoree,mshtml="
           cargo build -p opencomp-client --target x86_64-pc-windows-gnu
+          # The client reaches its classes the way an application does: combase
+          # reads this manifest from beside the executable and loads the DLL it
+          # names. The entries are the ones a client ships; see
+          # docs/architecture.md.
+          cargo run -p xwinui -- manifest \
+            --out target/x86_64-pc-windows-gnu/debug/opencomp-client.exe.manifest
           # A GUI client under a software backend can hang; a runner that waits for
           # the job timeout tells nobody anything. Ninety seconds is generous for ten
           # frames and makes a hang a red step with a log instead.

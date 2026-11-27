@@ -196,6 +196,20 @@ The glue that makes the two replacements loadable and runnable:
 - windowing and input plumbing, including `Microsoft.UI.Windowing` and
   `Microsoft.UI.Input` if they are not replaced outright.
 
+A client reaches these classes through one registration or the other, never by
+calling our export. A packaged or unpackaged application ships a manifest whose
+`activatableClass` entries name the DLL — the document `xwinui manifest` writes,
+embedded as `RT_MANIFEST` or placed at `<executable>.manifest` — so combase reads
+it from the process activation context and loads the DLL itself. The entries must
+be in the WinRT namespace (`urn:schemas-microsoft-com:winrt.v1`), and the DLL has
+to be findable by the name the entry gives, which for a file name alone means
+beside the executable. A host that loads us itself can instead call
+`opencomp::register()` before its first activation, which registers the same names
+in-process with `RoRegisterActivationFactories`; the runtime documents that call
+for out-of-process exe servers and may refuse it for a plain host, so the manifest
+is the route that always works. Wine's combase implements the manifest lookup but
+stubs `RoRegisterActivationFactories`, so the Wine run exercises the manifest.
+
 Under Wine this is an addition to the platform layer (thread, window, message
 pump); on a native port it becomes a small PE/WinRT loader of its own.
 

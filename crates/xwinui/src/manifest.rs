@@ -1,4 +1,13 @@
 //! The application manifest that lets a client activate a class from our DLL by name.
+//!
+//! This file is the registration a packaged or unpackaged application ships. The
+//! process's activation context maps each `activatableClass` name to [`DEFAULT_DLL`],
+//! and combase then loads that DLL and calls its `DllGetActivationFactory` when the
+//! application asks for one of them. An application embeds the document as its
+//! `RT_MANIFEST` resource, or places it beside the executable as
+//! `<executable>.manifest`; either way the DLL has to be findable by name, which in
+//! practice means beside the executable, because the entries name the file and
+//! nothing else.
 
 use std::fs;
 use std::path::Path;
@@ -31,16 +40,23 @@ pub fn write(out: &Path, dll: &str, classes: &[String]) -> Result<(), String> {
 /// Render the assembly document. The entries are the fragment Windows and Wine
 /// look for under `<assembly>`; an XML declaration keeps the file loadable on
 /// its own.
+///
+/// `activatableClass` lives in the WinRT namespace, `urn:schemas-microsoft-com:winrt.v1`,
+/// because that is the element both the Windows SxS parser and Wine's look for
+/// under `<file>`; in the default `asm.v1` namespace the document parses as an
+/// assembly with no activatable classes. `assemblyIdentity` makes it a complete
+/// assembly rather than a fragment.
 pub fn render(dll: &str, classes: &[&str]) -> String {
     let mut text = String::new();
     text.push_str("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     text.push_str(
         "<assembly manifestVersion=\"1.0\" xmlns=\"urn:schemas-microsoft-com:asm.v1\">\n",
     );
+    text.push_str("  <assemblyIdentity version=\"1.0.0.0\" name=\"OpenWASDK.Client\" />\n");
     text.push_str(&format!("  <file name=\"{dll}\">\n"));
     for class in classes {
         text.push_str(&format!(
-            "    <activatableClass name=\"{class}\" threadingModel=\"both\" />\n"
+            "    <activatableClass name=\"{class}\" threadingModel=\"both\" xmlns=\"urn:schemas-microsoft-com:winrt.v1\" />\n"
         ));
     }
     text.push_str("  </file>\n");
@@ -57,10 +73,11 @@ mod tests {
         let text = render(DEFAULT_DLL, DEFAULT_CLASSES);
         let expected = r#"<?xml version="1.0" encoding="utf-8"?>
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="1.0.0.0" name="OpenWASDK.Client" />
   <file name="opencomp.dll">
-    <activatableClass name="Microsoft.UI.Composition.Compositor" threadingModel="both" />
-    <activatableClass name="Microsoft.UI.Content.ContentIsland" threadingModel="both" />
-    <activatableClass name="Microsoft.UI.Content.DesktopChildSiteBridge" threadingModel="both" />
+    <activatableClass name="Microsoft.UI.Composition.Compositor" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass name="Microsoft.UI.Content.ContentIsland" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass name="Microsoft.UI.Content.DesktopChildSiteBridge" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
   </file>
 </assembly>
 "#;
@@ -68,12 +85,33 @@ mod tests {
     }
 
     #[test]
+    fn every_class_is_in_the_winrt_namespace() {
+        let text = render(DEFAULT_DLL, DEFAULT_CLASSES);
+        let entries = text.matches("<activatableClass ").count();
+        let namespaced = text.matches("urn:schemas-microsoft-com:winrt.v1").count();
+        assert_eq!(entries, DEFAULT_CLASSES.len());
+        assert_eq!(namespaced, entries);
+    }
+
+    #[test]
     fn a_given_class_replaces_the_defaults() {
         let text = render("other.dll", &["Example.Class"]);
         assert!(text.contains("<file name=\"other.dll\">"));
-        assert!(
-            text.contains("<activatableClass name=\"Example.Class\" threadingModel=\"both\" />")
-        );
+        assert!(text.contains("<activatableClass name=\"Example.Class\""));
+        assert!(text.contains("threadingModel=\"both\""));
         assert!(!text.contains("Microsoft.UI.Composition.Compositor"));
+    }
+
+    /// What `xwinui manifest` leaves a client to ship: one file in the client's
+    /// directory, naming the DLL that answers for the classes.
+    #[test]
+    fn a_client_directory_gets_the_manifest_to_ship() {
+        let dir = std::env::temp_dir().join(format!("xwinui-manifest-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let out = dir.join("opencomp-client.exe.manifest");
+        write(&out, DEFAULT_DLL, &[]).expect("write");
+        let text = fs::read_to_string(&out).expect("read back");
+        assert_eq!(text, render(DEFAULT_DLL, DEFAULT_CLASSES));
+        let _ = fs::remove_dir_all(&dir);
     }
 }

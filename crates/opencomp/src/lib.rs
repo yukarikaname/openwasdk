@@ -18,6 +18,8 @@
 )]
 
 #[cfg(windows)]
+mod activation;
+#[cfg(windows)]
 mod animation;
 #[cfg(windows)]
 mod animation_group;
@@ -78,6 +80,17 @@ const E_NOTIMPL: i32 = 0x8000_4001u32 as i32;
 const E_POINTER: i32 = 0x8000_4003u32 as i32;
 const CLASS_E_CLASSNOTAVAILABLE: i32 = 0x8004_0111u32 as i32;
 
+/// The Windows runtime entry points, for a host that reaches the DLL by name.
+#[cfg(windows)]
+pub use activation::{activate, factory_of, register, unregistered};
+
+/// There is nothing to register with off Windows; the runtime this crate plugs
+/// into is combase. The no-op keeps a client's startup path one shape.
+#[cfg(not(windows))]
+pub fn register() -> windows_core::Result<()> {
+    Ok(())
+}
+
 /// The runtime classes this DLL answers for.
 ///
 /// In the shipped package the Content classes are served by `Microsoft.ui.xaml.dll`, which
@@ -115,14 +128,9 @@ pub unsafe extern "system" fn DllGetActivationFactory(
         std::mem::transmute_copy::<*mut c_void, HSTRING>(&class)
     });
     let name = name.to_string_lossy();
-    if !known(&name) {
+    let Some(class) = class_of(&name) else {
         unsafe { *factory = std::ptr::null_mut() };
         return CLASS_E_CLASSNOTAVAILABLE;
-    }
-    let class = match name.as_ref() {
-        "Microsoft.UI.Content.ContentIsland" => Class::ContentIsland,
-        "Microsoft.UI.Content.DesktopChildSiteBridge" => Class::DesktopChildSiteBridge,
-        _ => Class::Compositor,
     };
     unsafe { *factory = factory::Factory::create(class) };
     S_OK
@@ -145,7 +153,20 @@ pub extern "system" fn DllGetClassObject(
 }
 
 fn known(class: &str) -> bool {
-    CLASSES.contains(&class)
+    class_of(class).is_some()
+}
+
+/// The class a runtime class name names, if this DLL serves it.
+///
+/// This is the one place that maps a name to a class, so the export and the
+/// in-process registration cannot disagree about which classes exist.
+fn class_of(name: &str) -> Option<Class> {
+    match name {
+        "Microsoft.UI.Composition.Compositor" => Some(Class::Compositor),
+        "Microsoft.UI.Content.ContentIsland" => Some(Class::ContentIsland),
+        "Microsoft.UI.Content.DesktopChildSiteBridge" => Some(Class::DesktopChildSiteBridge),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
