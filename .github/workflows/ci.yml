@@ -212,11 +212,11 @@ jobs:
           path: target/x86_64-pc-windows-gnu/debug/opencomp.dll
           if-no-files-found: error
 
-  # Gate B starts here. The official `Microsoft.ui.xaml.dll` is loaded under Wine
-  # next to the DLLs it ships with, and the probe reports which exports it answers and
-  # which of the classes a first window needs it can activate. Nothing of ours is in
-  # front of it yet: the first run is a measurement, so a failure is expected and the
-  # log is the deliverable.
+  # Gate B starts here. The official `Microsoft.ui.xaml.dll` is loaded under Wine next
+  # to the DLLs it ships with, and the probe reports which exports it answers and which
+  # of the classes a first window needs it can activate. Nothing of ours is in front of
+  # it yet: the first run is a measurement, so a failure is expected and the log is the
+  # deliverable. `scripts/gate-b.sh` is the same script a local container runs.
   xaml:
     name: Gate B probe (Wine)
     runs-on: ubuntu-24.04
@@ -234,58 +234,27 @@ jobs:
         with:
           key: xaml
 
-      # `Microsoft.ui.xaml.dll` is in `WinUI`, the runtime it starts is in
-      # `Foundation`, and `Microsoft.UI.dll`, `dcompi.dll` and the FrameworkUdk stand-in
-      # are in `InteractiveExperiences`. The native files live under
-      # `runtimes-framework/win-x64/native`, not `runtimes`; the localized `.mui`
-      # resources below it are not needed to load the DLL.
-      - name: Fetch the App SDK
-        run: |
-          mkdir -p sdk
-          for pkg in winui foundation interactiveexperiences dwrite; do
-            name="microsoft.windowsappsdk.$pkg"
-            curl -sSLf -o "$pkg.nupkg" \
-              "https://api.nuget.org/v3-flatcontainer/$name/$SDK_VERSION/$name.$SDK_VERSION.nupkg"
-            unzip -Z1 "$pkg.nupkg" \
-              | grep -E '^runtimes-framework/win-x64/native/[^/]+\.dll$' > files.txt
-            unzip -j -o -q "$pkg.nupkg" -d sdk $(tr '\n' ' ' < files.txt)
-          done
-          ls -l sdk | head -20
+      # Ninety megabytes of SDK, unchanged between runs.
+      - uses: actions/cache@v6
+        with:
+          path: target/appsdk
+          key: appsdk-${{ env.SDK_VERSION }}
 
-      # A gnu link needs mingw's `dlltool`, which the runner does not carry.
-      - name: Build the probe
+      - name: Install Wine and the gnu linker
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
-          cargo build --target x86_64-pc-windows-gnu -p xaml-probe
+          sudo apt-get install -y --no-install-recommends \
+            wine64 xvfb gcc-mingw-w64-x86-64 unzip
+          rustup target add x86_64-pc-windows-gnu
 
-      # Run from `sdk/`: a DLL found by full path does not put its own directory on the
-      # dependency search path, and the current directory is searched.
-      - name: Load the official XAML DLL under Wine
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends wine64 xvfb
-          wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
-          echo "using $wine"
-          export WINEPREFIX="$PWD/target/wine"
-          export WINEDLLOVERRIDES="mscoree,mshtml="
-          xvfb-run -a "$wine" wineboot -u > /dev/null 2>&1 || true
-          cp target/x86_64-pc-windows-gnu/debug/xaml-probe.exe sdk/
-          export XAML_DLL="$PWD/sdk/Microsoft.ui.xaml.dll"
-          export OPENCOMP_XAML_PROBE_JSON=1
-          set +e
-          ( cd sdk && timeout -k 5 120 xvfb-run -a timeout -k 5 120 "$wine" ./xaml-probe.exe ) \
-            2>&1 | tee probe.log
-          status=${PIPESTATUS[0]}
-          set -e
-          echo "probe exited $status"
-          # The report is the point: which exports the DLL answers, which classes it
-          # activates, and the HRESULT of the first call that failed.
-          exit "$status"
+      # The report is the point: which exports the DLL answers, which classes it
+      # activates, and the HRESULT of the first call that failed.
+      - name: Load the official DLL
+        run: bash scripts/gate-b.sh target/appsdk
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: xaml-probe
-          path: probe.log
+          path: target/appsdk/probe.log
           if-no-files-found: warn
