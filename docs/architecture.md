@@ -74,7 +74,7 @@ What the DLL answers today, and what it reports `E_NOTIMPL` for:
 | --- | --- |
 | `CreateContainerVisual`, `CreateSpriteVisual`, `CreateColorBrush`, `CreateColorBrushWithColor`, `CreateInsetClip`, `CreateInsetClipWithInsets`, `CreateLinearEasingFunction`, `CreateCubicBezierEasingFunction`, `CreateScalarKeyFrameAnimation`, `CreateVector2KeyFrameAnimation`, `CreateVector3KeyFrameAnimation`, `CreateColorKeyFrameAnimation`, `CreatePropertySet` | animation groups, implicit animations, surfaces, effects, shadows, lights, `GetCommitBatch`, `RequestCommitAsync` |
 | `IContainerVisual.Children` with insert, remove and count | the rest of `VisualCollection`'s iteration |
-| `IVisual.Offset`, `Size`, `Opacity`, `IsVisible`, `Clip`, `Scale`, `RotationAngle`, `RotationAngleInDegrees`, `CenterPoint` | anchor point, transform matrix, border mode |
+| `IVisual.Offset`, `Size`, `Opacity`, `IsVisible`, `Clip`, `Scale`, `RotationAngle`, `RotationAngleInDegrees`, `CenterPoint`, `AnchorPoint` | transform matrix, border mode, backface |
 | `ISpriteVisual.Brush`, `ICompositionColorBrush.Color`, `IInsetClip` insets, `ICubicBezierEasingFunction` control points, `ICompositionPropertySet`, `StartAnimation`/`StopAnimation` on visuals | the other clips, expression animations, `TryGetAnimationController` |
 | every object answers `ICompositionObject2`/`4`/`5`, visuals also `IVisual2`/`3`/`4`, sprites `ISpriteVisual2`, clips `ICompositionClip2` | the methods behind them |
 

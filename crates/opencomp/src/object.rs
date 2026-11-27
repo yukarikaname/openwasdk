@@ -232,9 +232,10 @@ macro_rules! visual_trait {
             // client that only wanted to configure the tree, so these are accepted and dropped;
             // the getters answer the documented default rather than failing.
             fn AnchorPoint(&self) -> windows_core::Result<Vector2> {
-                Ok(Vector2::default())
+                Ok(self.node.lock().unwrap().anchor)
             }
-            fn SetAnchorPoint(&self, _value: &Vector2) -> windows_core::Result<()> {
+            fn SetAnchorPoint(&self, value: &Vector2) -> windows_core::Result<()> {
+                self.node.lock().unwrap().anchor = *value;
                 Ok(())
             }
             fn BackfaceVisibility(&self) -> windows_core::Result<CompositionBackfaceVisibility> {

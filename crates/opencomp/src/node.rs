@@ -22,6 +22,8 @@ pub struct Node {
     pub offset: Vector3,
     pub size: Vector2,
     pub opacity: f32,
+    /// The point of the visual that `offset` places, as a fraction of its size.
+    pub anchor: Vector2,
     /// Scale and rotation about `center`, both in the node's own coordinates.
     pub scale: Vector3,
     pub rotation: f32,
@@ -72,6 +74,7 @@ impl Default for Node {
             offset: Vector3::default(),
             size: Vector2::default(),
             opacity: 1.0,
+            anchor: Vector2::default(),
             scale: Vector3 {
                 x: 1.0,
                 y: 1.0,
@@ -144,6 +147,10 @@ fn snapshot_at(
             Some(relative) => [parent.x * relative.x, parent.y * relative.y],
             None => [node.offset.x, node.offset.y],
         };
+        // The anchor is the point of the visual that `offset` places, so a centred anchor
+        // moves the drawn rectangle back by half its size.
+        offset[0] -= node.anchor.x * size.x;
+        offset[1] -= node.anchor.y * size.y;
         let mut opacity = (parent_opacity * node.opacity).clamp(0.0, 1.0);
         let mut color = node.color;
         for (property, value) in node.animation_values() {
@@ -365,6 +372,24 @@ mod tests {
 
         stop_animation(&root, Property::Opacity);
         assert_eq!(snapshot(&root).unwrap().opacity, 1.0);
+    }
+
+    #[test]
+    fn a_centred_anchor_places_the_offset_at_the_middle() {
+        let root = node(1.0);
+        {
+            let mut root = root.lock().unwrap();
+            root.size = Vector2 { x: 100.0, y: 40.0 };
+            root.offset = Vector3 {
+                x: 50.0,
+                y: 20.0,
+                z: 0.0,
+            };
+            root.anchor = Vector2 { x: 0.5, y: 0.5 };
+        }
+        let visual = snapshot(&root).unwrap();
+        assert_eq!(visual.offset, [0.0, 0.0]);
+        assert_eq!(visual.size, [100.0, 40.0]);
     }
 
     #[test]
