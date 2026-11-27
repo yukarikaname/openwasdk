@@ -182,8 +182,14 @@ impl Presenter {
         if (width, height) == self.size {
             return true;
         }
+        // D2D holds its own reference to the target bitmap, and DXGI will not resize a
+        // swapchain whose back buffer is still referenced. Release the target first.
+        unsafe {
+            let _ = self.d2d.EndDraw(None, None);
+            self.d2d.SetTarget(None);
+        }
         self.target = None;
-        // Safety: the target bitmap referencing the back buffer is dropped first.
+        // Safety: no target references the back buffer any more.
         let resized = unsafe {
             self.swapchain.ResizeBuffers(
                 2,
