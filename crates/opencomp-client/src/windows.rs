@@ -68,8 +68,10 @@ pub fn run() -> i32 {
     step("MoveAndResize(connected)", site.MoveAndResize(rect));
     step("Show", site.Show());
 
+    // The first frame costs a device, a swapchain and a D2D target; wait for it rather
+    // than for a fixed number of iterations.
     let frames = frames();
-    pump(frames);
+    pump_until_presented(frames);
 
     step("Hide", site.Hide());
     let closable: IClosable = step("QueryInterface(IClosable)", bridge.cast());
@@ -303,15 +305,23 @@ fn checkerboard() -> Vec<u8> {
 }
 
 /// Drain the window's messages once per iteration, then let the presenter draw.
-fn pump(frames: u32) {
+fn pump_until_presented(frames: u32) {
     let mut message = MSG::default();
-    for _ in 0..frames {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let mut ticks = 0;
+    while ticks < frames || opencomp::frames_presented() == 0 {
         unsafe {
             while PeekMessageW(&mut message, None, 0, 0, PM_REMOVE).as_bool() {
                 let _ = TranslateMessage(&message);
                 let _ = DispatchMessageW(&message);
             }
             Sleep(FRAME_MS);
+        }
+        ticks += 1;
+        // The first frame needs a device and a target; after two seconds the graphics
+        // stack is not going to answer and the caller reports it.
+        if std::time::Instant::now() > deadline {
+            break;
         }
     }
 }

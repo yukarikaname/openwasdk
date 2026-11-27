@@ -176,8 +176,12 @@ fn a_window_presents_a_frame() {
     bridge.MoveAndResize(rect).expect("resize after connect");
     bridge.Show().expect("show");
 
+    // The presenter thread creates the device, the swapchain and the D2D target before
+    // its first frame; on a CI runner that is not 160 ms of work. Wait for the first
+    // frame instead of counting iterations, and give up after two seconds.
     let mut message = MSG::default();
-    for _ in 0..10 {
+    let deadline = std::time::Instant::now() + Duration::from_secs(2);
+    while opencomp::frames_presented() == 0 && std::time::Instant::now() < deadline {
         // Safety: the message lives on this stack frame.
         if unsafe { PeekMessageW(&mut message, None, 0, 0, PM_REMOVE) }.as_bool() {
             unsafe {
