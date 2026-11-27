@@ -152,8 +152,17 @@ pub fn run() -> i32 {
         function
     });
 
+    // A crash inside the engine takes the rest of the report with it, so the set can be
+    // narrowed from outside: `OPENCOMP_XAML_PROBE_ONLY=Controls.` runs the classes whose
+    // name contains that text. Without it every class is probed.
+    let only = std::env::var("OPENCOMP_XAML_PROBE_ONLY").ok();
     let mut any = false;
     for entry in CLASSES {
+        if let Some(needle) = &only
+            && !entry.name.contains(needle.as_str())
+        {
+            continue;
+        }
         let outcome = match get_factory {
             Some(get) => probe(entry, get),
             None => Outcome {

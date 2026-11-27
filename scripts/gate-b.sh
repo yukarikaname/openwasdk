@@ -24,6 +24,16 @@ if [ ! -f "$sdk/Microsoft.ui.xaml.dll" ] || [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; 
 fi
 echo "gate-b: $(find "$sdk" -maxdepth 1 -name '*.dll' | wc -l) SDK DLLs in $sdk"
 
+# Run the probe once and keep its output. The run directory holds a copy of the SDK so
+# a run can replace a DLL without touching the cached download.
+probe() {
+	local label=$1
+	echo "gate-b: probing with $label DLLs"
+	( cd "$run" && timeout -k 5 120 xvfb-run -a timeout -k 5 120 "$wine" ./xaml-probe.exe ) \
+		2>&1 | tee "probe-$label.log"
+	return "${PIPESTATUS[0]}"
+}
+
 rm -rf "$run"
 mkdir -p "$run"
 cp "$sdk"/*.dll "$run"/

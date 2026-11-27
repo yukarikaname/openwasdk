@@ -6,3 +6,6 @@
 *.msixbundle
 *.appx
 *.pfx
+
+# gate-b run output
+probe-*.log
