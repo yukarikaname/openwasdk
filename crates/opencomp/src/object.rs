@@ -9,17 +9,13 @@
 //! a method is recoverable, a failed QI is not.
 
 pub(crate) mod prelude {
-    // Exactly what the macros below name. Callers import this instead of repeating the list,
-    // and must not import the same names again: a duplicate import hides the glob and makes the
-    // re-export look unused.
+    // The names the `#[implement]` lists and `visual_trait!` refer to. The trait bodies
+    // themselves write their paths out in full, because they expand in several modules.
     pub(crate) use crate::bindings::Microsoft::UI::Composition::{
-        AnimationController, CompositionAnimation, CompositionBackfaceVisibility,
-        CompositionBorderMode, CompositionClip, CompositionCompositeMode, CompositionPropertySet,
-        Compositor, ICompositionAnimationBase, ICompositionObject_Impl, ICompositionObject2,
-        ICompositionObject2_Impl, ICompositionObject4, ICompositionObject4_Impl,
-        ICompositionObject5, ICompositionObject5_Impl, ISpriteVisual2, ISpriteVisual2_Impl,
-        IVisual_Impl, IVisual2, IVisual2_Impl, IVisual3, IVisual3_Impl, IVisual4, IVisual4_Impl,
-        ImplicitAnimationCollection, Visual,
+        CompositionBackfaceVisibility, CompositionBorderMode, CompositionClip,
+        CompositionCompositeMode, CompositionPropertySet, ICompositionObject2, ICompositionObject4,
+        ICompositionObject5, ISpriteVisual2, ISpriteVisual2_Impl, IVisual_Impl, IVisual2,
+        IVisual2_Impl, IVisual3, IVisual3_Impl, IVisual4, IVisual4_Impl, Visual,
     };
     pub(crate) use crate::bindings::Windows::Foundation::Numerics::Quaternion;
     pub(crate) use windows_core::{HSTRING, Ref};
@@ -35,79 +31,157 @@ pub(crate) fn not_implemented<T>() -> windows_core::Result<T> {
     Err(Error::from_hresult(E_NOTIMPL))
 }
 
-macro_rules! composition_object {
+macro_rules! composition_followups {
     ($impl_type:ident) => {
-        impl ICompositionObject_Impl for $impl_type {
-            // The compositor is stateless here, so a client that asks an object for it gets a
-            // working object rather than an exception. It is not the same instance: nothing in
-            // this DLL compares them.
-            fn Compositor(&self) -> windows_core::Result<Compositor> {
-                windows_core::Interface::cast(&$crate::compositor::instance()?)
-            }
-            fn Properties(&self) -> windows_core::Result<CompositionPropertySet> {
+        impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject2_Impl for $impl_type {
+            fn Comment(&self) -> windows_core::Result<::windows_core::HSTRING> {
                 $crate::object::not_implemented()
             }
-            fn StartAnimation(
+            fn SetComment(&self, _value: &::windows_core::HSTRING) -> windows_core::Result<()> {
+                $crate::object::not_implemented()
+            }
+            fn ImplicitAnimations(
                 &self,
-                _property: &HSTRING,
-                _animation: Ref<CompositionAnimation>,
-            ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-            fn StopAnimation(&self, _property: &HSTRING) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-        }
-
-        impl ICompositionObject2_Impl for $impl_type {
-            fn Comment(&self) -> windows_core::Result<HSTRING> {
-                $crate::object::not_implemented()
-            }
-            fn SetComment(&self, _value: &HSTRING) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
-            }
-            fn ImplicitAnimations(&self) -> windows_core::Result<ImplicitAnimationCollection> {
+            ) -> windows_core::Result<
+                $crate::bindings::Microsoft::UI::Composition::ImplicitAnimationCollection,
+            > {
                 $crate::object::not_implemented()
             }
             fn SetImplicitAnimations(
                 &self,
-                _value: Ref<ImplicitAnimationCollection>,
+                _value: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::ImplicitAnimationCollection,
+                >,
             ) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
             fn StartAnimationGroup(
                 &self,
-                _value: Ref<ICompositionAnimationBase>,
+                _value: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::ICompositionAnimationBase,
+                >,
             ) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
             fn StopAnimationGroup(
                 &self,
-                _value: Ref<ICompositionAnimationBase>,
+                _value: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::ICompositionAnimationBase,
+                >,
             ) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
         }
 
-        impl ICompositionObject4_Impl for $impl_type {
+        impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject4_Impl for $impl_type {
             fn TryGetAnimationController(
                 &self,
-                _property: &HSTRING,
-            ) -> windows_core::Result<AnimationController> {
+                _property: &::windows_core::HSTRING,
+            ) -> windows_core::Result<
+                $crate::bindings::Microsoft::UI::Composition::AnimationController,
+            > {
                 $crate::object::not_implemented()
             }
         }
 
-        impl ICompositionObject5_Impl for $impl_type {
+        impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject5_Impl for $impl_type {
             fn StartAnimationWithController(
                 &self,
-                _property: &HSTRING,
-                _animation: Ref<CompositionAnimation>,
-                _controller: Ref<AnimationController>,
+                _property: &::windows_core::HSTRING,
+                _animation: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::CompositionAnimation,
+                >,
+                _controller: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::AnimationController,
+                >,
             ) -> windows_core::Result<()> {
                 $crate::object::not_implemented()
             }
         }
+    };
+}
+
+/// `ICompositionObject` and its follow-ons.
+///
+/// The `node` argument is for objects that own a visual: their `StartAnimation` and
+/// `StopAnimation` reach the tree. Everything else accepts an animation and ignores
+/// it, which is what the ABI allows.
+macro_rules! composition_object {
+    ($impl_type:ident, node) => {
+        impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject_Impl for $impl_type {
+            fn Compositor(
+                &self,
+            ) -> windows_core::Result<$crate::bindings::Microsoft::UI::Composition::Compositor>
+            {
+                windows_core::Interface::cast(&$crate::compositor::instance()?)
+            }
+            fn Properties(
+                &self,
+            ) -> windows_core::Result<
+                $crate::bindings::Microsoft::UI::Composition::CompositionPropertySet,
+            > {
+                $crate::propertyset::create()
+            }
+            fn StartAnimation(
+                &self,
+                property: &::windows_core::HSTRING,
+                animation: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::CompositionAnimation,
+                >,
+            ) -> windows_core::Result<()> {
+                let name = property.to_string_lossy();
+                if let (Some(property), Some(keyframes)) = (
+                    $crate::node::Property::parse(&name),
+                    animation.as_ref().and_then($crate::animation::keyframes),
+                ) {
+                    $crate::node::start_animation(&self.node, property, keyframes);
+                }
+                Ok(())
+            }
+            fn StopAnimation(
+                &self,
+                property: &::windows_core::HSTRING,
+            ) -> windows_core::Result<()> {
+                if let Some(property) = $crate::node::Property::parse(&property.to_string_lossy()) {
+                    $crate::node::stop_animation(&self.node, property);
+                }
+                Ok(())
+            }
+        }
+        $crate::object::composition_followups!($impl_type);
+    };
+    ($impl_type:ident) => {
+        impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject_Impl for $impl_type {
+            fn Compositor(
+                &self,
+            ) -> windows_core::Result<$crate::bindings::Microsoft::UI::Composition::Compositor>
+            {
+                windows_core::Interface::cast(&$crate::compositor::instance()?)
+            }
+            fn Properties(
+                &self,
+            ) -> windows_core::Result<
+                $crate::bindings::Microsoft::UI::Composition::CompositionPropertySet,
+            > {
+                $crate::propertyset::create()
+            }
+            fn StartAnimation(
+                &self,
+                _property: &::windows_core::HSTRING,
+                _animation: ::windows_core::Ref<
+                    $crate::bindings::Microsoft::UI::Composition::CompositionAnimation,
+                >,
+            ) -> windows_core::Result<()> {
+                Ok(())
+            }
+            fn StopAnimation(
+                &self,
+                _property: &::windows_core::HSTRING,
+            ) -> windows_core::Result<()> {
+                Ok(())
+            }
+        }
+        $crate::object::composition_followups!($impl_type);
     };
 }
 
@@ -323,5 +397,6 @@ macro_rules! visual_trait {
     };
 }
 
+pub(crate) use composition_followups;
 pub(crate) use composition_object;
 pub(crate) use visual_trait;

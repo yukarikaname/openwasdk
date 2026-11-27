@@ -26,7 +26,7 @@ pub fn instance() -> Result<windows_core::IInspectable> {
 #[allow(unused_variables)]
 impl ICompositor_Impl for Compositor_Impl {
     fn CreateColorKeyFrameAnimation(&self) -> windows_core::Result<ColorKeyFrameAnimation> {
-        not_implemented()
+        crate::color_animation::color()
     }
     fn CreateColorBrush(&self) -> windows_core::Result<CompositionColorBrush> {
         crate::brush::create()
@@ -91,7 +91,7 @@ impl ICompositor_Impl for Compositor_Impl {
         crate::easing::linear()
     }
     fn CreatePropertySet(&self) -> windows_core::Result<CompositionPropertySet> {
-        not_implemented()
+        crate::propertyset::create()
     }
     fn CreateQuaternionKeyFrameAnimation(
         &self,
@@ -99,7 +99,7 @@ impl ICompositor_Impl for Compositor_Impl {
         not_implemented()
     }
     fn CreateScalarKeyFrameAnimation(&self) -> windows_core::Result<ScalarKeyFrameAnimation> {
-        not_implemented()
+        crate::animation::scalar()
     }
     fn CreateScopedBatch(
         &self,
@@ -120,10 +120,10 @@ impl ICompositor_Impl for Compositor_Impl {
         not_implemented()
     }
     fn CreateVector2KeyFrameAnimation(&self) -> windows_core::Result<Vector2KeyFrameAnimation> {
-        not_implemented()
+        crate::animation::vector2()
     }
     fn CreateVector3KeyFrameAnimation(&self) -> windows_core::Result<Vector3KeyFrameAnimation> {
-        not_implemented()
+        crate::animation::vector3()
     }
     fn CreateVector4KeyFrameAnimation(&self) -> windows_core::Result<Vector4KeyFrameAnimation> {
         not_implemented()

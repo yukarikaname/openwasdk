@@ -8,10 +8,11 @@
 //! COM pointer and has to find the node behind it. The table holds weak references, so a visual
 //! that dies leaves nothing behind.
 
-use std::sync::{Arc, Mutex, OnceLock, Weak};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
-use opencomp_core::Visual as CoreVisual;
-use windows_core::{IUnknown, Interface};
+use opencomp_core::{Keyframes, Visual as CoreVisual};
+use windows_core::Interface;
 use windows_numerics::{Vector2, Vector3};
 
 /// A node in the live tree. Shared between the COM object, its parent and any snapshot in flight.
@@ -29,7 +30,36 @@ pub struct Node {
     /// Fraction of the parent's size, from `IVisual2`. A root visual uses this to fill its host.
     pub relative_size: Option<Vector2>,
     pub relative_offset: Option<Vector3>,
+    pub animations: Vec<Running>,
     pub children: Vec<NodeRef>,
+}
+
+/// The properties an animation can drive. The names are the ones the ABI passes
+/// to `ICompositionObject.StartAnimation`.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Property {
+    Offset,
+    Size,
+    Opacity,
+    Color,
+}
+
+impl Property {
+    pub fn parse(name: &str) -> Option<Self> {
+        match name {
+            "Offset" => Some(Self::Offset),
+            "Size" => Some(Self::Size),
+            "Opacity" => Some(Self::Opacity),
+            "Color" => Some(Self::Color),
+            _ => None,
+        }
+    }
+}
+
+pub struct Running {
+    pub property: Property,
+    pub keyframes: Keyframes,
+    pub started: Instant,
 }
 
 impl Default for Node {
@@ -44,6 +74,7 @@ impl Default for Node {
             insets: None,
             relative_size: None,
             relative_offset: None,
+            animations: Vec::new(),
             children: Vec::new(),
         }
     }
@@ -52,6 +83,17 @@ impl Default for Node {
 impl Node {
     pub fn new() -> NodeRef {
         Arc::new(Mutex::new(Self::default()))
+    }
+
+    /// The animated value of each property at this instant, in draw order.
+    fn animation_values(&self) -> impl Iterator<Item = (Property, [f32; 4])> + '_ {
+        self.animations.iter().filter_map(|running| {
+            let time = running.started.elapsed().as_secs_f32();
+            running
+                .keyframes
+                .sample(time)
+                .map(|value| (running.property, value))
+        })
     }
 
     fn resolved_size(&self, parent: Vector2) -> Vector2 {
@@ -86,16 +128,31 @@ fn snapshot_at(
         if !node.visible {
             return None;
         }
-        let size = node.resolved_size(parent);
-        let offset = match node.relative_offset {
+        let mut size = node.resolved_size(parent);
+        let mut offset = match node.relative_offset {
             Some(relative) => [parent.x * relative.x, parent.y * relative.y],
             None => [node.offset.x, node.offset.y],
         };
+        let mut opacity = (parent_opacity * node.opacity).clamp(0.0, 1.0);
+        let mut color = node.color;
+        for (property, value) in node.animation_values() {
+            match property {
+                Property::Offset => offset = [value[0], value[1]],
+                Property::Size => {
+                    size = Vector2 {
+                        x: value[0],
+                        y: value[1],
+                    }
+                }
+                Property::Opacity => opacity = value[0].clamp(0.0, 1.0),
+                Property::Color => color = value,
+            }
+        }
         let visual = CoreVisual {
             offset,
             size: [size.x, size.y],
-            color: node.color,
-            opacity: (parent_opacity * node.opacity).clamp(0.0, 1.0),
+            color,
+            opacity,
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
         };
@@ -116,6 +173,26 @@ fn snapshot_at(
     Some(visual)
 }
 
+/// Start an animation, replacing one already running on the same property.
+pub fn start_animation(node: &NodeRef, property: Property, keyframes: Keyframes) {
+    let mut node = node.lock().unwrap();
+    node.animations
+        .retain(|running| running.property != property);
+    node.animations.push(Running {
+        property,
+        keyframes,
+        started: Instant::now(),
+    });
+}
+
+/// Stop an animation and leave the property where it last was.
+pub fn stop_animation(node: &NodeRef, property: Property) {
+    node.lock()
+        .unwrap()
+        .animations
+        .retain(|running| running.property != property);
+}
+
 /// The clip rectangle an `InsetClip` produces inside a visual of `size`.
 fn clip_of(size: Vector2, [left, top, right, bottom]: [f32; 4]) -> (f32, f32, f32, f32) {
     (
@@ -126,44 +203,14 @@ fn clip_of(size: Vector2, [left, top, right, bottom]: [f32; 4]) -> (f32, f32, f3
     )
 }
 
-/// A weak node filed under the identity of the object that owns it.
-type Entry = (usize, Weak<Mutex<Node>>);
-
-/// Nodes by object identity. Keyed by the `IUnknown` pointer, which is the one pointer every
-/// interface of an object agrees on.
-static REGISTRY: OnceLock<Mutex<Vec<Entry>>> = OnceLock::new();
-
-fn registry() -> &'static Mutex<Vec<Entry>> {
-    REGISTRY.get_or_init(|| Mutex::new(Vec::new()))
-}
-
-/// The identity of a COM object, normalised through `IUnknown`.
-fn key<T: Interface>(object: &T) -> Option<usize> {
-    object
-        .cast::<IUnknown>()
-        .ok()
-        .map(|unknown| unknown.as_raw() as usize)
-}
-
 /// Make `node` findable by `object`.
 pub fn publish<T: Interface>(object: &T, node: &NodeRef) {
-    let Some(key) = key(object) else { return };
-    let mut table = registry().lock().unwrap();
-    if table.len() >= 64 {
-        table.retain(|(_, node)| node.strong_count() > 0);
-    }
-    table.retain(|(existing, _)| *existing != key);
-    table.push((key, Arc::downgrade(node)));
+    crate::identity::publish(object, node);
 }
 
 /// The node behind `object`, if this DLL made it.
 pub fn resolve<T: Interface>(object: &T) -> Option<NodeRef> {
-    let key = key(object)?;
-    let table = registry().lock().unwrap();
-    table
-        .iter()
-        .find(|(existing, _)| *existing == key)
-        .and_then(|(_, node)| node.upgrade())
+    crate::identity::lookup::<_, Mutex<Node>>(object)
 }
 
 #[cfg(test)]
@@ -280,6 +327,30 @@ mod tests {
         let root = node(1.0);
         root.lock().unwrap().visible = false;
         assert!(snapshot(&root).is_none());
+    }
+
+    #[test]
+    fn an_animation_drives_the_property_it_names() {
+        use opencomp_core::Frame;
+        let root = node(1.0);
+        root.lock().unwrap().opacity = 1.0;
+        start_animation(
+            &root,
+            Property::Opacity,
+            Keyframes {
+                frames: vec![Frame {
+                    time: 0.0,
+                    value: [0.25, 0.25, 0.25, 0.25],
+                    easing: opencomp_core::Easing::Linear,
+                }],
+                ..Keyframes::default()
+            },
+        );
+        let visual = snapshot(&root).unwrap();
+        assert_eq!(visual.opacity, 0.25);
+
+        stop_animation(&root, Property::Opacity);
+        assert_eq!(snapshot(&root).unwrap().opacity, 1.0);
     }
 
     #[test]

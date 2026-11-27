@@ -50,8 +50,8 @@ pub struct SpriteVisualObject {
     brush: Mutex<Option<CompositionBrush>>,
 }
 
-composition_object!(ContainerVisualObject_Impl);
-composition_object!(SpriteVisualObject_Impl);
+composition_object!(ContainerVisualObject_Impl, node);
+composition_object!(SpriteVisualObject_Impl, node);
 visual_trait!(ContainerVisualObject_Impl);
 visual_trait!(SpriteVisualObject_Impl);
 

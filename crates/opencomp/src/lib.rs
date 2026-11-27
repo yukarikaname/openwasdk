@@ -18,6 +18,8 @@
 )]
 
 #[cfg(windows)]
+mod animation;
+#[cfg(windows)]
 mod bindings;
 #[cfg(windows)]
 mod brush;
@@ -26,12 +28,17 @@ mod clip;
 #[cfg(windows)]
 mod collection;
 #[cfg(windows)]
+mod color_animation;
+#[cfg(windows)]
 mod compositor;
 #[cfg(windows)]
 mod easing;
+mod identity;
 mod node;
 #[cfg(windows)]
 mod object;
+#[cfg(windows)]
+mod propertyset;
 #[cfg(windows)]
 mod visual;
 
@@ -333,6 +340,27 @@ mod abi {
         assert_eq!(easing.ControlPoint1().unwrap(), Vector2 { x: 0.1, y: 0.2 });
         assert_eq!(easing.ControlPoint2().unwrap(), Vector2 { x: 0.8, y: 0.9 });
         assert!(compositor.CreateLinearEasingFunction().is_ok());
+    }
+
+    #[test]
+    fn an_animation_reaches_the_tree() {
+        use crate::bindings::Microsoft::UI::Composition::{
+            CompositionAnimation, ICompositionObject, IScalarKeyFrameAnimation,
+        };
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let animation = compositor.CreateScalarKeyFrameAnimation().unwrap();
+        let keyframes: IScalarKeyFrameAnimation = animation.cast().unwrap();
+        keyframes.InsertKeyFrame(0.0, 0.25).unwrap();
+        let animation: CompositionAnimation = animation.cast().unwrap();
+
+        let object: ICompositionObject = sprite.cast().unwrap();
+        object.StartAnimation("Opacity", &animation).unwrap();
+        let node = crate::node::resolve(&sprite).unwrap();
+        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 0.25);
+
+        object.StopAnimation("Opacity").unwrap();
+        assert_eq!(crate::node::snapshot(&node).unwrap().opacity, 1.0);
     }
 
     #[test]

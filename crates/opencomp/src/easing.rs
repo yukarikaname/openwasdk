@@ -13,7 +13,6 @@ use crate::bindings::Microsoft::UI::Composition::{
     ILinearEasingFunction_Impl, LinearEasingFunction,
 };
 use crate::object::composition_object;
-use crate::object::prelude::*;
 use windows_core::{Interface, Result};
 use windows_numerics::Vector2;
 

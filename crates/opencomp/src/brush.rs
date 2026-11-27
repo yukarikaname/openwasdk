@@ -13,7 +13,6 @@ use crate::bindings::Microsoft::UI::Composition::{
 };
 use crate::bindings::Windows::UI::Color;
 use crate::object::composition_object;
-use crate::object::prelude::*;
 use windows_core::Result;
 
 #[windows_core::implement(

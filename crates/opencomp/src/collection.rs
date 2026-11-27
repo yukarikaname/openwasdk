@@ -11,7 +11,6 @@ use crate::bindings::Microsoft::UI::Composition::{
 };
 use crate::node::{self, NodeRef};
 use crate::object::composition_object;
-use crate::object::prelude::*;
 use windows_core::{Error, HRESULT, Interface, Result};
 
 const E_INVALIDARG: HRESULT = HRESULT(0x8007_0057u32 as i32);
