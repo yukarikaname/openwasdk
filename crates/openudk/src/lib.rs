@@ -110,6 +110,40 @@ pub unsafe extern "system" fn Windowing_GetIconFromIconId(id: u64, icon: *mut *m
     S_OK
 }
 
+/// Names whose result is a `BOOL`, not an `HRESULT`. A stub that answered
+/// `E_NOTIMPL` here would read as TRUE, which is the opposite of "not available",
+/// so these say FALSE: there is no UIA endpoint, containment changes are not
+/// observable, and the playback rate is whatever the caller set.
+#[unsafe(no_mangle)]
+pub extern "system" fn AutomationExtension_IsUiaEndpointsSupported() -> i32 {
+    0
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Containment_GetChangeEnabled() -> i32 {
+    0
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn MediaPlaybackSessionExtension_IsPlaybackRateSupported() -> i32 {
+    0
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn PackageManagement_IsFeatureSupported() -> i32 {
+    0
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn PackageManagement_IsPackageRegistrationPending() -> i32 {
+    0
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn PackageManagement_IsRegisteredOrNewerAvailable() -> i32 {
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -181,6 +215,13 @@ mod tests {
             assert_eq!(Windowing_GetIconFromIconId(icon_id, &mut back), S_OK);
             assert_eq!(back, icon);
         }
+    }
+
+    #[test]
+    fn a_boolean_export_answers_false() {
+        assert_eq!(AutomationExtension_IsUiaEndpointsSupported(), 0);
+        assert_eq!(Containment_GetChangeEnabled(), 0);
+        assert_eq!(MediaPlaybackSessionExtension_IsPlaybackRateSupported(), 0);
     }
 
     #[test]

@@ -29,11 +29,6 @@ pub extern "system" fn BackButtonIntegration_UnregisterListener() -> i32 {
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Containment_GetChangeEnabled() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
 pub extern "system" fn DCompPrivates_CreateSharedVisual() -> i32 {
     E_NOTIMPL
 }
@@ -135,11 +130,6 @@ pub extern "system" fn MediaPlaybackListExtension_AddAutoRepeatChanged() -> i32 
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MediaPlaybackListExtension_RemoveAutoRepeatChanged() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
-pub extern "system" fn MediaPlaybackSessionExtension_IsPlaybackRateSupported() -> i32 {
     E_NOTIMPL
 }
 

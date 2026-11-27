@@ -21,11 +21,6 @@ pub extern "system" fn AppxPackageVolumeReset_RepairDeviceWithAppReset() -> i32 
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn AutomationExtension_IsUiaEndpointsSupported() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
 pub extern "system" fn Containment_SetConfiguration() -> i32 {
     E_NOTIMPL
 }
@@ -192,21 +187,6 @@ pub extern "system" fn MediaPlayerExtension_DisableVisibilityHandling() -> i32 {
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MediaPlayerExtension_GetCurrentMediaPlaybackItem_Deprecated() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
-pub extern "system" fn PackageManagement_IsFeatureSupported() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
-pub extern "system" fn PackageManagement_IsPackageRegistrationPending() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
-pub extern "system" fn PackageManagement_IsRegisteredOrNewerAvailable() -> i32 {
     E_NOTIMPL
 }
 
