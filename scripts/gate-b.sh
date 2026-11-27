@@ -52,7 +52,9 @@ export OPENCOMP_XAML_PROBE_JSON=1
 # then fails at the first activation, which the report shows.
 msix=${ACTIVATION_MSIX:-}
 if [ -z "$msix" ]; then
-	msix=$(ls "$sdk"/../Microsoft.WindowsAppRuntime.2.msix 2>/dev/null | head -1)
+	# `find` rather than `ls`: a missing file must leave this empty, not abort the run
+	# under `set -e`.
+	msix=$(find "$sdk/.." -maxdepth 1 -name 'Microsoft.WindowsAppRuntime*.msix' 2>/dev/null | head -1)
 fi
 if [ -n "$msix" ] && [ -f "$msix" ]; then
 	cargo run -q -p xwinui -- activation --sdk "$msix" \
