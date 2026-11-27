@@ -306,6 +306,29 @@ which is two copies of the same statics. Anything a host wants to read back (the
 frame counter, for one) has to come from the copy that did the work, which is why
 `opencomp_frames_presented` is exported.
 
+### Running Gate B locally
+
+`scripts/gate-b.sh` is the whole procedure -- fetch the App SDK, build the probe, run
+it under Wine -- and the CI job only calls it. The same script runs in an x86-64 Linux
+container, which is the same userland as the runner:
+
+```sh
+container system start
+container run -d --name wasdk --arch amd64 --rosetta \
+    -v "$PWD:/src" -w /src ubuntu:24.04 sleep infinity
+container exec wasdk bash -lc 'apt-get update && apt-get install -y wine64 xvfb \
+    gcc-mingw-w64-x86-64 curl unzip ca-certificates'
+container exec wasdk bash -lc 'cd /src && bash scripts/gate-b.sh target/appsdk'
+```
+
+`NUGET_BASE` points the fetch at another flat-container host when nuget.org is not the
+closest source; the path below it is the same. The base image carries no CA store, so
+`apt` needs `ca-certificates` before an `https` source works.
+
+The first probe run reports `LoadLibraryW` failing with `ERROR_MOD_NOT_FOUND`; the
+script sets `WINEDEBUG=err+loaddll` so the module that is missing is printed. That name
+is the next thing to add or stub.
+
 ## Milestones
 
 The binaries themselves are measured in [`winui-anatomy.md`](winui-anatomy.md):
