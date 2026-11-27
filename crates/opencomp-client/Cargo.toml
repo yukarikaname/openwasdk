@@ -1,0 +1,23 @@
+[package]
+name = "opencomp-client"
+description = "Composition-only client: a window, a tree built through the ABI, and the bridge that presents it"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "opencomp-client"
+path = "src/main.rs"
+
+# The composition ABI is Windows only, so on any other target the binary needs nothing.
+[target.'cfg(windows)'.dependencies]
+opencomp = { path = "../opencomp" }
+windows-core = "0.100"
+windows-numerics = "0.100"
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+    "Win32_UI_WindowsAndMessaging",
+] }

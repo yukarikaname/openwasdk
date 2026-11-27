@@ -1361,6 +1361,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "opencomp-client"
+version = "0.1.0"
+dependencies = [
+ "opencomp",
+ "windows",
+ "windows-core 0.100.0",
+ "windows-numerics 0.100.0",
+]
+
+[[package]]
 name = "opencomp-core"
 version = "0.1.0"
 dependencies = [

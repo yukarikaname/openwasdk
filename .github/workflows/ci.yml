@@ -137,6 +137,19 @@ jobs:
           echo "running $test_exe"
           xvfb-run -a "$wine" "$test_exe" --test-threads=1
 
+      # The client is the shape a real application has: a window, a tree built
+      # through the ABI, an island, and a bridge that presents. Ten frames are
+      # enough to prove the path; a failure names the step.
+      - name: Run the client under Wine
+        if: runner.os == 'Linux'
+        run: |
+          wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
+          export WINEPREFIX="$PWD/target/wine"
+          export WINEDLLOVERRIDES="mscoree,mshtml="
+          cargo build -p opencomp-client --target x86_64-pc-windows-gnu
+          OPENCOMP_FRAMES=10 xvfb-run -a "$wine" \
+            target/x86_64-pc-windows-gnu/debug/opencomp-client.exe
+
       # The flat C layer XAML imports by name. A missing export is a load failure,
       # so check one conversion and one stub, not just that the crate compiled.
       - name: Link the framework UDK stand-in
