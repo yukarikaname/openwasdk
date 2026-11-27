@@ -8,8 +8,8 @@
 use std::fmt;
 
 use crate::element::{
-    CornerRadius, Element, GridLength, HorizontalAlignment, Length, Orientation, Thickness, Value,
-    VerticalAlignment,
+    CornerRadius, Element, GridLength, GridTrack, HorizontalAlignment, Length, Orientation,
+    Thickness, Value, VerticalAlignment, Visibility,
 };
 use crate::property::ValueType;
 use crate::support::{self, TypeSupport};
@@ -206,13 +206,15 @@ fn color_from_argb(color: u32) -> [f32; 4] {
 /*
  * Grid.RowDefinitions and Grid.ColumnDefinitions arrive as RowDefinition and
  * ColumnDefinition elements. Each one contributes one track; the owner's
- * property name says whether the track is a height or a width.
+ * property name says whether the track is a height or a width. The definition's
+ * Min/Max is carried with the track, because the definition element itself is
+ * not part of this layer's model.
  */
-fn definitions(property: &xbf::Property) -> Option<Vec<GridLength>> {
-    let (axis, owner) = if property.name.ends_with("ColumnDefinitions") {
-        ("Width", "ColumnDefinition")
+fn definitions(property: &xbf::Property) -> Option<Vec<GridTrack>> {
+    let (axis, min, max, owner) = if property.name.ends_with("ColumnDefinitions") {
+        ("Width", "MinWidth", "MaxWidth", "ColumnDefinition")
     } else {
-        ("Height", "RowDefinition")
+        ("Height", "MinHeight", "MaxHeight", "RowDefinition")
     };
     let values: Vec<&xbf::Element> = match &property.value {
         xbf::model::Value::Element(definition) => vec![definition],
@@ -225,13 +227,27 @@ fn definitions(property: &xbf::Property) -> Option<Vec<GridLength>> {
             if name_suffix(&definition.type_name) != owner {
                 return None;
             }
-            let value = definition
+            let length = definition
                 .properties
                 .iter()
-                .find(|property| property.name == axis)?;
-            grid_length(&value.value)
+                .find(|property| property.name == axis)
+                .and_then(|property| grid_length(&property.value))
+                .unwrap_or_default();
+            let min = definition_property(definition, min)
+                .map(|value| value.max(0.0))
+                .unwrap_or(0.0);
+            let max = definition_property(definition, max).unwrap_or(f32::INFINITY);
+            Some(GridTrack { length, min, max })
         })
         .collect()
+}
+
+fn definition_property(definition: &xbf::Element, name: &str) -> Option<f32> {
+    definition
+        .properties
+        .iter()
+        .find(|property| property.name == name)
+        .and_then(|property| number(&property.value))
 }
 
 fn grid_length(value: &xbf::model::Value) -> Option<GridLength> {
@@ -269,7 +285,8 @@ fn resolved_type(value: &xbf::model::Value) -> Option<String> {
 
 /*
  * WinRT enumeration values are stable: Orientation is Vertical=0, Horizontal=1;
- * the alignments are Left/Top=0, Center=1, Right/Bottom=2, Stretch=3.
+ * Visibility is Visible=0, Collapsed=1; the alignments are Left/Top=0,
+ * Center=1, Right/Bottom=2, Stretch=3.
  */
 fn enum_value(expected: &str, value: &xbf::model::Value) -> Option<Value> {
     let xbf::model::Value::Enum { type_name, value } = value else {
@@ -281,6 +298,8 @@ fn enum_value(expected: &str, value: &xbf::model::Value) -> Option<Value> {
     match (expected, *value) {
         ("Orientation", 0) => Some(Value::Orientation(Orientation::Vertical)),
         ("Orientation", 1) => Some(Value::Orientation(Orientation::Horizontal)),
+        ("Visibility", 0) => Some(Value::Visibility(Visibility::Visible)),
+        ("Visibility", 1) => Some(Value::Visibility(Visibility::Collapsed)),
         ("HorizontalAlignment", 0) => Some(Value::HorizontalAlignment(HorizontalAlignment::Left)),
         ("HorizontalAlignment", 1) => Some(Value::HorizontalAlignment(HorizontalAlignment::Center)),
         ("HorizontalAlignment", 2) => Some(Value::HorizontalAlignment(HorizontalAlignment::Right)),

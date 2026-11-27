@@ -24,9 +24,12 @@ use std::collections::BTreeMap;
 
 use crate::property::{self, Property, PropertyError, PropertyId};
 
+mod grid;
+mod visibility;
+
 pub use crate::value::{
-    CornerRadius, GridLength, HorizontalAlignment, Length, Orientation, Thickness, Value,
-    VerticalAlignment,
+    CornerRadius, GridLength, GridTrack, HorizontalAlignment, Length, Orientation, Thickness,
+    Value, VerticalAlignment, Visibility,
 };
 
 /// The element types this layer can lay out. The list is closed on purpose:
@@ -434,25 +437,31 @@ impl Element {
         element
     }
 
-    pub fn rows(&self) -> &[GridLength] {
+    pub fn rows(&self) -> &[GridTrack] {
         definitions(self.get(&property::GRID_ROWS))
     }
 
-    pub fn set_rows(&mut self, rows: impl IntoIterator<Item = GridLength>) {
+    pub fn set_rows(&mut self, rows: impl IntoIterator<Item = impl Into<GridTrack>>) {
         self.store(
             &property::GRID_ROWS,
-            Value::GridDefinitions(rows.into_iter().collect::<Vec<_>>().into()),
+            Value::GridDefinitions(rows.into_iter().map(Into::into).collect::<Vec<_>>().into()),
         );
     }
 
-    pub fn columns(&self) -> &[GridLength] {
+    pub fn columns(&self) -> &[GridTrack] {
         definitions(self.get(&property::GRID_COLUMNS))
     }
 
-    pub fn set_columns(&mut self, columns: impl IntoIterator<Item = GridLength>) {
+    pub fn set_columns(&mut self, columns: impl IntoIterator<Item = impl Into<GridTrack>>) {
         self.store(
             &property::GRID_COLUMNS,
-            Value::GridDefinitions(columns.into_iter().collect::<Vec<_>>().into()),
+            Value::GridDefinitions(
+                columns
+                    .into_iter()
+                    .map(Into::into)
+                    .collect::<Vec<_>>()
+                    .into(),
+            ),
         );
     }
 
@@ -483,7 +492,7 @@ fn index_value(value: &Value) -> usize {
     }
 }
 
-fn definitions(value: &Value) -> &[GridLength] {
+fn definitions(value: &Value) -> &[GridTrack] {
     match value {
         Value::GridDefinitions(definitions) => definitions.as_ref(),
         _ => &[],

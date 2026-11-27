@@ -2,231 +2,135 @@
 //!
 //! The rules and their upstream functions are documented in `layout.rs`; the
 //! names below repeat the engine function each helper ports:
-//! `MeasureCell`, `GetDesiredInnerSize`, `ResolveStar`, `DistributeStarSpace`
-//! and `SetFinalSize`, all in `dxaml/xcp/core/core/elements/Grid.cpp`.
+//! `MeasureCell`, `GetAvailableSizeForRange`, `GetDesiredInnerSize`,
+//! `ResolveStar`, `DistributeStarSpace`, `EnsureMinSizeInDefinitionRange` and
+//! `SetFinalSize`, all in `dxaml/xcp/core/core/elements/Grid.cpp`.
 
 use opencomp_core::Rect;
 
 use super::{
-    Layout, Size, arrange_with_desired, chrome, deflate, layout_round, measure as measure_element,
+    Layout, LayoutError, Size, arrange_with_desired, chrome, deflate, measure as measure_element,
     reduce,
 };
-use crate::element::{Element, GridLength};
+use crate::element::Element;
 
-pub(super) fn measure(element: &Element, available: Size) -> Size {
+mod track;
+
+use track::Tracks;
+
+pub(super) fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> {
     let chrome = chrome(element);
     let inner = Size::new(
         reduce(available.width, chrome.horizontal()),
         reduce(available.height, chrome.vertical()),
     );
-    let columns = element.columns();
-    let rows = element.rows();
-    let (natural_columns, natural_rows) = natural(element, columns, rows, inner);
+    let (mut columns, mut rows) = axes(element, inner);
 
-    let width: f32 = desired_tracks(columns, &natural_columns).iter().sum();
-    let height: f32 = desired_tracks(rows, &natural_rows).iter().sum();
-    Size::new(width + chrome.horizontal(), height + chrome.vertical())
+    natural(element, &mut columns, &mut rows)?;
+
+    let column_count = element.columns().len().max(1);
+    let row_count = element.rows().len().max(1);
+    let width = columns.desired() + element.column_spacing() * (column_count - 1) as f32;
+    let height = rows.desired() + element.row_spacing() * (row_count - 1) as f32;
+    Ok(Size::new(
+        width + chrome.horizontal(),
+        height + chrome.vertical(),
+    ))
 }
 
-pub(super) fn arrange(element: &Element, content: Rect) -> Vec<Layout> {
+pub(super) fn arrange(element: &Element, content: Rect) -> Result<Vec<Layout>, LayoutError> {
     let inner = deflate(content, chrome(element));
-    let columns = element.columns();
-    let rows = element.rows();
-    let (natural_columns, natural_rows) =
-        natural(element, columns, rows, Size::new(inner.width, inner.height));
+    let (mut columns, mut rows) = axes(element, Size::new(inner.width, inner.height));
+    let column_spacing = element.column_spacing();
+    let row_spacing = element.row_spacing();
 
-    // In arrange the final size wins: an implicit track fills the Grid and a
-    // star track takes the share `SetFinalSize` gives it.
-    let column_sizes = if columns.is_empty() {
-        vec![inner.width.max(0.0)]
-    } else {
-        resolve(columns, inner.width, &natural_columns)
-    };
-    let row_sizes = if rows.is_empty() {
-        vec![inner.height.max(0.0)]
-    } else {
-        resolve(rows, inner.height, &natural_rows)
-    };
-    let column_offsets = offsets(&column_sizes);
-    let row_offsets = offsets(&row_sizes);
+    natural(element, &mut columns, &mut rows)?;
+    columns.set_final_size();
+    rows.set_final_size();
 
+    let column_offsets = columns.offsets();
+    let row_offsets = rows.offsets();
     let mut layouts = Vec::with_capacity(element.children().len());
     for child in element.children() {
-        let column = child.grid_column().min(column_sizes.len() - 1);
-        let row = child.grid_row().min(row_sizes.len() - 1);
-        let slot = Rect::new(
-            inner.x + column_offsets[column],
-            inner.y + row_offsets[row],
-            column_sizes[column],
-            row_sizes[row],
-        );
-        let desired = measure_element(child, Size::new(slot.width, slot.height));
-        layouts.push(arrange_with_desired(child, slot, desired));
+        let (column, column_span) = columns.range(child.grid_column(), child.grid_column_span());
+        let (row, row_span) = rows.range(child.grid_row(), child.grid_row_span());
+
+        // `CGrid::ArrangeOverride`: the offset carries the spacing before the
+        // first track, the size carries the spacing inside the span.
+        let x = inner.x + column_offsets[column] + column_spacing * column as f32;
+        let y = inner.y + row_offsets[row] + row_spacing * row as f32;
+        let width =
+            columns.range_size(column, column_span) + column_spacing * (column_span - 1) as f32;
+        let height = rows.range_size(row, row_span) + row_spacing * (row_span - 1) as f32;
+        let slot = Rect::new(x, y, width, height);
+
+        if !child.is_visible() {
+            // A collapsed child leaves the cell empty and changes no track.
+            layouts.push(Layout {
+                rect: Rect::new(x, y, 0.0, 0.0),
+                children: Vec::new(),
+            });
+            continue;
+        }
+        let desired = measure_element(child, Size::new(slot.width, slot.height))?;
+        layouts.push(arrange_with_desired(child, slot, desired)?);
     }
-    layouts
+    Ok(layouts)
 }
 
-/// `CGrid::GetDesiredInnerSize`: a pixel track contributes its value, an auto
-/// track and a star track contribute their largest child desired size. A star
-/// is therefore auto-like in measure even when the available size is finite;
-/// it only becomes a share during arrange (`CGrid::SetFinalSize`).
-fn desired_tracks(definitions: &[GridLength], natural: &[f32]) -> Vec<f32> {
-    if definitions.is_empty() {
-        return vec![natural.first().copied().unwrap_or(0.0)];
-    }
-    definitions
-        .iter()
-        .enumerate()
-        .map(|(index, definition)| match *definition {
-            GridLength::Pixels(pixels) => layout_round(pixels.max(0.0)),
-            GridLength::Auto | GridLength::Star(_) => {
-                natural.get(index).copied().unwrap_or(0.0).max(0.0)
-            }
-        })
-        .collect()
+/// Build both axes. The spacing between tracks is subtracted from the size the
+/// tracks share (`CGrid::MeasureOverride`, `CGrid::ArrangeOverride`).
+fn axes(element: &Element, inner: Size) -> (Tracks, Tracks) {
+    let column_count = element.columns().len().max(1);
+    let row_count = element.rows().len().max(1);
+    let column_space = reduce(
+        inner.width,
+        element.column_spacing() * (column_count - 1) as f32,
+    );
+    let row_space = reduce(inner.height, element.row_spacing() * (row_count - 1) as f32);
+    (
+        Tracks::new(element.columns(), element.column_spacing(), column_space),
+        Tracks::new(element.rows(), element.row_spacing(), row_space),
+    )
 }
 
-/// `CGrid::MeasureOverride` and `CGrid::MeasureCell`: collect the largest
-/// desired size per track. A cell in an auto track is measured freely, a pixel
-/// cell with the pixel value, a star cell with its share of what the other
-/// tracks leave. Cells in a star track go second so the auto sizes exist.
-fn natural(
-    element: &Element,
-    columns: &[GridLength],
-    rows: &[GridLength],
-    inner: Size,
-) -> (Vec<f32>, Vec<f32>) {
-    let column_count = columns.len().max(1);
-    let row_count = rows.len().max(1);
-    let mut natural_columns = vec![0.0_f32; column_count];
-    let mut natural_rows = vec![0.0_f32; row_count];
-
-    for star_cell in [false, true] {
+/// `CGrid::MeasureOverride`: cells outside a star track first, then a star
+/// resolution, then the cells inside a star track. The engine's four groups are
+/// collapsed into those two passes; the difference is documented in `layout.rs`.
+fn natural(element: &Element, columns: &mut Tracks, rows: &mut Tracks) -> Result<(), LayoutError> {
+    for star_pass in [false, true] {
         for child in element.children() {
-            let column = child.grid_column().min(column_count - 1);
-            let row = child.grid_row().min(row_count - 1);
-            let in_star =
-                star_track(columns, column, inner.width) || star_track(rows, row, inner.height);
-            if in_star != star_cell {
+            if !child.is_visible() {
                 continue;
             }
+            let (column, column_span) =
+                columns.range(child.grid_column(), child.grid_column_span());
+            let (row, row_span) = rows.range(child.grid_row(), child.grid_row_span());
+            let in_star =
+                columns.range_has_star(column, column_span) || rows.range_has_star(row, row_span);
+            if in_star != star_pass {
+                continue;
+            }
+            // A span over a star track is the engine's cyclic-measure case.
+            if column_span > 1 && columns.range_has_star(column, column_span) {
+                return Err(LayoutError::SpanAcrossStarTrack);
+            }
+            if row_span > 1 && rows.range_has_star(row, row_span) {
+                return Err(LayoutError::SpanAcrossStarTrack);
+            }
+
             let constraint = Size::new(
-                cell_constraint(columns, column, inner.width, &natural_columns),
-                cell_constraint(rows, row, inner.height, &natural_rows),
+                columns.cell_constraint(column, column_span),
+                rows.cell_constraint(row, row_span),
             );
-            let desired = measure_element(child, constraint);
-            natural_columns[column] = natural_columns[column].max(desired.width);
-            natural_rows[row] = natural_rows[row].max(desired.height);
+            let desired = measure_element(child, constraint)?;
+            columns.contribute(column, column_span, desired.width);
+            rows.contribute(row, row_span, desired.height);
+        }
+        if !star_pass {
+            columns.resolve_stars();
+            rows.resolve_stars();
         }
     }
-    (natural_columns, natural_rows)
-}
-
-/// `CGrid::ValidateDefinitions`: with an infinite constraint a star is an auto,
-/// so it is measured freely and contributes its content to desired.
-fn star_track(definitions: &[GridLength], index: usize, available: f32) -> bool {
-    matches!(definitions.get(index), Some(GridLength::Star(_))) && available.is_finite()
-}
-
-/// `CGrid::MeasureCell`: the constraint one cell gives its child.
-fn cell_constraint(
-    definitions: &[GridLength],
-    index: usize,
-    available: f32,
-    natural: &[f32],
-) -> f32 {
-    match definitions.get(index) {
-        None => available,
-        Some(GridLength::Auto) => f32::INFINITY,
-        Some(GridLength::Pixels(pixels)) => layout_round(pixels.max(0.0)),
-        Some(GridLength::Star(weight)) => {
-            if !available.is_finite() {
-                return f32::INFINITY;
-            }
-            let weights = star_weight(definitions);
-            if weights == 0.0 {
-                0.0
-            } else {
-                (layout_round(available) - fixed_tracks(definitions, natural)).max(0.0)
-                    * weight.max(0.0)
-                    / weights
-            }
-        }
-    }
-}
-
-/// `CGrid::ResolveStar`: pixel and auto tracks come off the available size
-/// before the stars share the remainder.
-fn fixed_tracks(definitions: &[GridLength], natural: &[f32]) -> f32 {
-    definitions
-        .iter()
-        .enumerate()
-        .map(|(index, definition)| match *definition {
-            GridLength::Pixels(pixels) => layout_round(pixels.max(0.0)),
-            GridLength::Auto => natural.get(index).copied().unwrap_or(0.0).max(0.0),
-            GridLength::Star(_) => 0.0,
-        })
-        .sum()
-}
-
-fn star_weight(definitions: &[GridLength]) -> f32 {
-    definitions
-        .iter()
-        .map(|definition| match *definition {
-            GridLength::Star(weight) => weight.max(0.0),
-            _ => 0.0,
-        })
-        .sum()
-}
-
-/// `CGrid::SetFinalSize` and `CGrid::DistributeStarSpace`: a pixel keeps its
-/// layout-rounded value, an auto track its content, and the stars divide the
-/// remainder. `SortDefinitionsForStarSizeDistribution` orders the allocation by
-/// `maxSize / weight`, which with no Min/Max values is largest weight first.
-/// Each share is rounded to a layout pixel and clamped to the track's content.
-fn resolve(definitions: &[GridLength], available: f32, natural: &[f32]) -> Vec<f32> {
-    let mut sizes = vec![0.0_f32; definitions.len().max(1)];
-    if definitions.is_empty() {
-        sizes[0] = available.max(0.0);
-        return sizes;
-    }
-
-    let mut stars = Vec::new();
-    for (index, definition) in definitions.iter().enumerate() {
-        match *definition {
-            GridLength::Pixels(pixels) => sizes[index] = layout_round(pixels.max(0.0)),
-            GridLength::Auto => {
-                sizes[index] = natural.get(index).copied().unwrap_or(0.0).max(0.0);
-            }
-            GridLength::Star(weight) => stars.push((index, weight.max(0.0))),
-        }
-    }
-
-    stars.sort_by(|left, right| right.1.total_cmp(&left.1));
-    let distributed = available.is_finite();
-    let mut left =
-        (layout_round(available) - layout_round(fixed_tracks(definitions, natural))).max(0.0);
-    let mut remaining: f32 = stars.iter().map(|star| star.1).sum();
-    for (index, weight) in stars {
-        let share = if distributed && weight > 0.0 && remaining > 0.0 {
-            layout_round(left * weight / remaining)
-        } else {
-            0.0
-        };
-        let size = share.max(natural.get(index).copied().unwrap_or(0.0).max(0.0));
-        sizes[index] = size;
-        left = (left - size).max(0.0);
-        remaining -= weight;
-    }
-    sizes
-}
-
-fn offsets(sizes: &[f32]) -> Vec<f32> {
-    let mut offsets = Vec::with_capacity(sizes.len());
-    let mut offset = 0.0;
-    for size in sizes {
-        offsets.push(offset);
-        offset += size;
-    }
-    offsets
+    Ok(())
 }

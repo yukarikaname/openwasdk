@@ -25,6 +25,7 @@ use std::fmt;
 
 use crate::value::{
     CornerRadius, HorizontalAlignment, Length, Orientation, Thickness, Value, VerticalAlignment,
+    Visibility,
 };
 
 /// A property name, exactly as XAML spells it. Attached properties keep their
@@ -91,6 +92,7 @@ impl Value {
             Self::HorizontalAlignment(_) => ValueType::Enum("HorizontalAlignment"),
             Self::VerticalAlignment(_) => ValueType::Enum("VerticalAlignment"),
             Self::Orientation(_) => ValueType::Enum("Orientation"),
+            Self::Visibility(_) => ValueType::Enum("Visibility"),
             Self::Color(_) => ValueType::SolidColorBrush,
             Self::Text(_) => ValueType::Text,
             Self::GridDefinitions(_) => ValueType::GridDefinitions,
@@ -181,8 +183,30 @@ pub static ORIENTATION: Property = Property::new(
     &Value::Orientation(Orientation::Vertical),
     false,
 );
+/// `UIElement.Visibility`. A collapsed element is not measured, takes no space
+/// and does not advance a `StackPanel` cursor or count toward its `Spacing`.
+pub static VISIBILITY: Property = Property::new(
+    "Visibility",
+    ValueType::Enum("Visibility"),
+    &Value::Visibility(Visibility::Visible),
+    false,
+);
 pub static SPACING: Property =
     Property::new("Spacing", ValueType::Double, &Value::Number(0.0), false);
+/// `Grid.RowSpacing`, between rows only.
+pub static GRID_ROW_SPACING: Property = Property::new(
+    "Grid.RowSpacing",
+    ValueType::Double,
+    &Value::Number(0.0),
+    false,
+);
+/// `Grid.ColumnSpacing`, between columns only.
+pub static GRID_COLUMN_SPACING: Property = Property::new(
+    "Grid.ColumnSpacing",
+    ValueType::Double,
+    &Value::Number(0.0),
+    false,
+);
 pub static TEXT: Property = Property::new(
     "Text",
     ValueType::Text,
@@ -219,6 +243,20 @@ pub static GRID_ROW: Property =
     Property::new("Grid.Row", ValueType::Double, &Value::Number(0.0), false);
 pub static GRID_COLUMN: Property =
     Property::new("Grid.Column", ValueType::Double, &Value::Number(0.0), false);
+/// A child crosses this many rows; one row is the default.
+pub static GRID_ROW_SPAN: Property = Property::new(
+    "Grid.RowSpan",
+    ValueType::Double,
+    &Value::Number(1.0),
+    false,
+);
+/// A child crosses this many columns; one column is the default.
+pub static GRID_COLUMN_SPAN: Property = Property::new(
+    "Grid.ColumnSpan",
+    ValueType::Double,
+    &Value::Number(1.0),
+    false,
+);
 pub static GRID_ROWS: Property = Property::new(
     "Grid.RowDefinitions",
     ValueType::GridDefinitions,
@@ -244,7 +282,10 @@ pub static PROPERTIES: &[&Property] = &[
     &VERTICAL_ALIGNMENT,
     &BACKGROUND,
     &ORIENTATION,
+    &VISIBILITY,
     &SPACING,
+    &GRID_ROW_SPACING,
+    &GRID_COLUMN_SPACING,
     &TEXT,
     &FONT_SIZE,
     &BORDER_BRUSH,
@@ -252,6 +293,8 @@ pub static PROPERTIES: &[&Property] = &[
     &CORNER_RADIUS,
     &GRID_ROW,
     &GRID_COLUMN,
+    &GRID_ROW_SPAN,
+    &GRID_COLUMN_SPAN,
     &GRID_ROWS,
     &GRID_COLUMNS,
 ];

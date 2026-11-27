@@ -1,27 +1,51 @@
 //! Measure and arrange, ported from the XAML core. No WinRT, no renderer.
 //!
 //! Rules and the file each came from:
-//! - `dxaml/xcp/dxaml/lib/StackPanel_Partial.cpp` (peer) and
+//! - `dxaml/xcp/core/core/elements/StackPanel.cpp` (peer) and
 //!   `dxaml/xcp/core/core/elements/StackPanel.cpp` (`MeasureOverride`,
 //!   `ArrangeOverride`): infinite constraint along the stacking axis; desired
-//!   is the sum of the child desired sizes plus `Spacing * (visible - 1)`;
-//!   arrange advances a cursor by the child slot plus spacing, so there is no
-//!   spacing before the first or after the last child. A child's slot is its
-//!   desired main size and `CLayoutElement::ArrangeCore` removes the child's
-//!   margin inside that slot.
-//! - `dxaml/xcp/core/core/elements/Grid.cpp` (`MeasureOverride`,
-//!   `MeasureCell`, `GetDesiredInnerSize`, `ArrangeOverride`, `SetFinalSize`,
-//!   `ResolveStar`, `DistributeStarSpace`): a pixel track keeps its value, an
-//!   auto track takes the largest child desired size, a star contributes its
-//!   content in measure, and in arrange the stars divide what pixel and auto
-//!   tracks leave by weight. `ValidateDefinitions` turns every star into an
-//!   auto when the available size is infinite.
+//!   is the sum of the child desired sizes plus `Spacing * (visible - 1)`, where
+//!   `visible` counts only children whose `IsVisible` is true; arrange advances
+//!   a cursor by the child slot plus spacing, so there is no spacing before the
+//!   first or after the last visible child. A collapsed child is placed in a
+//!   zero-size rect and never advances the cursor. A child's slot is its desired
+//!   main size and `CLayoutElement::ArrangeCore` removes the child's margin
+//!   inside that slot.
+//! - `dxaml/xcp/core/core/elements/Grid.cpp` (`MeasureOverride`, `MeasureCell`,
+//!   `GetAvailableSizeForRange`, `GetDesiredInnerSize`, `ValidateDefinitions`,
+//!   `ArrangeOverride`, `SetFinalSize`, `ResolveStar`, `DistributeStarSpace`,
+//!   `EnsureMinSizeInDefinitionRange`, `SortDefinitionsForStarSizeDistribution`,
+//!   `SortDefinitionsForSpanMaxSizeDistribution`,
+//!   `SortDefinitionsForOverflowSizeDistribution`): a pixel track keeps its
+//!   value clamped to its Min/Max, an auto track takes the largest child
+//!   desired size, a star contributes its content in measure, and in arrange
+//!   the stars divide what pixel and auto tracks leave by weight. `RowSpacing`
+//!   and `ColumnSpacing` are removed from the available size before that
+//!   division and are added only between tracks. A star's resolved size is
+//!   clamped to `[effectiveMin, userMax]`; the clamp happens in allocation order
+//!   (lowest `maxSize / weight` first), so a track that hits its Max leaves the
+//!   remainder for the later stars and a track forced up by its Min takes space
+//!   from them. Each star is allocated once. After the stars, if the total still
+//!   exceeds the final size, `SetFinalSize`'s overflow pass shrinks every track
+//!   once in ascending `(size - effectiveMin)` order. `ValidateDefinitions`
+//!   turns every star into an auto when the available size is infinite.
+//! - `dxaml/xcp/core/core/elements/Grid.cpp` spans: `GetRowSpan`/`GetColumnSpan`
+//!   clamp to the remaining tracks; `MeasureCell` measures a spanning child
+//!   against `GetAvailableSizeForRange` (the sum of the spanned tracks plus the
+//!   spacing between them, or infinity when the range contains an auto and no
+//!   star track); `RegisterSpan` plus `EnsureMinSizeInDefinitionRange` spread
+//!   the child's desired size back over the spanned tracks; `ArrangeOverride`
+//!   places it in `GetFinalSizeForRange`. This layer refuses a span that covers
+//!   a star track with [`LayoutError::SpanAcrossStarTrack`]; the engine resolves
+//!   those cells through the cyclic measure groups (groups 2', 2'' in
+//!   `CGrid::MeasureOverride`) that this layer does not model.
 //! - `dxaml/xcp/core/core/elements/Border.cpp` (`MeasureOverride`,
 //!   `ArrangeOverride`, `HelperGetCombinedThickness`, `HelperGetInnerRect`,
 //!   `HelperDeflateRect`): border thickness and padding both reduce the child
 //!   constraint and add to desired; arrange removes both from the slot,
 //!   clamped at zero. `CornerRadius` is read only while drawing and hit-testing
-//!   (same file), never by measure or arrange.
+//!   (same file), never by measure or arrange. A collapsed child contributes
+//!   nothing to desired and gets a zero-size rect.
 //! - `dxaml/xcp/core/core/elements/layoutelement.cpp` (`MeasureCore`,
 //!   `ArrangeCore`): margin is removed before measuring and added back; a
 //!   desired size is rounded, then clipped to available; arrange uses a slot
@@ -34,18 +58,31 @@
 //!   `LayoutRoundHelper` is not modelled. Ties use `f32::round` (away from
 //!   zero); the body of `XcpRound` is not in the MIT tree we read, so the tie
 //!   rule is assumed, not verified.
+//! - `dxaml/xcp/core/core/elements/uielement.h`: `GetIsLayoutSuspended` is
+//!   `IsCollapsed`, and `uielement.cpp`'s `MeasureInternal` returns before
+//!   `MeasureCore` while suspended. The zero desired size that follows is
+//!   inferred from `CLayoutElement::GetActualWidth`'s comment (a collapsed
+//!   element has no layout storage and reports 0); the reset itself lives in a
+//!   visibility file absent from the local tree, so that step is unverified.
 //!
 //! `Grid_Partial.cpp` and `Border_Partial.cpp` are absent from the current MIT
 //! tree; their layout lives in the core files above. Margins do not collapse:
 //! 5 px bottom + 5 px top is a 10 px gap, as in WPF.
 //!
 //! Not modelled:
-//! - grid spans (`Grid.RowSpan`/`ColumnSpan`) and the four measure groups that
-//!   break the auto-row/star-column cycle; cells outside and inside a star
-//!   track are measured in two passes instead.
-//! - `Grid.RowSpacing`/`ColumnSpacing`, `MinWidth`/`MaxWidth`, and the overflow
-//!   redistribution in `CGrid::SetFinalSize`.
-//! - `Visibility`: every child counts as visible for `Spacing`.
+//! - the four measure groups of `CGrid::MeasureOverride` (`ValidateCells`):
+//!   cells outside a star track are measured first, then the stars are
+//!   resolved, then cells inside a star track are measured. The engine's
+//!   group-2'/group-2'' cycle handling is not here, which is why a span across
+//!   a star track is an error rather than a number.
+//! - the `SortDefinitionsForSpanPreferredDistribution` branch of
+//!   `EnsureMinSizeInDefinitionRange`: for a span with no star track every
+//!   definition's `GetPreferredSize` is its effective min (auto returns the min
+//!   by definition; a pixel track's measure and min are the same clamped
+//!   value), so `rangePreferred == rangeMin` and that branch cannot be reached.
+//!   The source is cited rather than exercised.
+//! - `GRID_STARVALUE_MAX`, the overflow cap on star weights, is defined in
+//!   `Grid.h`, which is not in the local tree; weights are used as given.
 //! - `UseLayoutRounding = false` and rasterisation scales other than 1: this
 //!   layer always rounds to whole pixels and has no property to opt out.
 //! - arrange measures each child again for its slot; the engine arranges with
@@ -55,12 +92,44 @@
 //!   declared in `core/inc/TextBlock.h` and its metrics come from the DWrite
 //!   text layout (`core/native/text/Common/WinTextCore.cpp`); `FontSize` alone
 //!   cannot produce them, so this layer does not pretend it can.
+//!
+//! The numbers are this port's; conformance to the engine needs the measurements
+//! `scripts/gate-b.sh` collects.
+
+use std::fmt;
 
 use opencomp_core::Rect;
 
 use crate::element::{Element, HorizontalAlignment, Kind, Length, Thickness, VerticalAlignment};
 
+mod border;
 mod grid;
+mod stack;
+
+use border::{arrange_border, measure_border};
+use stack::{arrange_stack, horizontal_box, measure_stack, vertical_box};
+
+/// Why a layout pass could not follow an engine rule.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LayoutError {
+    /// A `Grid` child spans more than one track and the span covers a star
+    /// track. `CGrid::MeasureOverride` resolves such cells through the cyclic
+    /// measure groups, which this layer does not model; refusing is preferable
+    /// to inventing a constraint.
+    SpanAcrossStarTrack,
+}
+
+impl fmt::Display for LayoutError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::SpanAcrossStarTrack => {
+                write!(formatter, "a Grid span across a star track is not modelled")
+            }
+        }
+    }
+}
+
+impl std::error::Error for LayoutError {}
 
 /// A desired or available size in pixels.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -85,21 +154,21 @@ pub struct Layout {
 
 impl Element {
     /// Measure this element for the given available size.
-    pub fn measure(&self, available: Size) -> Size {
+    pub fn measure(&self, available: Size) -> Result<Size, LayoutError> {
         measure(self, available)
     }
 
     /// Arrange in `slot` and clear the dirty flag this pass consumed.
-    pub fn arrange(&mut self, slot: Rect) -> Layout {
-        let layout = arrange(self, slot);
+    pub fn arrange(&mut self, slot: Rect) -> Result<Layout, LayoutError> {
+        let layout = arrange(self, slot)?;
         self.mark_layout_clean();
-        layout
+        Ok(layout)
     }
 }
 
 /// `CUIElement::LayoutRound` at rasterisation scale 1: distances that layout
 /// writes are whole pixels, halves away from zero. See the module comment.
-fn layout_round(value: f32) -> f32 {
+pub(super) fn layout_round(value: f32) -> f32 {
     if value.is_finite() {
         value.round()
     } else {
@@ -121,7 +190,7 @@ fn rounded_border(element: &Element) -> Thickness {
 
 /// `CBorder::HelperGetCombinedThickness`: border thickness and padding are
 /// both layout chrome and both are subtracted from the child slot.
-fn chrome(element: &Element) -> Thickness {
+pub(super) fn chrome(element: &Element) -> Thickness {
     let border = rounded_border(element);
     let padding = element.padding();
     Thickness::new(
@@ -134,7 +203,13 @@ fn chrome(element: &Element) -> Thickness {
 
 /// Measure an element, applying the outer `FrameworkElement` rules and then the
 /// rule for its kind.
-pub fn measure(element: &Element, available: Size) -> Size {
+pub fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> {
+    // A collapsed subtree never enters MeasureCore; it contributes nothing,
+    // margin included (`CUIElement::GetIsLayoutSuspended`).
+    if !element.is_visible() {
+        return Ok(Size::new(0.0, 0.0));
+    }
+
     let margin = element.margin();
     let inner_available = Size::new(
         reduce(available.width, margin.horizontal()),
@@ -152,7 +227,7 @@ pub fn measure(element: &Element, available: Size) -> Size {
         },
     );
 
-    let content = measure_override(element, constraint);
+    let content = measure_override(element, constraint)?;
 
     // `CLayoutElement::MeasureCore` rounds the content and the margin sums
     // separately before adding the margin back.
@@ -175,12 +250,12 @@ pub fn measure(element: &Element, available: Size) -> Size {
     if available.height.is_finite() {
         desired.height = desired.height.min(available.height.max(0.0));
     }
-    desired
+    Ok(desired)
 }
 
-fn measure_override(element: &Element, available: Size) -> Size {
+fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutError> {
     match element.kind() {
-        Kind::TextBlock => measure_text(element),
+        Kind::TextBlock => Ok(measure_text(element)),
         Kind::Border => measure_border(element, available),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
@@ -193,66 +268,22 @@ fn measure_text(element: &Element) -> Size {
     Size::new(characters * font_size * 0.5, font_size * 1.2)
 }
 
-fn measure_border(element: &Element, available: Size) -> Size {
-    let chrome = chrome(element);
-    let child_available = Size::new(
-        reduce(available.width, chrome.horizontal()),
-        reduce(available.height, chrome.vertical()),
-    );
-    match element.children().first() {
-        Some(child) => {
-            let desired = measure(child, child_available);
-            Size::new(
-                desired.width + chrome.horizontal(),
-                desired.height + chrome.vertical(),
-            )
-        }
-        None => Size::new(chrome.horizontal(), chrome.vertical()),
+pub fn arrange(element: &Element, slot: Rect) -> Result<Layout, LayoutError> {
+    if !element.is_visible() {
+        return Ok(Layout {
+            rect: Rect::new(slot.x, slot.y, 0.0, 0.0),
+            children: Vec::new(),
+        });
     }
-}
-
-fn measure_stack(element: &Element, available: Size) -> Size {
-    let chrome = chrome(element);
-    let inner = Size::new(
-        reduce(available.width, chrome.horizontal()),
-        reduce(available.height, chrome.vertical()),
-    );
-    let vertical = element.orientation() == crate::element::Orientation::Vertical;
-    let constraint = if vertical {
-        Size::new(inner.width, f32::INFINITY)
-    } else {
-        Size::new(f32::INFINITY, inner.height)
-    };
-
-    let mut main = 0.0;
-    let mut cross = 0.0_f32;
-    for child in element.children() {
-        let desired = measure(child, constraint);
-        if vertical {
-            main += desired.height;
-            cross = cross.max(desired.width);
-        } else {
-            main += desired.width;
-            cross = cross.max(desired.height);
-        }
-    }
-    let gaps = element.children().len().saturating_sub(1) as f32;
-    main += element.spacing() * gaps;
-
-    if vertical {
-        Size::new(cross + chrome.horizontal(), main + chrome.vertical())
-    } else {
-        Size::new(main + chrome.horizontal(), cross + chrome.vertical())
-    }
-}
-
-/// Arrange in `slot`, measuring first so non-stretch alignments know their size.
-pub fn arrange(element: &Element, slot: Rect) -> Layout {
-    let desired = measure(element, Size::new(slot.width, slot.height));
+    let desired = measure(element, Size::new(slot.width, slot.height))?;
     arrange_with_desired(element, slot, desired)
 }
 
-fn arrange_with_desired(element: &Element, slot: Rect, desired: Size) -> Layout {
+pub(super) fn arrange_with_desired(
+    element: &Element,
+    slot: Rect,
+    desired: Size,
+) -> Result<Layout, LayoutError> {
     let margin = element.margin();
     let client = Rect::new(
         slot.x + margin.left,
@@ -279,109 +310,30 @@ fn arrange_with_desired(element: &Element, slot: Rect, desired: Size) -> Layout 
     );
 
     let local = Rect::new(0.0, 0.0, width, height);
-    Layout {
+    Ok(Layout {
         rect: Rect::new(x, y, width, height),
-        children: arrange_children(element, local),
-    }
+        children: arrange_children(element, local)?,
+    })
 }
 
-fn horizontal_box(
-    width: Length,
-    alignment: HorizontalAlignment,
-    desired: f32,
-    client: Rect,
-) -> (f32, f32) {
-    let arranged = match (width, alignment) {
-        (Length::Pixels(pixels), HorizontalAlignment::Stretch) => pixels.max(0.0).min(client.width),
-        (Length::Pixels(pixels), _) => pixels.max(0.0),
-        (Length::Auto, HorizontalAlignment::Stretch) => client.width,
-        (Length::Auto, _) => desired,
-    };
-    let x = match alignment {
-        HorizontalAlignment::Left => client.x,
-        HorizontalAlignment::Center => client.x + (client.width - arranged) * 0.5,
-        HorizontalAlignment::Right => client.x + client.width - arranged,
-        // ArrangeCore centres a Stretch element that has an explicit Width.
-        HorizontalAlignment::Stretch => client.x + (client.width - arranged) * 0.5,
-    };
-    (x, arranged)
-}
-
-fn vertical_box(
-    height: Length,
-    alignment: VerticalAlignment,
-    desired: f32,
-    client: Rect,
-) -> (f32, f32) {
-    let arranged = match (height, alignment) {
-        (Length::Pixels(pixels), VerticalAlignment::Stretch) => pixels.max(0.0).min(client.height),
-        (Length::Pixels(pixels), _) => pixels.max(0.0),
-        (Length::Auto, VerticalAlignment::Stretch) => client.height,
-        (Length::Auto, _) => desired,
-    };
-    let y = match alignment {
-        VerticalAlignment::Top => client.y,
-        VerticalAlignment::Center => client.y + (client.height - arranged) * 0.5,
-        VerticalAlignment::Bottom => client.y + client.height - arranged,
-        VerticalAlignment::Stretch => client.y + (client.height - arranged) * 0.5,
-    };
-    (y, arranged)
-}
-
-fn arrange_children(element: &Element, content: Rect) -> Vec<Layout> {
+fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, LayoutError> {
     match element.kind() {
-        Kind::TextBlock => Vec::new(),
+        Kind::TextBlock => Ok(Vec::new()),
         Kind::Border => arrange_border(element, content),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }
 }
 
-fn arrange_border(element: &Element, content: Rect) -> Vec<Layout> {
-    // `CBorder::HelperGetInnerRect` deflates by border thickness and then by
-    // padding, each step clamped; `CornerRadius` is not part of this.
-    let inner = deflate(deflate(content, rounded_border(element)), element.padding());
-    let Some(child) = element.children().first() else {
-        return Vec::new();
-    };
-    let desired = measure(child, Size::new(inner.width, inner.height));
-    vec![arrange_with_desired(child, inner, desired)]
-}
-
-fn arrange_stack(element: &Element, content: Rect) -> Vec<Layout> {
-    let inner = deflate(content, chrome(element));
-    let vertical = element.orientation() == crate::element::Orientation::Vertical;
-    let spacing = element.spacing();
-    let constraint = if vertical {
-        Size::new(inner.width, f32::INFINITY)
-    } else {
-        Size::new(f32::INFINITY, inner.height)
-    };
-
-    let mut cursor = if vertical { inner.y } else { inner.x };
-    let mut cross = if vertical { inner.width } else { inner.height };
-    let mut layouts = Vec::with_capacity(element.children().len());
-    for child in element.children() {
-        let desired = measure(child, constraint);
-        let slot = if vertical {
-            cross = cross.max(desired.width);
-            Rect::new(inner.x, cursor, cross, desired.height)
-        } else {
-            cross = cross.max(desired.height);
-            Rect::new(cursor, inner.y, desired.width, cross)
-        };
-        layouts.push(arrange_with_desired(child, slot, desired));
-        cursor += if vertical {
-            desired.height
-        } else {
-            desired.width
-        } + spacing;
+pub(super) fn collapsed(origin: Rect) -> Layout {
+    Layout {
+        rect: Rect::new(origin.x, origin.y, 0.0, 0.0),
+        children: Vec::new(),
     }
-    layouts
 }
 
 /// `CBorder::HelperDeflateRect`: subtract a thickness, never going negative.
-fn deflate(rect: Rect, thickness: Thickness) -> Rect {
+pub(super) fn deflate(rect: Rect, thickness: Thickness) -> Rect {
     Rect::new(
         rect.x + thickness.left,
         rect.y + thickness.top,
@@ -390,7 +342,7 @@ fn deflate(rect: Rect, thickness: Thickness) -> Rect {
     )
 }
 
-fn reduce(length: f32, amount: f32) -> f32 {
+pub(super) fn reduce(length: f32, amount: f32) -> f32 {
     if length.is_finite() {
         (length - amount).max(0.0)
     } else {

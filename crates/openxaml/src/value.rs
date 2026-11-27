@@ -123,6 +123,16 @@ pub enum Orientation {
     Vertical,
 }
 
+/// `UIElement.Visibility`. WinUI has no `Hidden` state: an element is either
+/// laid out and drawn or collapsed out of layout. WinRT numbers these values
+/// `Visible = 0, Collapsed = 1`.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Visibility {
+    #[default]
+    Visible,
+    Collapsed,
+}
+
 /// One `Grid` row or column. A star carries its weight, not a size.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GridLength {
@@ -147,6 +157,69 @@ impl GridLength {
     }
 }
 
+/// One `Grid` track: the `GridLength` plus the `MinWidth`/`MaxWidth` (or
+/// `MinHeight`/`MaxHeight`) the definition carries. `ColumnDefinition` and
+/// `RowDefinition` are not element types in this layer, so the bounds travel
+/// with the track instead of living in a definition element.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct GridTrack {
+    pub length: GridLength,
+    pub min: f32,
+    pub max: f32,
+}
+
+impl GridTrack {
+    pub const fn new(length: GridLength) -> Self {
+        Self {
+            length,
+            min: 0.0,
+            max: f32::INFINITY,
+        }
+    }
+
+    pub const fn auto() -> Self {
+        Self::new(GridLength::Auto)
+    }
+
+    pub const fn star(weight: f32) -> Self {
+        Self::new(GridLength::Star(weight))
+    }
+
+    pub const fn pixels(pixels: f32) -> Self {
+        Self::new(GridLength::Pixels(pixels))
+    }
+
+    /// `ColumnDefinition.MinWidth` / `RowDefinition.MinHeight`.
+    pub const fn with_min(self, min: f32) -> Self {
+        Self { min, ..self }
+    }
+
+    /// `ColumnDefinition.MaxWidth` / `RowDefinition.MaxHeight`.
+    pub const fn with_max(self, max: f32) -> Self {
+        Self { max, ..self }
+    }
+}
+
+impl Default for GridTrack {
+    fn default() -> Self {
+        Self::new(GridLength::default())
+    }
+}
+
+impl From<GridLength> for GridTrack {
+    fn from(length: GridLength) -> Self {
+        Self::new(length)
+    }
+}
+
+/// Lets a caller compare a track against the length it was written as, which is
+/// what the loader tests and most callers care about.
+impl PartialEq<GridLength> for GridTrack {
+    fn eq(&self, other: &GridLength) -> bool {
+        self.length == *other
+    }
+}
+
 /// A value in the property store. The variants are the property types layout
 /// knows about; anything else stays a name without a typed reader.
 #[derive(Clone, Debug, PartialEq)]
@@ -158,12 +231,13 @@ pub enum Value {
     HorizontalAlignment(HorizontalAlignment),
     VerticalAlignment(VerticalAlignment),
     Orientation(Orientation),
+    Visibility(Visibility),
     /// Straight, unpremultiplied colour in linear light.
     Color([f32; 4]),
     /// A text run. `Cow` keeps the empty default in a static descriptor.
     Text(Cow<'static, str>),
     /// Grid tracks. `Cow` keeps the empty default in a static descriptor.
-    GridDefinitions(Cow<'static, [GridLength]>),
+    GridDefinitions(Cow<'static, [GridTrack]>),
     Bool(bool),
     /// A resolved type name carried for a property that asks for a type.
     TypeName(String),

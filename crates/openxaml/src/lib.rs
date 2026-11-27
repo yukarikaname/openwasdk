@@ -27,10 +27,10 @@ mod value;
 
 pub use compose::compose;
 pub use element::{
-    CornerRadius, Element, GridLength, HorizontalAlignment, Kind, Length, Orientation, Thickness,
-    Value, VerticalAlignment,
+    CornerRadius, Element, GridLength, GridTrack, HorizontalAlignment, Kind, Length, Orientation,
+    Thickness, Value, VerticalAlignment, Visibility,
 };
-pub use layout::{Layout, Size, arrange, measure};
+pub use layout::{Layout, LayoutError, Size, arrange, measure};
 pub use loader::{LoadError, load, load_root};
 pub use opencomp_core::Rect;
 pub use property::{Property, PropertyError, PropertyId, ValueType};
