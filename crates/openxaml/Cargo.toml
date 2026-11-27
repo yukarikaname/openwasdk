@@ -1,0 +1,11 @@
+[package]
+name = "openxaml"
+description = "XAML element model, property store, layout and composition translation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+opencomp-core = { path = "../opencomp-core" }
