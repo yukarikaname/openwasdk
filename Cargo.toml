@@ -2,7 +2,6 @@
 resolver = "3"
 members = [
     "crates/comptrace",
-    "crates/layout-probe",
     "crates/opencomp",
     "crates/opendispatch",
     "crates/opencomp-client",

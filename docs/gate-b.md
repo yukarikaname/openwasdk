@@ -1,8 +1,8 @@
 # Gate B, measured
 
 The first stage of the ladder that loads Microsoft's XAML engine. Everything here is
-output of `scripts/gate-b.sh` (`xaml-probe`/`layout-probe` against the 2.7.0 packages),
-on Wine and natively on Windows, and nothing here is inferred from source.
+output of `scripts/gate-b.sh` (`xaml-probe` against the 2.7.0 packages), on Wine and
+natively on Windows, and nothing here is inferred from source.
 
 ## What loads
 
@@ -53,36 +53,74 @@ so it needs a registration entry pointing at the DLL, not a file name.
 
 ## Regenerating the probe's bindings
 
-`crates/xaml-probe/src/xaml_bindings.rs` covers the classes the export probe names, which
-is enough to load the DLL and ask for a factory. Measuring needs `IUIElement`
-(`Measure`, `Arrange`, `DesiredSize`) and `IApplicationFactory`, so the filter grows to
-the namespaces those live in. The metadata ships in the packages the probe already
-downloads:
+`crates/xaml-probe/src/xaml_bindings.rs` is generated from the App SDK winmds and
+`Windows.winmd` with `--minimal`. The filter is the class list the export probe still
+names, the statics interfaces it casts, and the members the layout case calls:
+
+```sh
+cargo run -p comptrace -- generate target/appsdk \
+    --namespace 'Microsoft.UI.Content.ContentIsland,Microsoft.UI.Content.IContentIslandStatics::{},Microsoft.UI.Xaml.Application,Microsoft.UI.Xaml.Window,Microsoft.UI.Xaml.IWindowStatics::{},Microsoft.UI.Xaml.Controls.Button,Microsoft.UI.Xaml.Controls.IButtonStatics::{},Microsoft.UI.Xaml.Controls.Border,Microsoft.UI.Xaml.Controls.Frame,Microsoft.UI.Xaml.Controls.IFrameStatics::{},Microsoft.UI.Xaml.Controls.Grid,Microsoft.UI.Xaml.Controls.IGridStatics::{},Microsoft.UI.Xaml.Controls.StackPanel,Microsoft.UI.Xaml.Controls.IStackPanelStatics::{},Microsoft.UI.Xaml.Controls.TextBlock,Microsoft.UI.Xaml.Media.SolidColorBrush,Microsoft.UI.Xaml.UIElement::{},Microsoft.UI.Xaml.FrameworkElement::{},Microsoft.UI.Xaml.IApplicationFactory,Microsoft.UI.Xaml.Controls.IStackPanelFactory,Microsoft.UI.Xaml.Application::Start,Microsoft.UI.Xaml.UIElement::Measure,Microsoft.UI.Xaml.UIElement::Arrange,Microsoft.UI.Xaml.UIElement::DesiredSize,Microsoft.UI.Xaml.FrameworkElement::Height,Microsoft.UI.Xaml.Controls.StackPanel::Spacing,Microsoft.UI.Xaml.Media.SolidColorBrush::Color,Windows.Foundation.Size,Windows.Foundation.Rect' \
+    --minimal --out crates/xaml-probe/src/xaml_bindings.rs
+```
+
+Each entry is there for one reason:
+
+- `Microsoft.UI.Xaml.Application` and `Application::Start` start the engine;
+  `IApplicationFactory` creates the application inside the callback.
+- `Window`, `Controls.{Button,Border,Frame,Grid,StackPanel,TextBlock}` and
+  `Media.SolidColorBrush` are the classes the export probe activates. The
+  `I*Statics::{}` entries are name-only shells: the probe only casts them, and
+  projecting their methods would pull in dependency closures the probe does not use.
+- `UIElement` and `FrameworkElement` are name-only class wrappers; the members that
+  matter are selected one by one: `UIElement::{Measure,Arrange,DesiredSize}`,
+  `FrameworkElement::Height` and `Controls.StackPanel::Spacing`.
+- `Controls.Border` is the activatable child; `Controls.IStackPanelFactory` is how the
+  composable `StackPanel` is created.
+- `Windows.Foundation.Size` and `Rect` are the `Measure`/`Arrange` arguments and the
+  `DesiredSize` result.
+- `Microsoft.UI.Content.ContentIsland` is still in the export probe's class list.
+- `Microsoft.UI.Xaml.Media.SolidColorBrush::Color` is the one method the class probe
+  actually calls.
+
+Two accessors are deliberately outside the filter. `Panel.Children` returns a
+`UIElementCollection`, whose `IVector<UIElement>` windows-bindgen projects through the
+`windows-collections` crate, and the probe keeps its dependency list to `windows-core`
+and `windows-sys`. `start.rs` declares those two interfaces from their metadata IIDs
+instead; that is the only hand-written ABI left in the probe.
+
+The metadata comes from the cached packages:
 
 - `Microsoft.WindowsAppSDK.WinUI`: `metadata/Microsoft.UI.Xaml.winmd`
 - `Microsoft.WindowsAppSDK.InteractiveExperiences`: `metadata/10.0.18362.0/Microsoft.UI.winmd`
   and `Microsoft.Foundation.winmd`
 - `Microsoft.Windows.SDK.CPP`: `c/UnionMetadata/10.0.26100.0/Windows.winmd`
 
-```sh
-cargo run -p comptrace -- generate <winmds...> \
-    --namespace Microsoft.UI.Xaml,Microsoft.UI.Xaml.Controls,Microsoft.UI.Xaml.Media, \
-Windows.Foundation,Windows.Foundation.Numerics,Windows.UI.Color,Microsoft.UI,Microsoft.UI.Content \
-    --minimal --out crates/xaml-probe/src/xaml_bindings.rs
-```
-
-`--minimal` keeps the interface and `_Impl` definitions without class wrappers; the probe
-calls through the interfaces rather than through the generated class helpers, which is
-also what makes it work without combase registration.
-
-Both sets of files come from one command, so there is no unpacking step to get wrong:
+The App SDK set is unpacked by:
 
 ```sh
 cargo run -p xwinui -- sdk --out target/appsdk --metadata
 ```
 
+`Windows.winmd` lives in the CPP package's union metadata and is read from the cached
+package directly:
+
+```sh
+unzip -p ~/.cache/xwinui/microsoft.windows.sdk.cpp.10.0.26100.4948.nupkg \
+    'c/UnionMetadata/10.0.26100.0/Windows.winmd' > target/appsdk/Windows.winmd
+```
+
 `XWINUI_NUGET_BASE` moves the download to another flat-container host when nuget.org is
 not the closest one.
+
+`--minimal` keeps the interface and `_Impl` definitions and omits inherited forwarders;
+explicitly filtered classes still get a wrapper. The probe calls through the interfaces
+rather than through the generated class helpers, which is also what makes it work
+without combase registration. windows-bindgen writes no leading comment, so the file
+carries a hand-written header with the `#![allow(...)]` the metadata spelling needs.
+Nothing else is post-processed: the one delegate box in this selection,
+`ApplicationInitializationCallbackBox`, is declared and used inside
+`Microsoft::UI::Xaml`, so no crate-qualified path is needed (unlike the
+`TypedEventHandler` step in `README.md`).
 
 ## What the check is not about
 
@@ -127,14 +165,21 @@ answered by `opencomp.dll`.
 
 ## What the next step is
 
-A `Microsoft.UI.Dispatching` replacement, then the callback `Application.Start` is supposed
-to run.
+The dispatcher is still what stands between the call and the callback: on Windows
+`Application.Start` waits for a queue, and under Wine `CoreMessagingXP` cannot be
+loaded at all. `opendispatch.dll` is the replacement in progress.
 
-The callback `Application.Start` is supposed to run. The call itself is now right --
-through the generated vtable slot and the generated delegate it blocks in the engine's
-message loop under Wine, where the hand-written call returned immediately on both hosts
--- but the callback has not been observed. WinUI's generated entry point creates the
-`Application` object *inside* that callback, so the next thing to try is doing the
-same: create the application, give it a window, and see whether the engine then calls
-back. `layout-probe` is the same experiment with hand-written slots and should be
-retired once this works.
+The measurement no longer waits on a second probe. The callback creates the
+`Application` through `IApplicationFactory`, builds the vertical `StackPanel`
+(`Spacing = 4`, three 10 px `Border` children), measures and arranges it through the
+generated `IUIElement`, and prints the line `layout-probe` used to print:
+
+```
+{"case":"stackpanel-spacing4","width":...,"height":...,"child0_height":...}
+```
+
+The engine is expected to answer 38 for the height -- three borders plus two gaps -- but
+the line prints what it answers. Nothing in this worktree has observed that line yet:
+there is no Windows host here, and Wine still fails before the callback. The Windows CI
+step is the first place it will be seen. `layout-probe` is deleted; its hand-written
+slots were the source of the faults the generated bindings avoid.

@@ -1,19 +1,34 @@
-//! Gate B's entry point: start the engine and see whether it reaches our callback.
+//! Gate B's entry point: start the engine and measure one layout case in its callback.
 //!
-//! Split from `windows.rs` to keep both files readable. Everything here talks to the
-//! engine through the DLL's own exports and the generated bindings; the pieces it needs
-//! from the rest of the probe are the loader and the export lookup.
+//! Split from `windows.rs` to keep both files readable. The loader, the export lookup and
+//! the activation factory come from there; everything below the callback talks through the
+//! generated bindings, so a slot the engine disagrees with is the generator's problem
+//! rather than a number written by hand.
 
 use std::ffi::c_void;
+use std::io::Write;
 use std::ptr;
 
 use windows_core::{HSTRING, IUnknown, Interface};
 use windows_sys::Win32::Foundation::HMODULE;
 
-use crate::windows::{export, handle};
+use crate::windows::{IActivationFactory, export, handle};
+use crate::xaml_bindings::Microsoft::UI::Xaml::Controls::{IStackPanel, IStackPanelFactory};
 use crate::xaml_bindings::Microsoft::UI::Xaml::{
-    ApplicationInitializationCallback, IApplicationStatics,
+    ApplicationInitializationCallback, IApplicationFactory, IApplicationStatics, IFrameworkElement,
+    IUIElement,
 };
+use crate::xaml_bindings::Windows::Foundation::{Rect, Size};
+
+const E_POINTER: i32 = 0x8000_4003u32 as i32;
+
+type GetActivationFactory = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
+type CreateInstance = unsafe extern "system" fn(
+    *mut c_void,
+    *mut c_void,
+    *mut *mut c_void,
+    *mut *mut c_void,
+) -> windows_core::HRESULT;
 
 // XAML installs a dispatcher on the calling thread and expects it to be an apartment.
 // A process that never called `RoInitialize` gets whatever the engine picks.
@@ -83,15 +98,192 @@ fn create_dispatcher() -> Option<i32> {
     Some(hr)
 }
 
-/// Gate B's first measurement: hand `Application.Start` a callback and see whether the
-/// engine runs it on the thread it owns. Nothing below that -- a tree, a measure, a
-/// frame -- can happen until this does.
-///
-/// The call goes through the generated `IApplicationStatics::Start`, not a hand-written
-/// slot: the delegate ABI is part of the call, and a wrong slot returns `S_OK` without
-/// running anything, which is exactly what the hand-written probe did on both hosts.
-/// `MddBootstrapInitialize(majorMinor, versionTag, minVersion)` from the SDK's
-/// bootstrapper, which lives beside the XAML DLL.
+// `Panel.Children` is a `UIElementCollection`, which implements
+// `Windows.Foundation.Collections.IVector<UIElement>`. windows-bindgen projects every
+// `IVector<T>` through the `windows-collections` crate; the probe does not depend on it,
+// so the two accessors the measurement needs are declared here.
+//
+// The slots before `Append` are real IVector methods, not padding: metadata order is
+// `get_ItemAt`, `get_Size`, `GetView`, `IndexOf`, `SetAt`, `InsertAt`, `RemoveAt`,
+// `Append`, which puts `Append` where the engine answers it.
+windows_core::interface_decl! {
+    unsafe trait IPanelChildren(IPanelChildrenVtbl, IPanelChildrenImpl)
+        : windows_core::IUnknown
+        = 0x27a1_b418_56f3_525e_b883_cefe_d905_eed3
+    {
+        unsafe fn children(&self, out: *mut *mut c_void) -> Result<()>;
+    }
+}
+
+windows_core::interface_decl! {
+    unsafe trait IVectorUIElement(IVectorUIElementVtbl, IVectorUIElementImpl)
+        : windows_core::IUnknown
+        = 0x9133_37e9_11a1_4345_a3a2_4e7f_956e_222d
+    {
+        unsafe fn item_at(&self, index: u32, out: *mut *mut c_void) -> Result<()>;
+        unsafe fn size(&self, out: *mut u32) -> Result<()>;
+        unsafe fn view(&self, out: *mut *mut c_void) -> Result<()>;
+        unsafe fn index_of(
+            &self,
+            value: *mut c_void,
+            index: *mut u32,
+            found: *mut bool,
+        ) -> Result<()>;
+        unsafe fn set_at(&self, index: u32, value: *mut c_void) -> Result<()>;
+        unsafe fn insert_at(&self, index: u32, value: *mut c_void) -> Result<()>;
+        unsafe fn remove_at(&self, index: u32) -> Result<()>;
+        unsafe fn append(&self, value: *mut c_void) -> Result<()>;
+    }
+}
+
+/// A failed step names itself and its HRESULT; there is no JSON line in that case.
+fn fail(step: &str, hr: i32) -> ! {
+    eprintln!("xaml-probe: {step} hr=0x{:08x}", hr as u32);
+    std::process::exit(1);
+}
+
+fn check(step: &str, hr: windows_core::HRESULT) {
+    if hr.0 < 0 {
+        fail(step, hr.0);
+    }
+}
+
+fn cast<T: Interface>(object: &IUnknown, step: &str) -> T {
+    object
+        .cast::<T>()
+        .unwrap_or_else(|error| fail(step, error.code().0))
+}
+
+/// Ask the engine's own `DllGetActivationFactory` for one class.
+fn activation_factory(get: GetActivationFactory, class: &str) -> IUnknown {
+    let name = HSTRING::from(class);
+    let mut raw: *mut c_void = ptr::null_mut();
+    let hr = unsafe { get(handle(&name), &mut raw) };
+    let step = format!("DllGetActivationFactory({class})");
+    check(&step, windows_core::HRESULT(hr));
+    if raw.is_null() {
+        fail(&step, E_POINTER);
+    }
+    unsafe { IUnknown::from_raw(raw) }
+}
+
+/// Call a composable factory: `CreateInstance(outer, inner, result)`.
+fn create_instance(step: &str, factory: *mut c_void, function: CreateInstance) -> IUnknown {
+    let mut inner: *mut c_void = ptr::null_mut();
+    let mut out: *mut c_void = ptr::null_mut();
+    let hr = unsafe { function(factory, ptr::null_mut(), &mut inner, &mut out) };
+    check(step, hr);
+    // A null outer leaves `inner` null. A non-null one would be ours to release, but it
+    // is not the object being measured; the probe leaks it for the one call it makes.
+    if out.is_null() {
+        fail(step, E_POINTER);
+    }
+    unsafe { IUnknown::from_raw(out) }
+}
+
+/// Activate a class that has a default constructor, such as `Border`.
+fn activate(get: GetActivationFactory, class: &str) -> IUnknown {
+    let factory = activation_factory(get, class);
+    let activation: IActivationFactory = cast(&factory, "QueryInterface(IActivationFactory)");
+    let mut raw: *mut c_void = ptr::null_mut();
+    let step = format!("{class}.ActivateInstance");
+    unsafe { activation.activate_instance(&mut raw) }
+        .unwrap_or_else(|error| fail(&step, error.code().0));
+    if raw.is_null() {
+        fail(&step, E_POINTER);
+    }
+    unsafe { IUnknown::from_raw(raw) }
+}
+
+/// The one layout question: a vertical `StackPanel`, `Spacing = 4`, three 10 px high
+/// `Border` children. The panel is expected to want 38 px; the numbers printed are the
+/// ones the engine returns, not that expectation.
+fn measure(get: GetActivationFactory, app_factory: &IApplicationFactory) {
+    // The application WinUI's own entry point creates inside this callback. The factory
+    // came from the DLL's `DllGetActivationFactory`, so no combase registration is needed.
+    let application = create_instance(
+        "IApplicationFactory.CreateInstance",
+        Interface::as_raw(app_factory),
+        Interface::vtable(app_factory).CreateInstance,
+    );
+
+    let stack_factory = activation_factory(get, "Microsoft.UI.Xaml.Controls.StackPanel");
+    let stack_factory: IStackPanelFactory =
+        cast(&stack_factory, "QueryInterface(IStackPanelFactory)");
+    let stack = create_instance(
+        "IStackPanelFactory.CreateInstance",
+        Interface::as_raw(&stack_factory),
+        Interface::vtable(&stack_factory).CreateInstance,
+    );
+
+    // `StackPanel`'s default orientation is vertical, which is the case being measured.
+    let stack_panel: IStackPanel = cast(&stack, "QueryInterface(IStackPanel)");
+    stack_panel
+        .SetSpacing(4.0)
+        .unwrap_or_else(|error| fail("IStackPanel.Spacing", error.code().0));
+
+    let panel: IPanelChildren = cast(&stack, "QueryInterface(IPanel)");
+    let mut collection: *mut c_void = ptr::null_mut();
+    unsafe { panel.children(&mut collection) }
+        .unwrap_or_else(|error| fail("IPanel.Children", error.code().0));
+    if collection.is_null() {
+        fail("IPanel.Children result", E_POINTER);
+    }
+    let children = unsafe { IUnknown::from_raw(collection) };
+    let children: IVectorUIElement = cast(&children, "QueryInterface(IVector<UIElement>)");
+
+    let mut first: Option<IUnknown> = None;
+    for index in 0..3 {
+        let border = activate(get, "Microsoft.UI.Xaml.Controls.Border");
+        let element: IFrameworkElement = cast(&border, "QueryInterface(IFrameworkElement)");
+        element
+            .SetHeight(10.0)
+            .unwrap_or_else(|error| fail("IFrameworkElement.Height", error.code().0));
+        unsafe { children.append(Interface::as_raw(&border)) }
+            .unwrap_or_else(|error| fail("IVector<UIElement>.Append", error.code().0));
+        if index == 0 {
+            first = Some(border);
+        }
+    }
+
+    let ui: IUIElement = cast(&stack, "QueryInterface(IUIElement)");
+    ui.Measure(Size {
+        width: f32::INFINITY,
+        height: f32::INFINITY,
+    })
+    .unwrap_or_else(|error| fail("IUIElement.Measure", error.code().0));
+    let desired = ui
+        .DesiredSize()
+        .unwrap_or_else(|error| fail("IUIElement.DesiredSize", error.code().0));
+    ui.Arrange(Rect {
+        x: 0.0,
+        y: 0.0,
+        width: 1000.0,
+        height: 1000.0,
+    })
+    .unwrap_or_else(|error| fail("IUIElement.Arrange", error.code().0));
+
+    let Some(first) = first else {
+        fail("first Border", E_POINTER);
+    };
+    let child: IUIElement = cast(&first, "QueryInterface(first child IUIElement)");
+    let child_desired = child
+        .DesiredSize()
+        .unwrap_or_else(|error| fail("first child DesiredSize", error.code().0));
+
+    // One line, the shape the Gate B job consumes.
+    println!(
+        "{{\"case\":\"stackpanel-spacing4\",\"width\":{},\"height\":{},\"child0_height\":{}}}",
+        desired.width, desired.height, child_desired.height
+    );
+    // The callback exits the process, which does not flush Rust's buffered stdout.
+    std::io::stdout().flush().ok();
+    // Releasing the application would run the engine's teardown for no reason.
+    std::mem::forget(application);
+}
+
+/// `MddBootstrapInitialize(majorMinor, versionTag, minVersion)` from the SDK's bootstrapper,
+/// which lives beside the XAML DLL.
 fn bootstrap() -> i32 {
     let path = std::env::var_os("XAML_DLL")
         .map(std::path::PathBuf::from)
@@ -117,8 +309,7 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         return 1;
     };
     // `HRESULT DllGetActivationFactory(HSTRING, IActivationFactory **)`.
-    let get_factory: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32 =
-        unsafe { std::mem::transmute(get_factory) };
+    let get_factory: GetActivationFactory = unsafe { std::mem::transmute(get_factory) };
     let name = HSTRING::from("Microsoft.UI.Xaml.Application");
     let mut raw: *mut c_void = ptr::null_mut();
     let hr = unsafe { get_factory(handle(&name), &mut raw) };
@@ -155,16 +346,15 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         eprintln!("xaml-probe: no IApplicationStatics on the factory");
         return 1;
     };
+    let app_factory: IApplicationFactory = cast(&factory, "QueryInterface(IApplicationFactory)");
 
-    let callback = ApplicationInitializationCallback::new(|_params| {
-        // The engine called us on its own thread with a core behind it. Everything the
-        // gate needs -- a tree, a measure -- starts from here.
-        // stderr, not stdout: a run that is killed by its timeout loses a buffered
-        // line, and this is the line that decides whether the engine started.
-        eprintln!("xaml-probe: Application.Start called back");
+    let callback = ApplicationInitializationCallback::new(move |_params| {
+        // The engine called us on its own thread with a core behind it. Build the case,
+        // print its numbers, and leave the message loop: there is nothing after this.
+        measure(get_factory, &app_factory);
         std::process::exit(0);
     });
-    println!("{{\"kind\":\"start\",\"state\":\"calling\"}}");
+    eprintln!("xaml-probe: calling Application.Start");
 
     // The generated vtable names the slot and the generated delegate carries the ABI;
     // `--minimal` leaves out only the method wrapper, which is this one line.
@@ -175,8 +365,8 @@ pub(crate) fn run(module: HMODULE) -> i32 {
         )
     };
     // A start that returns without calling back never built a core.
-    println!(
-        "{{\"kind\":\"start\",\"state\":\"returned\",\"hr\":\"0x{:08x}\"}}",
+    eprintln!(
+        "xaml-probe: Application.Start returned hr=0x{:08x}",
         hr.0 as u32
     );
     1
