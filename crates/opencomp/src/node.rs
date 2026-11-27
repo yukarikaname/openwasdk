@@ -174,6 +174,9 @@ fn snapshot_at(
             scale: [node.scale.x, node.scale.y],
             rotation: node.rotation,
             center: [node.center.x, node.center.y],
+            // A visual has no surface yet; the composition surface brush will name one.
+            image: None,
+            uv: [0.0, 0.0, 1.0, 1.0],
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
         };

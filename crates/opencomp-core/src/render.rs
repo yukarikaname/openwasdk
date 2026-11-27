@@ -1,13 +1,15 @@
 //! The wgpu renderer: draws a [`Visual`] tree into a texture or a swapchain image.
 //!
 //! Each draw is one quadrilateral, six vertices in a vertex buffer built for the frame. The colour
-//! rides along with the vertices, so there is no uniform and no bind group to allocate per draw.
-//! The CPU applies the tree's affine transform and then the device scale, so the shader only
-//! forwards clip-space corners. A scissor stays the only clip mechanism; see [`crate::tree`] for
-//! what that means when a rotation is involved.
+//! and the texture coordinates ride along with the vertices, so there is no uniform to allocate.
+//! Every draw binds a texture: an image from the registry, or the built-in white one that leaves a
+//! flat colour alone. The CPU applies the tree's affine transform and then the device scale, so
+//! the shader only forwards clip-space corners. A scissor stays the only clip mechanism; see
+//! [`crate::tree`] for what that means when a rotation is involved.
 
 use bytemuck::{Pod, Zeroable};
 
+use crate::texture::{TextureId, Textures, WHITE};
 use crate::tree::{Draw, Rect, Visual, flatten_root};
 
 #[repr(C)]
@@ -16,10 +18,11 @@ struct Vertex {
     /// Clip-space position; the affine transform and the device scale are already applied.
     position: [f32; 2],
     color: [f32; 4],
+    uv: [f32; 2],
 }
 
-const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 2] =
-    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4];
+const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 3] =
+    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4, 2 => Float32x2];
 
 const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
     array_stride: core::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -36,6 +39,7 @@ pub struct Renderer {
     /// Device pixels per composition unit: the display scale factor.
     scale: f32,
     background: [f32; 4],
+    textures: Textures,
     root: Visual,
 }
 
@@ -78,9 +82,12 @@ impl Renderer {
             label: Some("opencomp solid"),
             source: wgpu::ShaderSource::Wgsl(include_str!("solid.wgsl").into()),
         });
+        // Flat colours and bitmaps share one pipeline: a draw without an image binds the white
+        // texture, so the only difference between the two cases is which bind group is set.
+        let textures = Textures::new(&device, &queue);
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("opencomp solid"),
-            bind_group_layouts: &[],
+            bind_group_layouts: &[Some(textures.layout())],
             immediate_size: 0,
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -116,6 +123,7 @@ impl Renderer {
             size,
             scale: 1.0,
             background,
+            textures,
             root: Visual::default(),
         }
     }
@@ -146,6 +154,20 @@ impl Renderer {
         self.root = root;
     }
 
+    /// Upload a bitmap under a caller-chosen [`TextureId`], sRGB RGBA8 and row-major.
+    ///
+    /// Uploading an id again replaces the bitmap. An empty size, a slice that does not hold
+    /// `width * height * 4` bytes, and the reserved id zero are all ignored.
+    pub fn upload_rgba(&mut self, id: TextureId, width: u32, height: u32, pixels: &[u8]) {
+        self.textures
+            .upload(&self.device, &self.queue, id, width, height, pixels);
+    }
+
+    /// Drop a bitmap; visuals that still name its id draw as flat colours.
+    pub fn release(&mut self, id: TextureId) {
+        self.textures.release(id);
+    }
+
     /// Render the tree into the swapchain image the host acquired.
     pub fn render_to_surface(&self, frame: &wgpu::SurfaceTexture) {
         let view = frame.texture.create_view(&Default::default());
@@ -159,12 +181,14 @@ impl Renderer {
 
         let mut vertices = Vec::new();
         let mut scissors = Vec::new();
+        let mut images: Vec<TextureId> = Vec::new();
         for draw in &draws {
             let Some(scissor) = scissor_rect(draw.scissor, self.scale, self.size) else {
                 continue;
             };
             vertices.extend(quad(draw, self.scale, self.size));
             scissors.push(scissor);
+            images.push(draw.image.unwrap_or(WHITE));
         }
 
         let mut encoder = self
@@ -206,6 +230,7 @@ impl Renderer {
                 pass.set_pipeline(&self.pipeline);
                 pass.set_vertex_buffer(0, buffer.slice(..));
                 for (index, &(x, y, width, height)) in scissors.iter().enumerate() {
+                    pass.set_bind_group(0, self.textures.bind_group(images[index]), &[]);
                     pass.set_scissor_rect(x, y, width, height);
                     let first = (index * 6) as u32;
                     pass.draw(first..first + 6, 0..1);
@@ -295,9 +320,13 @@ fn quad(draw: &Draw, scale: f32, size: (u32, u32)) -> [Vertex; 6] {
             1.0 - y * scale / height * 2.0,
         ]
     };
+    // Clockwise from the top-left, the same order as the corners.
+    let [u0, v0, u1, v1] = draw.uv;
+    let uvs = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
     let at = |index: usize| Vertex {
         position: to_clip(draw.corners[index]),
         color: draw.color,
+        uv: uvs[index],
     };
     [at(0), at(1), at(2), at(0), at(2), at(3)]
 }

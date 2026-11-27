@@ -8,7 +8,9 @@
 //! scissor, so a rotated draw is bounded by its own axis-aligned bounds and its clip is not
 //! applied. Translation and scale, which is what a zoom uses, keep exact clipping.
 
-/// A solid rectangle in canvas pixels: origin, then size.
+use crate::texture::TextureId;
+
+/// A rectangle in canvas pixels: origin, then size.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Rect {
     pub x: f32,
@@ -47,6 +49,10 @@ pub struct Visual {
     pub center: [f32; 2],
     /// Children are clipped to this rectangle in the node's own coordinates.
     pub clip: Option<(f32, f32, f32, f32)>,
+    /// A bitmap uploaded to the renderer; when set, the colour multiplies the sampled texel.
+    pub image: Option<TextureId>,
+    /// The part of the bitmap the rectangle covers, as `u0, v0, u1, v1`.
+    pub uv: [f32; 4],
     pub children: Vec<Visual>,
 }
 
@@ -61,6 +67,8 @@ impl Default for Visual {
             rotation: 0.0,
             center: [0.0, 0.0],
             clip: None,
+            image: None,
+            uv: [0.0, 0.0, 1.0, 1.0],
             children: Vec::new(),
         }
     }
@@ -89,6 +97,18 @@ impl Visual {
     /// Clip children to a rectangle in this node's coordinates.
     pub fn clip_to(mut self, x: f32, y: f32, width: f32, height: f32) -> Self {
         self.clip = Some((x, y, width, height));
+        self
+    }
+
+    /// Draw a bitmap from the renderer's registry across this node's rectangle.
+    pub fn with_image(mut self, image: TextureId) -> Self {
+        self.image = Some(image);
+        self
+    }
+
+    /// Cover only part of the bitmap: `u0, v0` is its top-left, `u1, v1` its bottom-right.
+    pub fn with_uv(mut self, uv: [f32; 4]) -> Self {
+        self.uv = uv;
         self
     }
 
@@ -210,6 +230,10 @@ pub(crate) struct Draw {
     /// transform is axis aligned.
     pub(crate) scissor: Rect,
     pub(crate) color: [f32; 4],
+    /// The bitmap to sample; `None` binds the built-in white texture.
+    pub(crate) image: Option<TextureId>,
+    /// The part of the bitmap the quad covers.
+    pub(crate) uv: [f32; 4],
 }
 
 /// Flatten a root tree, whose parent space is the canvas, into draw order.
@@ -247,6 +271,8 @@ fn flatten(visual: &Visual, parent: Affine, opacity: f32, clip: Option<Rect>, ou
                 visual.color[2],
                 visual.color[3] * alpha,
             ],
+            image: visual.image,
+            uv: visual.uv,
         });
     }
 

@@ -7,11 +7,13 @@
 mod animation;
 mod color;
 mod render;
+mod texture;
 mod tree;
 
 pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
 pub use render::Renderer;
+pub use texture::TextureId;
 pub use tree::{Rect, Visual};
 
 #[cfg(test)]
@@ -21,6 +23,21 @@ mod tests {
     fn pixel(pixels: &[u8], width: u32, x: u32, y: u32) -> [u8; 4] {
         let at = ((y * width + x) * 4) as usize;
         pixels[at..at + 4].try_into().unwrap()
+    }
+
+    /// GPU rounding is allowed to differ from the CPU's by a byte.
+    fn close(actual: [u8; 4], expected: [u8; 4]) -> bool {
+        actual
+            .iter()
+            .zip(expected)
+            .all(|(actual, expected)| actual.abs_diff(expected) <= 2)
+    }
+
+    /// A 2x2 sRGB bitmap: red and green on the top row, blue and white on the bottom.
+    fn quadrants() -> [u8; 16] {
+        [
+            255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 255, 255,
+        ]
     }
 
     #[test]
@@ -168,5 +185,79 @@ mod tests {
         // Two composition units scaled by two are four units, eight device pixels at 2x.
         assert_eq!(pixel(&pixels, 16, 7, 7), [255, 0, 0, 255]);
         assert_eq!(pixel(&pixels, 16, 8, 8), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn a_textured_visual_draws_the_quadrants_of_its_bitmap() {
+        let Some(mut renderer) = Renderer::headless((8, 8), [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        renderer.upload_rgba(1, 2, 2, &quadrants());
+        renderer.set_root(Visual::rect(8.0, 8.0, [1.0; 4]).with_image(1));
+        let pixels = renderer.render_to_pixels();
+        // Sample away from the centre: linear filtering blends where the quadrants meet.
+        assert_eq!(pixel(&pixels, 8, 1, 1), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 8, 6, 1), [0, 255, 0, 255]);
+        assert_eq!(pixel(&pixels, 8, 1, 6), [0, 0, 255, 255]);
+        assert_eq!(pixel(&pixels, 8, 6, 6), [255, 255, 255, 255]);
+    }
+
+    #[test]
+    fn a_uv_rectangle_selects_part_of_the_bitmap() {
+        let Some(mut renderer) = Renderer::headless((8, 8), [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        renderer.upload_rgba(1, 2, 2, &quadrants());
+        // The top half of the bitmap is red and green; the bottom row must never be sampled.
+        renderer.set_root(
+            Visual::rect(8.0, 8.0, [1.0; 4])
+                .with_image(1)
+                .with_uv([0.0, 0.0, 1.0, 0.5]),
+        );
+        let pixels = renderer.render_to_pixels();
+        assert_eq!(pixel(&pixels, 8, 1, 1), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 8, 6, 1), [0, 255, 0, 255]);
+        assert_eq!(pixel(&pixels, 8, 1, 3), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 8, 6, 3), [0, 255, 0, 255]);
+    }
+
+    #[test]
+    fn the_visual_colour_multiplies_the_texel() {
+        let Some(mut renderer) = Renderer::headless((8, 8), [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        renderer.upload_rgba(1, 1, 1, &[255, 255, 255, 255]);
+        // White texels under a half-red colour are half the light, 188 in sRGB and not 128.
+        let [a, r, g, b] = srgb_bytes_from_rgba([0.5, 0.0, 0.0, 1.0]);
+        renderer.set_root(Visual::rect(8.0, 8.0, [0.5, 0.0, 0.0, 1.0]).with_image(1));
+        let pixels = renderer.render_to_pixels();
+        let actual = pixel(&pixels, 8, 4, 4);
+        assert!(
+            close(actual, [r, g, b, a]),
+            "half red came out as {actual:?}"
+        );
+    }
+
+    #[test]
+    fn an_untextured_visual_draws_its_flat_colour() {
+        let Some(mut renderer) = Renderer::headless((8, 8), [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        renderer.set_root(Visual::rect(8.0, 8.0, [0.0, 0.0, 1.0, 1.0]));
+        let pixels = renderer.render_to_pixels();
+        // No image means the built-in white texture, so only the colour is left.
+        assert_eq!(pixel(&pixels, 8, 4, 4), [0, 0, 255, 255]);
+    }
+
+    #[test]
+    fn a_released_bitmap_falls_back_to_the_flat_colour() {
+        let Some(mut renderer) = Renderer::headless((8, 8), [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        renderer.upload_rgba(1, 2, 2, &quadrants());
+        renderer.release(1);
+        renderer.set_root(Visual::rect(8.0, 8.0, [0.0, 1.0, 0.0, 1.0]).with_image(1));
+        let pixels = renderer.render_to_pixels();
+        assert_eq!(pixel(&pixels, 8, 4, 4), [0, 255, 0, 255]);
     }
 }
