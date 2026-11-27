@@ -8,9 +8,7 @@
 //!
 //! The effective value follows the base-value chain in
 //! `dxaml/xcp/components/DependencyObject/PropertySystem.cpp`
-//! (`CDependencyObject::EvaluateBaseValue` and `GetValueInherited`). The WinUI 2
-//! tree keeps the same chain in `dxaml/xcp/dxaml/lib/DependencyObject_Partial.cpp`
-//! and `core/elements/EffectiveValue.cpp`:
+//! (`CDependencyObject::EvaluateBaseValue` and `CDependencyObject::GetValueInherited`):
 //!
 //! 1. the local value set on the element
 //! 2. the value inherited from the nearest ancestor that set one
