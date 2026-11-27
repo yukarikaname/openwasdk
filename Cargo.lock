@@ -1292,6 +1292,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "openudk"
+version = "0.1.0"
+
+[[package]]
 name = "orbclient"
 version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"

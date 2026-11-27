@@ -99,6 +99,15 @@ jobs:
           x86_64-w64-mingw32-objdump -p target/x86_64-pc-windows-gnu/debug/opencomp.dll \
             | grep -E "DllGetActivationFactory|DllCanUnloadNow|DllGetClassObject"
 
+      # The flat C layer XAML imports by name. A missing export is a load failure,
+      # so check one conversion and one stub, not just that the crate compiled.
+      - name: Link the framework UDK stand-in
+        if: runner.os == 'Linux'
+        run: |
+          cargo build -p openudk --target x86_64-pc-windows-gnu
+          x86_64-w64-mingw32-objdump -p target/x86_64-pc-windows-gnu/debug/openudk.dll \
+            | grep -E "Windowing_GetWindowIdFromWindow|Windowing_GetWindowFromWindowId|Containment_GetChangeEnabled"
+
       - uses: actions/upload-artifact@v7
         if: runner.os == 'Linux'
         with:
