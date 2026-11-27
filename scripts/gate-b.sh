@@ -16,9 +16,13 @@ set -euo pipefail
 
 sdk=${1:-target/appsdk}
 run=${RUN_DIR:-target/gate-b}
-# WineHQ installs under /opt and does not always put a wrapper on PATH.
-wine=/opt/wine-stable/bin/wine64
-[ -x "$wine" ] || wine=/usr/lib/wine/wine64
+# WineHQ installs its runners under /opt and replaces the distribution package, so
+# neither a PATH lookup nor the old path is reliable.
+wine=
+for candidate in wine64 wine /opt/wine-stable/bin/wine64 /opt/wine-stable/bin/wine /usr/lib/wine/wine64; do
+	if resolved=$(command -v "$candidate" 2>/dev/null); then wine=$resolved; break; fi
+done
+[ -n "$wine" ] || { echo "gate-b: no wine found" >&2; exit 2; }
 target=target/x86_64-pc-windows-gnu/debug
 
 if [ ! -f "$sdk/Microsoft.ui.xaml.dll" ] || [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; then

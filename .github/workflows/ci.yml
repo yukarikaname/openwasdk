@@ -198,9 +198,13 @@ jobs:
             echo "winehq unreachable; using the distribution's wine"
             sudo apt-get install -y --no-install-recommends wine64 xvfb
           fi
-          # WineHQ installs under /opt and does not always put a wrapper on PATH.
-          wine=/opt/wine-stable/bin/wine64
-          [ -x "$wine" ] || wine=/usr/lib/wine/wine64
+          # WineHQ installs its runners under /opt, and the distribution package is
+          # replaced by it, so neither a PATH lookup nor the old path is reliable.
+          wine=
+          for candidate in wine64 wine /opt/wine-stable/bin/wine64 /opt/wine-stable/bin/wine /usr/lib/wine/wine64; do
+            if resolved=$(command -v "$candidate" 2>/dev/null); then wine=$resolved; break; fi
+          done
+          if [ -z "$wine" ]; then echo "no wine found"; exit 1; fi
           echo "using $wine"
           export WINEPREFIX="$PWD/target/wine"
           export WINEDLLOVERRIDES="mscoree,mshtml="
@@ -229,7 +233,11 @@ jobs:
       - name: Run the client under Wine
         if: runner.os == 'Linux'
         run: |
-          wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
+          wine=
+          for candidate in wine64 wine /opt/wine-stable/bin/wine64 /opt/wine-stable/bin/wine /usr/lib/wine/wine64; do
+            if resolved=$(command -v "$candidate" 2>/dev/null); then wine=$resolved; break; fi
+          done
+          if [ -z "$wine" ]; then echo "no wine found"; exit 1; fi
           export WINEPREFIX="$PWD/target/wine"
           export WINEDLLOVERRIDES="mscoree,mshtml="
           cargo build -p opencomp-client --target x86_64-pc-windows-gnu
