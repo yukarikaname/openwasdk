@@ -4,10 +4,12 @@
 //! tests on every host. That is what makes a macOS backend possible: the renderer talks to Metal
 //! through wgpu the same way it talks to Vulkan or D3D12 elsewhere.
 
+mod animation;
 mod color;
 mod render;
 mod tree;
 
+pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
 pub use render::Renderer;
 pub use tree::{Rect, Visual};
