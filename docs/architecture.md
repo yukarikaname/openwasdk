@@ -68,6 +68,15 @@ Language: Rust. The ABI shell is a `cdylib` built for
 wgpu. `windows`/`windows-bindgen` provide the ABI types; C++/WinRT is only a
 fallback if a private interface turns out to need hand-written vtables.
 
+What the DLL answers today, and what it reports `E_NOTIMPL` for:
+
+| Implemented | Answers `E_NOTIMPL` |
+| --- | --- |
+| `CreateContainerVisual`, `CreateSpriteVisual`, `CreateColorBrush`, `CreateColorBrushWithColor`, `CreateInsetClip`, `CreateInsetClipWithInsets` | the key-frame animations, easing functions, groups, surfaces, effects, shadows, lights, `GetCommitBatch`, `RequestCommitAsync` |
+| `IContainerVisual.Children` with insert, remove and count | the rest of `VisualCollection`'s iteration |
+| `IVisual.Offset`, `Size`, `Opacity`, `IsVisible`, `Clip` | rotation, scale, anchor, centre point, transform matrix |
+| `ISpriteVisual.Brush`, `ICompositionColorBrush.Color`, `IInsetClip` insets | the other clips and all animation methods on `ICompositionObject` |
+
 The renderer lives in `opencomp-core`, which contains no WinRT. That split is
 what makes macOS a first-class host for the compositor: the same visual tree
 renders through Metal on macOS, Vulkan on Linux and D3D12 elsewhere, and its

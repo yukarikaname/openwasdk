@@ -3,8 +3,9 @@
 An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
 **build them anywhere, and run existing binaries on Linux**.
 
-> Status: technical validation. `comptrace` works, `opencomp` builds and answers
-> the activation factory, nothing draws yet.
+> Status: technical validation. `comptrace` works, `opencomp` builds a visual
+> tree through its ABI, and `opencomp-core` draws that tree on a GPU; no WinUI
+> application runs on it yet.
 >
 > Not affiliated with Microsoft.
 
@@ -28,8 +29,8 @@ compiled XAML and the Wine host stay as they are.
 | Component | Role | State |
 | --- | --- | --- |
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
-| `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | factory only |
-| `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | draws rectangles |
+| `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | visuals, brushes, inset clips |
+| `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | draws trees, offscreen or on a swapchain |
 | `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | planned |
 | `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | planned |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
