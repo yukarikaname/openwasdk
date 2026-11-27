@@ -273,7 +273,7 @@ pub fn create(width: u32, height: u32) -> Result<CompositionDrawingSurface> {
 /// A surface the size a graphics device was asked for, in the requested format.
 ///
 /// The buffer is RGBA8 either way, so the two RGBA8 formats are the ones a client may ask
-/// for; anything else fails with `E_INVALIDARG` instead of returning swapped colors. `gpu`
+/// for; anything else fails with `E_INVALIDARG`. `gpu`
 /// is the device's Direct2D half, or `None` for the CPU-only path.
 pub(crate) fn create_sized(
     size: Size,
@@ -281,10 +281,15 @@ pub(crate) fn create_sized(
     alpha: DirectXAlphaMode,
     gpu: Option<Arc<GpuDevice>>,
 ) -> Result<CompositionDrawingSurface> {
-    if format != DirectXPixelFormat::R8G8B8A8UIntNormalized
-        && format != DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb
-    {
-        return Err(Error::from_hresult(E_INVALIDARG));
+    // Both channel orders are accepted: XAML asks for BGRA, our own tests for RGBA.
+    // The GPU texture is BGRA either way and the readback converts to the RGBA the
+    // composition path samples, so the requested format is what the getter echoes.
+    match format {
+        DirectXPixelFormat::R8G8B8A8UIntNormalized
+        | DirectXPixelFormat::R8G8B8A8UIntNormalizedSrgb
+        | DirectXPixelFormat::B8G8R8A8UIntNormalized
+        | DirectXPixelFormat::B8G8R8A8UIntNormalizedSrgb => {}
+        _ => return Err(Error::from_hresult(E_INVALIDARG)),
     }
     let width = size.width.max(0.0) as u32;
     let height = size.height.max(0.0) as u32;

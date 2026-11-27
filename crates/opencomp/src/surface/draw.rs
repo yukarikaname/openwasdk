@@ -236,6 +236,36 @@ mod tests {
     }
 
     #[test]
+    fn a_bgra_surface_accepts_a_draw_session() {
+        // XAML asks for BGRA; the GPU texture is BGRA either way, so this is the
+        // format a real client uses.
+        let Some(device) = d3d11() else { return };
+        let compositor: ICompositor = crate::compositor::instance().unwrap().cast().unwrap();
+        let factory: ICompositorInterop = compositor.cast().unwrap();
+        let graphics: ICompositionGraphicsDevice =
+            factory.CreateGraphicsDevice(&unknown(&device)).unwrap();
+        let surface = graphics
+            .CreateDrawingSurface(
+                Size {
+                    width: 4.0,
+                    height: 4.0,
+                },
+                DirectXPixelFormat::B8G8R8A8UIntNormalized,
+                DirectXAlphaMode::Premultiplied,
+            )
+            .expect("a BGRA surface");
+        let interop: ICompositionDrawingSurfaceInterop = surface.cast().unwrap();
+        let context = interop.BeginDraw(&ID2D1_DEVICE_CONTEXT);
+        let Ok(context) = context else {
+            // No Direct2D in this environment: the CPU path is all there is.
+            return;
+        };
+        let context: ID2D1DeviceContext = unsafe { windows::core::Interface::from_raw(context) };
+        drop(context);
+        interop.EndDraw().unwrap();
+    }
+
+    #[test]
     fn end_draw_without_begin_draw_fails() {
         let Some((_surface, interop)) = surface() else {
             return;
