@@ -87,7 +87,11 @@ impl Failure {
 
 // WinRT needs an initialized apartment before it hands out a XAML object. C++/WinRT's
 // `init_apartment` ends up here for the single-threaded case.
-#[link(name = "combase")]
+//
+// `raw-dylib` rather than a plain `#[link]`: the Windows SDK has no `combase.lib`, so a
+// plain link asks MSVC for a file that does not exist. This way rustc writes the import
+// itself, which is also what `windows-link` does for the same call.
+#[link(name = "combase.dll", kind = "raw-dylib", modifiers = "+verbatim")]
 unsafe extern "system" {
     fn RoInitialize(init_type: i32) -> i32;
 }

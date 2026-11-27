@@ -57,11 +57,15 @@ fn factory(class: &str) -> IUnknown {
 }
 
 fn compositor() -> ICompositor {
+    mark("activation factory");
+    let unknown = factory("Microsoft.UI.Composition.Compositor");
+    mark("QueryInterface(IActivationFactory)");
     let activation: windows_core::imp::IGenericFactory =
-        factory("Microsoft.UI.Composition.Compositor")
-            .cast()
-            .expect("IActivationFactory");
-    activation.ActivateInstance().expect("compositor")
+        unknown.cast().expect("IActivationFactory");
+    mark("ActivateInstance(Compositor)");
+    let instance = activation.ActivateInstance().expect("compositor");
+    mark("compositor activated");
+    instance
 }
 
 /// A hidden window of the built-in STATIC class.
