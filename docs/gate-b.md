@@ -51,6 +51,30 @@ creates the core against and Wine's DirectComposition is a stub. Replacing that 
 way a rename suggests: `Microsoft.UI.Composition.Compositor` is activated by class name,
 so it needs a registration entry pointing at the DLL, not a file name.
 
+## Regenerating the probe's bindings
+
+`crates/xaml-probe/src/xaml_bindings.rs` covers the classes the export probe names, which
+is enough to load the DLL and ask for a factory. Measuring needs `IUIElement`
+(`Measure`, `Arrange`, `DesiredSize`) and `IApplicationFactory`, so the filter grows to
+the namespaces those live in. The metadata ships in the packages the probe already
+downloads:
+
+- `Microsoft.WindowsAppSDK.WinUI`: `metadata/Microsoft.UI.Xaml.winmd`
+- `Microsoft.WindowsAppSDK.InteractiveExperiences`: `metadata/10.0.18362.0/Microsoft.UI.winmd`
+  and `Microsoft.Foundation.winmd`
+- `Microsoft.Windows.SDK.CPP`: `c/UnionMetadata/10.0.26100.0/Windows.winmd`
+
+```sh
+cargo run -p comptrace -- generate <winmds...> \
+    --namespace Microsoft.UI.Xaml,Microsoft.UI.Xaml.Controls,Microsoft.UI.Xaml.Media, \
+Windows.Foundation,Windows.Foundation.Numerics,Windows.UI.Color,Microsoft.UI,Microsoft.UI.Content \
+    --minimal --out crates/xaml-probe/src/xaml_bindings.rs
+```
+
+`--minimal` keeps the interface and `_Impl` definitions without class wrappers; the probe
+calls through the interfaces rather than through the generated class helpers, which is
+also what makes it work without combase registration.
+
 ## What the check is not about
 
 Three hypotheses were tested and are dead, so nobody has to test them again.
