@@ -47,11 +47,28 @@ export WINEDEBUG=${WINEDEBUG:-err+loaddll}
 export XAML_DLL="$PWD/$run/Microsoft.ui.xaml.dll"
 export OPENCOMP_XAML_PROBE_JSON=1
 
+# The probe reaches the App SDK classes by name, so a manifest has to point at the DLL
+# that serves each one. Without the runtime package there is no manifest; the engine
+# then fails at the first activation, which the report shows.
+msix=${ACTIVATION_MSIX:-}
+if [ -z "$msix" ]; then
+	msix=$(ls "$sdk"/../Microsoft.WindowsAppRuntime.2.msix 2>/dev/null | head -1)
+fi
+if [ -n "$msix" ] && [ -f "$msix" ]; then
+	cargo run -q -p xwinui -- activation --sdk "$msix" \
+		--replace Microsoft.UI.Composition.=opencomp.dll \
+		--replace Microsoft.UI.Dispatching.=opendispatch.dll \
+		--out "probe.exe.manifest"
+else
+	echo "gate-b: no activation manifest (set ACTIVATION_MSIX); activations will fail"
+fi
+
 cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe
 xvfb-run -a "$wine" wineboot -u >/dev/null 2>&1 || true
 # The probe and the DLLs sit together and the probe runs from that directory: a DLL
 # loaded by full path does not put its own directory on the dependency search path.
 cp "$target/xaml-probe.exe" "$run/"
+cp "probe.exe.manifest" "$run/xaml-probe.exe.manifest" 2>/dev/null || true
 
 official=0
 probe official || official=$?
