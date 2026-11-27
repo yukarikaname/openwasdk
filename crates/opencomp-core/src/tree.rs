@@ -53,6 +53,9 @@ pub struct Visual {
     pub image: Option<TextureId>,
     /// The part of the bitmap the rectangle covers, as `u0, v0, u1, v1`.
     pub uv: [f32; 4],
+    /// Corner radii clockwise from the top-left, in the node's own units. Zero is a square
+    /// corner, and a radius past half the shorter side is clamped.
+    pub radius: [f32; 4],
     pub children: Vec<Visual>,
 }
 
@@ -69,6 +72,7 @@ impl Default for Visual {
             clip: None,
             image: None,
             uv: [0.0, 0.0, 1.0, 1.0],
+            radius: [0.0; 4],
             children: Vec::new(),
         }
     }
@@ -109,6 +113,12 @@ impl Visual {
     /// Cover only part of the bitmap: `u0, v0` is its top-left, `u1, v1` its bottom-right.
     pub fn with_uv(mut self, uv: [f32; 4]) -> Self {
         self.uv = uv;
+        self
+    }
+
+    /// Round all four corners by the same radius, in the node's own units.
+    pub fn rounded(mut self, radius: f32) -> Self {
+        self.radius = [radius; 4];
         self
     }
 
@@ -234,6 +244,10 @@ pub(crate) struct Draw {
     pub(crate) image: Option<TextureId>,
     /// The part of the bitmap the quad covers.
     pub(crate) uv: [f32; 4],
+    /// The rectangle in the node's own units, which bounds the shader's rounded-box distance.
+    pub(crate) size: [f32; 2],
+    /// The four corner radii, in the node's own units and clamped to half the shorter side.
+    pub(crate) radius: [f32; 4],
 }
 
 /// Flatten a root tree, whose parent space is the canvas, into draw order.
@@ -262,6 +276,9 @@ fn flatten(visual: &Visual, parent: Affine, opacity: f32, clip: Option<Rect>, ou
         } else {
             bounds
         };
+        // A radius past half the shorter side would fold the outline back on itself, so clamp
+        // it the way a brush does; the shader's distance then stays exact.
+        let limit = visual.size[0].min(visual.size[1]) * 0.5;
         out.push(Draw {
             corners,
             scissor,
@@ -273,6 +290,8 @@ fn flatten(visual: &Visual, parent: Affine, opacity: f32, clip: Option<Rect>, ou
             ],
             image: visual.image,
             uv: visual.uv,
+            size: visual.size,
+            radius: visual.radius.map(|radius| radius.clamp(0.0, limit)),
         });
     }
 

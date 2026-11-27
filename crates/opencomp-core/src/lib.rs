@@ -260,4 +260,72 @@ mod tests {
         let pixels = renderer.render_to_pixels();
         assert_eq!(pixel(&pixels, 8, 4, 4), [0, 255, 0, 255]);
     }
+
+    #[test]
+    fn a_rounded_visual_clears_its_corners() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.set_root(Visual::rect(16.0, 16.0, [1.0, 0.0, 0.0, 1.0]).rounded(8.0));
+        let pixels = renderer.render_to_pixels();
+        // A radius of 8 on a 16x16 square is a circle about its centre: the corner pixel lies
+        // outside it, the middle well inside.
+        assert_eq!(pixel(&pixels, 16, 0, 0), [0, 0, 255, 255]);
+        assert_eq!(pixel(&pixels, 16, 8, 8), [255, 0, 0, 255]);
+    }
+
+    #[test]
+    fn a_zero_radius_still_fills_the_corners() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.set_root(Visual::rect(16.0, 16.0, [1.0, 0.0, 0.0, 1.0]).rounded(0.0));
+        let pixels = renderer.render_to_pixels();
+        // The shader must not soften a corner no radius asked for.
+        for (x, y) in [(0, 0), (15, 0), (0, 15), (15, 15), (8, 8)] {
+            assert_eq!(
+                pixel(&pixels, 16, x, y),
+                [255, 0, 0, 255],
+                "pixel {x},{y} should be fill"
+            );
+        }
+    }
+
+    #[test]
+    fn a_rounded_visual_keeps_the_texel_inside_the_shape() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [1.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.upload_rgba(1, 1, 1, &[0, 255, 0, 255]);
+        renderer.set_root(
+            Visual::rect(16.0, 16.0, [1.0; 4])
+                .with_image(1)
+                .rounded(8.0),
+        );
+        let pixels = renderer.render_to_pixels();
+        // The magenta background shows through the cut corner; inside the circle the green
+        // texel is sampled and, under a white colour, comes out unchanged.
+        assert_eq!(pixel(&pixels, 16, 0, 0), [255, 0, 255, 255]);
+        assert_eq!(pixel(&pixels, 16, 5, 5), [0, 255, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 8, 8), [0, 255, 0, 255]);
+    }
+
+    #[test]
+    fn a_rotated_rounded_visual_keeps_its_corners_round() {
+        let Some(mut renderer) = Renderer::headless((32, 32), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        let mut visual = Visual::rect(16.0, 16.0, [1.0, 0.0, 0.0, 1.0])
+            .at(8.0, 8.0)
+            .rounded(8.0);
+        visual.rotation = std::f32::consts::FRAC_PI_4;
+        visual.center = [8.0, 8.0];
+        renderer.set_root(visual);
+        let pixels = renderer.render_to_pixels();
+        // The square turns about (16, 16), so its local corner (1, 1) lands near (16, 6),
+        // inside the rotated quad but outside the circle of radius 8 that corner draws: only
+        // measuring the distance in local space leaves that pixel background.
+        assert_eq!(pixel(&pixels, 32, 16, 6), [0, 0, 255, 255]);
+        assert_eq!(pixel(&pixels, 32, 16, 16), [255, 0, 0, 255]);
+    }
 }

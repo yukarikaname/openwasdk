@@ -6,6 +6,10 @@
 //! flat colour alone. The CPU applies the tree's affine transform and then the device scale, so
 //! the shader only forwards clip-space corners. A scissor stays the only clip mechanism; see
 //! [`crate::tree`] for what that means when a rotation is involved.
+//!
+//! Vertices also carry their place in the node's own coordinates, the node's half size and its
+//! four corner radii. The fragment stage rebuilds the local position from them and rounds the
+//! outline there, so a radius follows the transform instead of the screen.
 
 use bytemuck::{Pod, Zeroable};
 
@@ -19,10 +23,23 @@ struct Vertex {
     position: [f32; 2],
     color: [f32; 4],
     uv: [f32; 2],
+    /// The same corner in the node's own coordinates; the fragment stage interpolates it, so a
+    /// fragment knows where it sits before the affine transform and the device scale.
+    local: [f32; 2],
+    /// Half the node's size, the same on every vertex of the quad.
+    half_size: [f32; 2],
+    /// The four corner radii, the same on every vertex of the quad.
+    radius: [f32; 4],
 }
 
-const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 3] =
-    wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4, 2 => Float32x2];
+const VERTEX_ATTRIBUTES: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![
+    0 => Float32x2,
+    1 => Float32x4,
+    2 => Float32x2,
+    3 => Float32x2,
+    4 => Float32x2,
+    5 => Float32x4
+];
 
 const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
     array_stride: core::mem::size_of::<Vertex>() as wgpu::BufferAddress,
@@ -323,10 +340,18 @@ fn quad(draw: &Draw, scale: f32, size: (u32, u32)) -> [Vertex; 6] {
     // Clockwise from the top-left, the same order as the corners.
     let [u0, v0, u1, v1] = draw.uv;
     let uvs = [[u0, v0], [u1, v0], [u1, v1], [u0, v1]];
+    // The same corners in the node's own units, together with the half size the shader
+    // measures the rounded outline against.
+    let [width, height] = draw.size;
+    let locals = [[0.0, 0.0], [width, 0.0], [width, height], [0.0, height]];
+    let half_size = [width * 0.5, height * 0.5];
     let at = |index: usize| Vertex {
         position: to_clip(draw.corners[index]),
         color: draw.color,
         uv: uvs[index],
+        local: locals[index],
+        half_size,
+        radius: draw.radius,
     };
     [at(0), at(1), at(2), at(0), at(2), at(3)]
 }

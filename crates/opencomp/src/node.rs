@@ -177,6 +177,8 @@ fn snapshot_at(
             // A visual has no surface yet; the composition surface brush will name one.
             image: None,
             uv: [0.0, 0.0, 1.0, 1.0],
+            // Rounded corners are not wired to an ABI property yet; a brush will set them.
+            radius: [0.0; 4],
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
         };
