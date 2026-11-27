@@ -11,3 +11,6 @@ rust-version.workspace = true
 bytemuck = { version = "1", features = ["derive"] }
 pollster = "0.4"
 wgpu = "30"
+
+[dev-dependencies]
+winit = "0.30"

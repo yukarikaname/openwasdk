@@ -119,6 +119,11 @@ impl Renderer {
         self.size
     }
 
+    /// The host resized its surface; the next frame draws at the new size.
+    pub fn set_size(&mut self, size: (u32, u32)) {
+        self.size = size;
+    }
+
     pub fn format(&self) -> wgpu::TextureFormat {
         self.format
     }
