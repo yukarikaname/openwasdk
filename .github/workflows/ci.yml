@@ -124,7 +124,7 @@ jobs:
           cd target/appsdk
           export XAML_DLL="$PWD/Microsoft.ui.xaml.dll"
           export OPENCOMP_XAML_PROBE_START=1
-          ./xaml-probe.exe 2>&1 | grep -E "^(proxy|xaml-probe):" > coreui-trace.txt || true
+          ./xaml-probe.exe 2>&1 | grep -E "^(proxy|xaml-probe):|^\{\"case\"" > coreui-trace.txt || true
           head -60 coreui-trace.txt
 
       - uses: actions/upload-artifact@v7

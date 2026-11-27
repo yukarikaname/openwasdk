@@ -325,3 +325,24 @@ err:seh:NtRaiseException Unhandled exception code c0000602
 The registrar conversation is ALPC by design, so this route needs an ALPC implementation
 inside Wine and cannot be answered by a shim. It stays in the probe, one environment
 variable away, for the day Wine has one.
+
+## What the Windows run says about the CoreUI question (2026-11-28)
+
+The proxy run on the Windows runner (artifact `coreui-trace`, job `Test (windows)`) reaches
+the callback and prints the measurement's steps. It never asks the system for the CoreUI
+session: `CoreUICreate` is answered by the probe and never called. Under Wine the same
+engine build calls it, so the CoreUI conversation is a branch the engine takes only when
+something before it did not go the Windows way -- not an unconditional part of
+`Application.Start`.
+
+One candidate was ruled out rather than assumed. `Microsoft.UI.Windowing.Core.dll` and
+`Microsoft.UI.Input.dll` import `DllGetActivationFactory` from `CoreMessagingXP.dll` and ask
+it for `Microsoft.UI.Dispatching.DispatcherQueueController` directly, bypassing the
+activation manifest; our stand-in refused that class, and `coremessaging` now forwards it to
+`opendispatch.dll`. The engine still calls `CoreUICreate` afterwards, so the branch is not
+about that class.
+
+The two traces agree up to the last activation before the branch
+(`Windows.UI.ViewManagement.UISettings`, reached through `RoActivateInstance`, which Wine
+carries as a semi-stub) and diverge there. The next step is to name the class that call
+activates, on both sides, and to walk the UDK function that decides.

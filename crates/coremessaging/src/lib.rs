@@ -13,146 +13,151 @@
 //! registers and are ignored, and the HRESULT is what a caller checks.
 
 mod coreui;
+mod factory;
 
 /// `E_NOTIMPL`: the name exists so a caller can load and fail honestly.
 const E_NOTIMPL: i32 = 0x8000_4001u32 as i32;
 
+/// Refuse one export and, under `OPENCOMP_TRACE`, say which one: the caller sees only the
+/// HRESULT, and this DLL answers 28 names that would otherwise be indistinguishable.
+fn refuse(name: &str) -> i32 {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("coremessaging: {name} refused");
+    }
+    E_NOTIMPL
+}
+
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreMsgCreateSession() -> i32 {
-    E_NOTIMPL
+    refuse("CoreMsgCreateSession")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreMsgGetExistingSession() -> i32 {
-    E_NOTIMPL
+    refuse("CoreMsgGetExistingSession")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallComputeMaximumMessageSize() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallComputeMaximumMessageSize")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallCreateConversationHost() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallCreateConversationHost")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallCreateEndpointHost() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallCreateEndpointHost")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallCreateEndpointHostWithSendPriority() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallCreateEndpointHostWithSendPriority")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallGetAddressOfParameterInBuffer() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallGetAddressOfParameterInBuffer")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallReceive() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallReceive")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallSend() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallSend")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICallSendVaList() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICallSendVaList")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUIConfigureTestHost() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUIConfigureTestHost")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUIConfigureUserIntegration() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUIConfigureUserIntegration")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUICreateAnonymousStream() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUICreateAnonymousStream")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUIEnableCrossProcessPrototyping() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUIEnableCrossProcessPrototyping")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUIInitializeTestService() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUIInitializeTestService")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUIRouteToTestRegistrar() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUIRouteToTestRegistrar")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn CoreUIUninitializeTestService() -> i32 {
-    E_NOTIMPL
+    refuse("CoreUIUninitializeTestService")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn DllCanUnloadNow() -> i32 {
-    E_NOTIMPL
-}
-
-#[unsafe(no_mangle)]
-pub extern "system" fn DllGetActivationFactory() -> i32 {
-    E_NOTIMPL
+    refuse("DllCanUnloadNow")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn DllGetClassObject() -> i32 {
-    E_NOTIMPL
+    refuse("DllGetClassObject")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MsgBlobCreateShared() -> i32 {
-    E_NOTIMPL
+    refuse("MsgBlobCreateShared")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MsgBlobCreateStack() -> i32 {
-    E_NOTIMPL
+    refuse("MsgBlobCreateStack")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MsgBufferShare() -> i32 {
-    E_NOTIMPL
+    refuse("MsgBufferShare")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MsgRelease() -> i32 {
-    E_NOTIMPL
+    refuse("MsgRelease")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MsgStringCreateShared() -> i32 {
-    E_NOTIMPL
+    refuse("MsgStringCreateShared")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn MsgStringCreateStack() -> i32 {
-    E_NOTIMPL
+    refuse("MsgStringCreateStack")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn WinUICreateDispatcherQueueController() -> i32 {
-    E_NOTIMPL
+    refuse("WinUICreateDispatcherQueueController")
 }
 
 #[unsafe(no_mangle)]
 pub extern "system" fn WinUIGetDispatcherQueueForCurrentThread() -> i32 {
-    E_NOTIMPL
+    refuse("WinUIGetDispatcherQueueForCurrentThread")
 }
