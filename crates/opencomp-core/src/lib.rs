@@ -74,6 +74,18 @@ mod tests {
     }
 
     #[test]
+    fn a_scale_factor_doubles_the_drawn_rectangle() {
+        let Some(mut renderer) = Renderer::headless((16, 16), [0.0, 0.0, 1.0, 1.0]) else {
+            return;
+        };
+        renderer.set_scale(2.0);
+        renderer.set_root(Visual::rect(4.0, 4.0, [1.0, 0.0, 0.0, 1.0]));
+        let pixels = renderer.render_to_pixels();
+        assert_eq!(pixel(&pixels, 16, 7, 7), [255, 0, 0, 255]);
+        assert_eq!(pixel(&pixels, 16, 8, 8), [0, 0, 255, 255]);
+    }
+
+    #[test]
     fn a_visual_outside_the_target_is_skipped() {
         let Some(mut renderer) = Renderer::headless((8, 8), [0.0, 0.0, 0.0, 1.0]) else {
             return;

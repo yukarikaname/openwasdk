@@ -107,6 +107,7 @@ impl ApplicationHandler for App {
         self.frame = Frame::new(window.clone());
         if let Some(frame) = &mut self.frame {
             frame.renderer.set_root(scene());
+            frame.renderer.set_scale(window.scale_factor() as f32);
         }
         self.window = Some(window);
     }

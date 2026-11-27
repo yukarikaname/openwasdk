@@ -17,6 +17,8 @@ pub struct Renderer {
     layout: wgpu::BindGroupLayout,
     format: wgpu::TextureFormat,
     size: (u32, u32),
+    /// Device pixels per composition unit: the display scale factor.
+    scale: f32,
     background: [f32; 4],
     root: Visual,
 }
@@ -110,6 +112,7 @@ impl Renderer {
             layout,
             format,
             size,
+            scale: 1.0,
             background,
             root: Visual::default(),
         }
@@ -122,6 +125,11 @@ impl Renderer {
     /// The host resized its surface; the next frame draws at the new size.
     pub fn set_size(&mut self, size: (u32, u32)) {
         self.size = size;
+    }
+
+    /// The host's scale factor. Composition units are device independent; the surface is not.
+    pub fn set_scale(&mut self, scale: f32) {
+        self.scale = scale;
     }
 
     pub fn format(&self) -> wgpu::TextureFormat {
@@ -177,7 +185,7 @@ impl Renderer {
             });
             pass.set_pipeline(&self.pipeline);
             for draw in &draws {
-                let (x, y, width, height) = draw.rect.as_pixels(1.0);
+                let (x, y, width, height) = draw.rect.as_pixels(self.scale);
                 if width == 0 || height == 0 || x >= self.size.0 || y >= self.size.1 {
                     continue;
                 }
