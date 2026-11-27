@@ -1,66 +1,59 @@
 #!/usr/bin/env bash
 # Load the official Microsoft.ui.xaml.dll under Wine and report what it answers.
 #
-# Gate B starts here. The DLL is the real one, next to the DLLs it ships with; nothing
-# of ours is in front of it yet, so the first runs are a measurement of what the engine
-# asks for. The same script runs on the CI runner and in a local container, which is
-# why it takes the SDK directory as an argument instead of assuming a layout.
+# Gate B starts here. The first run uses the DLLs as Microsoft ships them; the second
+# puts our `openudk` in place of `Microsoft.Internal.FrameworkUdk.dll`, which is the
+# layer XAML imports 43 functions from. Windows-only dependencies hang off the shipped
+# one (`Bcp47Langs`, `profapi`, the appmodel API sets), so the shipped copy cannot even
+# load under Wine -- that is what the stand-in is for.
 #
 #   scripts/gate-b.sh [sdk-dir]
 #
-# `OPENCOMP_SDK_FETCH=1` downloads the packages when the directory is empty. Set
-# `NUGET_BASE` to a mirror to make that download bearable outside a datacenter; the
-# flat-container path below is the same on nuget.org and on the mirrors that proxy it.
+# `OPENCOMP_SDK_FETCH=1` downloads the packages when the directory is empty. `NUGET_BASE`
+# points the download at another flat-container host; the path below it is the same.
 
 set -euo pipefail
 
 sdk=${1:-target/appsdk}
-version=${SDK_VERSION:-2.7.0}
-base=${NUGET_BASE:-https://api.nuget.org/v3-flatcontainer}
+run=${RUN_DIR:-target/gate-b}
 wine=$(command -v wine64 || echo /usr/lib/wine/wine64)
-
-# The native files are under `runtimes-framework/win-x64/native`, and one load needs
-# four packages: WinUI has the engine, Foundation the runtime it starts, and
-# InteractiveExperiences carries Microsoft.UI.dll, dcompi.dll and the FrameworkUdk
-# stand-in. DWrite is the text engine XAML links against.
-fetch() {
-	mkdir -p "$sdk"
-	for pkg in winui foundation interactiveexperiences dwrite; do
-		name="microsoft.windowsappsdk.$pkg"
-		curl -sSLf -o "$pkg.nupkg" \
-			"$base/$name/$version/$name.$version.nupkg"
-		unzip -Z1 "$pkg.nupkg" |
-			grep -E '^runtimes-framework/win-x64/native/[^/]+\.dll$' > files.txt
-		unzip -j -o -q "$pkg.nupkg" -d "$sdk" $(tr '\n' ' ' < files.txt)
-		rm -f "$pkg.nupkg" files.txt
-	done
-}
+target=target/x86_64-pc-windows-gnu/debug
 
 if [ ! -f "$sdk/Microsoft.ui.xaml.dll" ] || [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; then
-	fetch
+	scripts/fetch-sdk.sh "$sdk"
 fi
-count=$(find "$sdk" -maxdepth 1 -name '*.dll' | wc -l)
-echo "gate-b: $count SDK DLLs in $sdk"
+echo "gate-b: $(find "$sdk" -maxdepth 1 -name '*.dll' | wc -l) SDK DLLs in $sdk"
+
+rm -rf "$run"
+mkdir -p "$run"
+cp "$sdk"/*.dll "$run"/
 
 export WINEPREFIX=${WINEPREFIX:-$PWD/target/wine}
 export WINEDLLOVERRIDES=${WINEDLLOVERRIDES:-mscoree,mshtml=}
 export RUST_BACKTRACE=1
+# `err+loaddll` names the module that is missing when a load fails, which is the only
+# failure mode that does not print an HRESULT.
+export WINEDEBUG=${WINEDEBUG:-err+loaddll}
+export XAML_DLL="$PWD/$run/Microsoft.ui.xaml.dll"
+export OPENCOMP_XAML_PROBE_JSON=1
+
 cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe
 xvfb-run -a "$wine" wineboot -u >/dev/null 2>&1 || true
+# The probe and the DLLs sit together and the probe runs from that directory: a DLL
+# loaded by full path does not put its own directory on the dependency search path.
+cp "$target/xaml-probe.exe" "$run/"
 
-# Run from the SDK directory: a DLL loaded by full path does not put its own directory
-# on the dependency search path, and the current directory is searched. `err+loaddll`
-# names the module that is missing when the load fails, which is the only failure mode
-# that does not print an HRESULT.
-cp target/x86_64-pc-windows-gnu/debug/xaml-probe.exe "$sdk/"
-export XAML_DLL="$PWD/$sdk/Microsoft.ui.xaml.dll"
-export OPENCOMP_XAML_PROBE_JSON=1
-export WINEDEBUG=${WINEDEBUG:-err+loaddll}
+official=0
+probe official || official=$?
 
-cd "$sdk"
-set +e
-timeout -k 5 120 xvfb-run -a timeout -k 5 120 "$wine" ./xaml-probe.exe 2>&1 | tee probe.log
-status=${PIPESTATUS[0]}
-set -e
-echo "gate-b: probe exited $status"
-exit "$status"
+# Our stand-in for the flat C layer XAML imports. The exports are the 149 names the
+# shipped DLL carries; the ones XAML actually imports are all present.
+cargo build -q --target x86_64-pc-windows-gnu -p openudk
+cp "$target/openudk.dll" "$run/Microsoft.Internal.FrameworkUdk.dll"
+standin=0
+probe standin || standin=$?
+
+echo "gate-b: official exited $official, stand-in exited $standin"
+# The stand-in run is the one Gate B needs; the official run is the baseline it is
+# compared against.
+exit "$standin"
