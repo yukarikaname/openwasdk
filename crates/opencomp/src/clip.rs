@@ -128,6 +128,18 @@ pub fn create_with(insets: [f32; 4]) -> Result<InsetClip> {
     clip.cast()
 }
 
+/// A clip that clips nothing, for a visual that has none.
+///
+/// `IVisual.Clip` is nullable in the ABI and the generated `_Impl` trait cannot say
+/// so, so a client that reads it back gets this instead of an exception.
+pub fn empty() -> Result<CompositionClip> {
+    let clip: IInsetClip = InsetClipObject {
+        insets: Mutex::new([0.0; 4]),
+    }
+    .into();
+    clip.cast()
+}
+
 /// The insets of any clip object this DLL made, in left, top, right, bottom order.
 pub fn insets(clip: &CompositionClip) -> Option<[f32; 4]> {
     let clip = clip.cast::<IInsetClip>().ok()?;

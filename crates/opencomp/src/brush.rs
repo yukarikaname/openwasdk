@@ -7,9 +7,9 @@
 use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    CompositionColorBrush, ICompositionBrush, ICompositionBrush_Impl, ICompositionColorBrush,
-    ICompositionColorBrush_Impl, ICompositionObject, ICompositionObject2, ICompositionObject4,
-    ICompositionObject5,
+    CompositionBrush, CompositionColorBrush, ICompositionBrush, ICompositionBrush_Impl,
+    ICompositionColorBrush, ICompositionColorBrush_Impl, ICompositionObject, ICompositionObject2,
+    ICompositionObject4, ICompositionObject5,
 };
 use crate::bindings::Windows::UI::Color;
 use crate::object::composition_object;
@@ -55,6 +55,15 @@ pub fn create() -> Result<CompositionColorBrush> {
 pub fn create_with(color: Color) -> Result<CompositionColorBrush> {
     let brush: ICompositionColorBrush = ColorBrush {
         color: Mutex::new(to_rgba(color)),
+    }
+    .into();
+    windows_core::Interface::cast(&brush)
+}
+
+/// A brush that paints nothing, for a sprite that has none.
+pub fn transparent() -> Result<CompositionBrush> {
+    let brush: ICompositionColorBrush = ColorBrush {
+        color: Mutex::new([0.0; 4]),
     }
     .into();
     windows_core::Interface::cast(&brush)

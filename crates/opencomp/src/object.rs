@@ -142,7 +142,7 @@ macro_rules! visual_trait {
             fn Clip(&self) -> windows_core::Result<CompositionClip> {
                 match self.clip.lock().unwrap().clone() {
                     Some(clip) => Ok(clip),
-                    None => Err(Error::from_hresult($crate::object::E_FAIL)),
+                    None => $crate::clip::empty(),
                 }
             }
             fn SetClip(&self, value: Ref<CompositionClip>) -> windows_core::Result<()> {

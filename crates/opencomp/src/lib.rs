@@ -224,6 +224,18 @@ mod abi {
     }
 
     #[test]
+    fn an_unset_brush_and_clip_still_answer() {
+        let compositor = compositor();
+        let sprite = compositor.CreateSpriteVisual().unwrap();
+        let visual: IVisual = sprite.cast().unwrap();
+        // Both properties are nullable in the ABI; the trait cannot say so, so a client that
+        // reads one back must still get an object rather than an exception.
+        assert!(visual.Clip().is_ok());
+        let sprite: ISpriteVisual = sprite.cast().unwrap();
+        assert!(sprite.Brush().is_ok());
+    }
+
+    #[test]
     fn an_object_only_answers_for_what_it_is() {
         let compositor = compositor();
         let sprite = compositor.CreateSpriteVisual().unwrap();

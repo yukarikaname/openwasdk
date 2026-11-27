@@ -12,10 +12,9 @@ use crate::bindings::Microsoft::UI::Composition::{
     IVisual, SpriteVisual, VisualCollection,
 };
 use crate::node::{self, Node, NodeRef};
-use crate::object::E_FAIL;
 use crate::object::prelude::*;
 use crate::object::{composition_object, not_implemented, visual_trait};
-use windows_core::{Error, Interface, Result};
+use windows_core::{Interface, Result};
 
 #[windows_core::implement(
     ICompositionObject,
@@ -76,7 +75,7 @@ impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
     fn Brush(&self) -> Result<CompositionBrush> {
         match self.brush.lock().unwrap().clone() {
             Some(brush) => Ok(brush),
-            None => Err(Error::from_hresult(E_FAIL)),
+            None => crate::brush::transparent(),
         }
     }
 
