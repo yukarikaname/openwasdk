@@ -99,8 +99,11 @@ jobs:
       - name: Test the preview renderer
         run: cargo test -p opencomp-core --features preview
 
+      # `xwinui` is a host tool: it drives the cross-compiler, it is never itself
+      # built for Windows, and its TLS dependency compiles C for the target, which
+      # needs an MSVC C toolchain that a macOS or Linux runner does not have.
       - name: Check the Windows artifact
-        run: cargo check --workspace --all-targets --target x86_64-pc-windows-msvc
+        run: cargo check --workspace --all-targets --exclude xwinui --target x86_64-pc-windows-msvc
 
       # Checking types is not linking. Build the PE once so a missing export or a linker setting
       # fails here rather than on the machine that tries to load the DLL.
