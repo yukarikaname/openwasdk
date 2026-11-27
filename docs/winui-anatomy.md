@@ -158,6 +158,43 @@ The remaining 2,144 unresolved identifiers are used only inside
 `Microsoft.ui.xaml.dll`. Their neighbours include `IDWrite*`, `ID2D1*` and
 XAML's own internal interfaces; they do not constrain `opencomp`.
 
+## The flat C layer
+
+`Microsoft.ui.xaml.dll` imports 33 DLLs. Two of them are not WinRT servers:
+
+| DLL | Symbols imported by XAML | by `dcompi.dll` |
+| --- | --- | --- |
+| `Microsoft.Internal.FrameworkUdk.dll` | 43 | 10 |
+| `Microsoft.UI.Windowing.Core.dll` | 1 (`ContentPreTranslateMessage`) | |
+
+These are plain C exports, so the App SDK has a second, undocumented ABI next to
+WinRT. `Microsoft.Internal.FrameworkUdk.dll` is 441 KB and exports 149 functions
+in 40 groups; the ones XAML links are mostly optional features (input pane, text
+prediction, MUI language propagation, media playback extensions, back button,
+diagnostics) plus three that are structural:
+
+- `Windowing_GetWindowIdFromWindow` and `Windowing_GetWindowFromWindowId`, the
+  only `WindowId` ↔ `HWND` conversion. `include/Microsoft.UI.Interop.h` in the
+  package implements the helpers by `LoadLibrary`-ing this DLL and
+  `GetProcAddress`-ing those two names, so there is no WinRT path around them.
+- `Containment_GetChangeEnabled`, the containment check XAML makes early.
+
+`dcompi.dll`'s ten are `DxPrivates_*` (partner device, WARP extension) and
+`DCompPrivates_CreateSharedVisual` / `CreateSharedVisualHandle` /
+`OpenSharedResourceHandle` / `OpenAndAttachSharedTarget`, which is how the lifted
+compositor attaches to a shared visual outside its process.
+
+The import is static, not delay-loaded: `Microsoft.ui.xaml.dll` cannot be loaded
+at all unless this DLL is found. Any project that wants to run the official XAML
+binaries has to provide it, and that is a much smaller surface than the 214
+methods of `Microsoft.UI.Content`: 6 `Windowing_*` exports carry the structure,
+the rest degrade to a failed feature.
+
+For completeness, the rest of the package's flat layer: `PowerNotifications_*`
+(20), `ToastNotifications_*` (8), `PackageManagement_*` (9), `PushNotifications_*`
+(7), `Media*Extension_*` (26), `Uup_*` (4), `SyncLayout_*` (2),
+`DisplayPrivates_*` (5), `Theming_*` (2), `Text*` (7), `Input*` (12).
+
 ## Corrections to earlier assumptions
 
 `Microsoft.UI.Xaml.Internal.dll` is not the private XAML ABI. It is 872 KB with

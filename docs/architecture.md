@@ -82,6 +82,20 @@ The follow-on interfaces exist as stubs on purpose: a client asks for them with
 `QueryInterface` before it calls anything, and a failed QI throws, while a method
 that returns `E_NOTIMPL` can be handled.
 
+### The flat C layer
+
+`Microsoft.ui.xaml.dll` statically imports `Microsoft.Internal.FrameworkUdk.dll`,
+a 441 KB DLL with 149 plain C exports, so it cannot be loaded unless that DLL is
+found. XAML links 43 of them; six `Windowing_*` exports (WindowId ↔ HWND and the
+display/icon conversions) are the structural part, and the rest are optional
+features that fail cleanly. `dcompi.dll` links ten: the `DCompPrivates_*` shared
+visual handoff and `DxPrivates_*`.
+
+That layer is small, has no metadata and no COM, and is therefore the cheapest
+place to start against a real XAML binary: a crate that exports those names,
+with the conversions implemented and the rest returning `E_NOTIMPL`, is enough
+for the loader and for XAML's first HWND lookups.
+
 ### Hosting
 
 A composition tree reaches a window through `Microsoft.UI.Content`, not through
