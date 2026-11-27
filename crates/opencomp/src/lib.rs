@@ -322,12 +322,25 @@ mod export_tests {
     }
 
     #[test]
-    fn a_class_this_dll_does_not_serve_is_reported_as_missing() {
-        let name = HSTRING::from("Microsoft.UI.Composition.Visual");
+    fn a_class_the_manifest_does_not_name_is_reported_as_missing() {
+        let name = HSTRING::from("Microsoft.UI.Composition.NotAClass");
         let mut factory: *mut c_void = std::ptr::null_mut();
         let result = unsafe { DllGetActivationFactory(handle(&name), &mut factory) };
         assert_eq!(result, CLASS_E_CLASSNOTAVAILABLE);
         assert!(factory.is_null());
+    }
+
+    /// A class the manifest names gets a factory even when nothing is implemented: Wine's
+    /// combase ends the process on a missing one, so the refusal has to come from
+    /// `ActivateInstance`.
+    #[test]
+    fn a_manifest_class_without_an_implementation_still_gets_a_factory() {
+        let name = HSTRING::from("Microsoft.UI.Composition.Visual");
+        let mut factory: *mut c_void = std::ptr::null_mut();
+        let result = unsafe { DllGetActivationFactory(handle(&name), &mut factory) };
+        assert_eq!(result, S_OK);
+        assert!(!factory.is_null());
+        unsafe { crate::factory::release_for_test(factory) };
     }
 }
 
