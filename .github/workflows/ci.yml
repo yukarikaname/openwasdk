@@ -140,7 +140,13 @@ jobs:
             | sed -n 's/.*Executable.*(\(.*\))/\1/p' | tail -1)
           test "$test_exe" || { echo "no test binary"; exit 1; }
           echo "running $test_exe"
-          timeout 300 xvfb-run -a "$wine" "$test_exe" --test-threads=1
+          # `timeout` inside `xvfb-run`: wrapping the wrapper leaves wine alive when the
+          # wrapper is killed, and the step then waits for the job timeout anyway.
+          xvfb-run -a timeout -k 5 300 "$wine" "$test_exe" --test-threads=1 || code=$?
+          if [ "${code:-0}" = 124 ] || [ "${code:-0}" = 137 ]; then
+            echo "the test run was killed after the timeout; see the log above"
+          fi
+          exit "${code:-0}"
 
       # The client is the shape a real application has: a window, a tree built
       # through the ABI, an island, and a bridge that presents. Ten frames are
@@ -157,7 +163,7 @@ jobs:
           # frames and makes a hang a red step with a log instead.
           exe=target/x86_64-pc-windows-gnu/debug/opencomp-client.exe
           set +e
-          OPENCOMP_TRACE=1 OPENCOMP_FRAMES=10 timeout 90 xvfb-run -a "$wine" "$exe" \
+          OPENCOMP_TRACE=1 timeout 90 xvfb-run -a timeout -k 5 90 "$wine" "$exe" \
             > client.log 2>&1
           status=$?
           set -e
