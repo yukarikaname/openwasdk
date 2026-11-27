@@ -62,6 +62,12 @@ if [ -z "$msix" ]; then
 	# under `set -e`.
 	msix=$(find "$sdk/.." -maxdepth 1 -name 'Microsoft.WindowsAppRuntime*.msix' 2>/dev/null | head -1)
 fi
+if [ -z "$msix" ] && [ "${OPENCOMP_SDK_FETCH:-0}" = 1 ]; then
+	# The runtime-class table only exists in the framework package's MSIX; the NuGet set
+	# that carries the DLLs does not include it.
+	cargo run -q -p xwinui -- framework --out "$(dirname "$sdk")"
+	msix=$(find "$sdk/.." -maxdepth 1 -name 'Microsoft.WindowsAppRuntime*.msix' 2>/dev/null | head -1)
+fi
 if [ -n "$msix" ] && [ -f "$msix" ]; then
 	# Replace only the classes this project actually serves, one by one. A prefix
 	# replace points every class in the namespace at our DLL, and combase fails fast the
@@ -74,12 +80,13 @@ if [ -n "$msix" ] && [ -f "$msix" ]; then
 		--replace Microsoft.UI.Dispatching.DispatcherQueueTimer=opendispatch.dll \
 		--replace Microsoft.UI.Dispatching.DispatcherExitDeferral=opendispatch.dll \
 		--replace Microsoft.UI.Dispatching.DispatcherQueueShutdownStartingEventArgs=opendispatch.dll \
+		--add Windows.ApplicationModel.Core.CoreApplication=opencore.dll \
 		--out "probe.exe.manifest"
 else
 	echo "gate-b: no activation manifest (set ACTIVATION_MSIX); activations will fail"
 fi
 
-cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe -p opendispatch -p opencomp
+cargo build -q --target x86_64-pc-windows-gnu -p xaml-probe -p opendispatch -p opencomp -p opencore -p coremessaging
 # The SDK's own `Microsoft.UI.Dispatching` server aborts on load under Wine
 # (`ntdll.NtAllocateReserveObject`), so the manifest points that namespace at ours.
 xvfb-run -a "$wine" wineboot -u >/dev/null 2>&1 || true
@@ -106,6 +113,12 @@ export OPENCOMP_XAML_PROBE_START OPENCOMP_XAML_PROBE_ONLY
 cp "$target/opendispatch.dll" "$run/" 2>/dev/null || true
 cp "$target/opencomp.dll" "$run/" 2>/dev/null || true
 cp "$target/bcp47mrm.dll" "$run/" 2>/dev/null || true
+# The class Wine's `twinapi.appcore.dll` serves without the interface XAML asks for, and
+# the messaging DLL whose `CoreUICreate` is a stub: the probe answers that one name from
+# the copy it keeps under its own name.
+cp "$target/opencore.dll" "$run/" 2>/dev/null || true
+cp "$target/coremessaging.dll" "$run/opencoremsg.dll" 2>/dev/null || true
+cp "$target/coremessaging.dll" "$run/CoreMessagingXP.dll" 2>/dev/null || true
 standin=0
 probe standin || standin=$?
 

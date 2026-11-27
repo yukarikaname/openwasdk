@@ -80,10 +80,18 @@ jobs:
       # The App SDK's classes are registered on a machine only when its runtime is
       # installed. An unpackaged probe reaches them the same way the Wine job does: through
       # the activation manifest beside the executable, here with the SDK as shipped.
+      # The runtime-class table lives only in the framework package's MSIX, which is the
+      # 50 MB half of a 172 MB package: cached between runs.
+      - uses: actions/cache@v6
+        with:
+          path: target/Microsoft.WindowsAppRuntime.2.msix
+          key: appsdk-framework-${{ env.SDK_VERSION }}
+
       - name: Write the activation manifest
         run: |
           cargo run -q -p xwinui -- sdk --out target/appsdk
-          cargo run -q -p xwinui -- activation --sdk target/appsdk --out target/appsdk/xaml-probe.exe.manifest
+          cargo run -q -p xwinui -- framework --out target
+          cargo run -q -p xwinui -- activation --sdk target/Microsoft.WindowsAppRuntime.2.msix --out target/appsdk/xaml-probe.exe.manifest
 
       - name: Probe the official XAML DLL
         shell: bash

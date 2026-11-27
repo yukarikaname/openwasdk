@@ -6,6 +6,7 @@ mod activation;
 mod appx;
 mod build;
 mod check;
+mod framework;
 mod layout;
 mod manifest;
 mod packages;
@@ -73,6 +74,18 @@ enum Command {
         /// Manifest file to write
         #[arg(long)]
         out: PathBuf,
+    },
+    /// Unpack the framework MSIX that carries the runtime-class table
+    Framework {
+        /// Directory to write the MSIX into
+        #[arg(long)]
+        out: PathBuf,
+        /// Where the .nupkg files are cached; defaults to ~/.cache/xwinui
+        #[arg(long)]
+        cache: Option<PathBuf>,
+        /// Architecture of the MSIX to unpack
+        #[arg(long, default_value = "x64")]
+        arch: String,
     },
     /// Report which required metadata files and headers a layout has
     Check {
@@ -226,6 +239,15 @@ fn run(cli: Cli) -> Result<(), Failure> {
             activation::write(&out, &text)?;
             let dlls = text.matches("<file name=\"").count();
             eprintln!("{} classes in {} DLLs", entries.len(), dlls);
+            Ok(())
+        }
+        Command::Framework { out, cache, arch } => {
+            let cache = match cache {
+                Some(path) => path,
+                None => packages::default_cache()?,
+            };
+            let path = framework::run(&out, &cache, &arch)?;
+            eprintln!("framework at {}", path.display());
             Ok(())
         }
         Command::Check { layout } => {
