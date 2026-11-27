@@ -105,6 +105,19 @@ jobs:
           x86_64-w64-mingw32-objdump -p target/x86_64-pc-windows-gnu/debug/opencomp.dll \
             | grep -E "DllGetActivationFactory|DllCanUnloadNow|DllGetClassObject"
 
+      # The ABI objects are exercised on Windows, but never under the runtime a
+      # Linux user would actually have. Wine's combase is that runtime: running the
+      # same tests there catches an HSTRING or activation assumption that the native
+      # Windows job cannot.
+      - name: Test under Wine
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y --no-install-recommends wine64
+          cargo test -p opencomp --target x86_64-pc-windows-gnu --no-run
+          test_exe=$(find target/x86_64-pc-windows-gnu/debug/deps -maxdepth 1 -name 'opencomp-*' -perm -u+x -type f | head -1)
+          echo "running $test_exe"
+          wine64 "$test_exe" --test-threads=1 || wine "$test_exe" --test-threads=1
+
       # The flat C layer XAML imports by name. A missing export is a load failure,
       # so check one conversion and one stub, not just that the crate compiled.
       - name: Link the framework UDK stand-in
