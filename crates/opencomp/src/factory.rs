@@ -82,18 +82,22 @@ fn query_statics(class: Class, iid: GUID, out: *mut *mut c_void) -> Option<i32> 
         IContentIslandStatics, IDesktopChildSiteBridgeStatics,
     };
 
-    let statics: Result<windows_core::IUnknown, windows_core::Error> = match class {
+    // Hand out the interface that was asked for, not a cast of it. `#[implement]` gives
+    // every interface its own vtable reference inside the outer object, so `IUnknown` and
+    // `IContentIslandStatics` are eight bytes apart: answering a request for the second
+    // with the first hands the caller a vtable that does not have `Create` in it.
+    let statics: Result<*mut c_void, windows_core::Error> = match class {
         Class::ContentIsland if iid == IContentIslandStatics::IID => {
-            crate::content::island_statics().and_then(|statics| statics.cast())
+            crate::content::island_statics().map(|statics| statics.into_raw())
         }
         Class::DesktopChildSiteBridge if iid == IDesktopChildSiteBridgeStatics::IID => {
-            crate::content::bridge_statics().and_then(|statics| statics.cast())
+            crate::content::bridge_statics().map(|statics| statics.into_raw())
         }
         _ => return None,
     };
     Some(match statics {
-        Ok(statics) => {
-            unsafe { *out = statics.into_raw() };
+        Ok(pointer) => {
+            unsafe { *out = pointer };
             S_OK
         }
         Err(error) => {
@@ -265,6 +269,30 @@ mod tests {
         assert!(
             instance.is_ok(),
             "a compositor comes out of the generic factory"
+        );
+    }
+
+    /// `#[implement]` puts one vtable reference per interface inside the object, so a
+    /// `QueryInterface` that answers with a *cast* of the object answers with the wrong
+    /// interface: `IUnknown` and `IContentIslandStatics` sit eight bytes apart, and the
+    /// caller then reads `Create` past the end of the smaller table. Comparing the vtable
+    /// pointers catches that; calling a slot is what the gate did, and it faulted.
+    #[test]
+    #[cfg(windows)]
+    fn a_statics_query_answers_with_the_interface_that_was_asked_for() {
+        use crate::bindings::Microsoft::UI::Content::IContentIslandStatics;
+
+        let table = |statics: &IContentIslandStatics| unsafe {
+            (Interface::as_raw(statics) as *const usize).read_unaligned()
+        };
+        let factory = Factory::create(Class::ContentIsland);
+        let unknown: windows_core::IUnknown = unsafe { windows_core::IUnknown::from_raw(factory) };
+        let queried: IContentIslandStatics = unknown.cast().expect("statics");
+        let direct: IContentIslandStatics = crate::content::island_statics().expect("direct");
+        assert_eq!(
+            table(&queried),
+            table(&direct),
+            "the query shifted the interface"
         );
     }
 
