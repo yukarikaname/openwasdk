@@ -30,11 +30,13 @@ compiled XAML and the Wine host stay as they are.
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
 | `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | factory only |
 | `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | draws rectangles |
-| `openxaml` | `Microsoft.UI.Xaml.Internal` replacement: XBF loader, property system, layout, controls | planned |
+| `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | planned |
 | `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | planned |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
+What the shipped App SDK binaries contain — layers, interface counts, the private
+boundary — is in [`docs/winui-anatomy.md`](docs/winui-anatomy.md).
 
 ## Requirements
 
@@ -102,7 +104,7 @@ elsewhere. A machine without a GPU skips those tests.
 crates/comptrace       metadata reader, reports and the binding generator
 crates/opencomp        Microsoft.UI.Composition replacement (Windows target)
 crates/opencomp-core   portable visual tree and wgpu renderer (every host)
-docs/                  architecture, measured scale, milestones
+docs/                  architecture, measured scale, binary anatomy, milestones
 ```
 
 ## Roadmap

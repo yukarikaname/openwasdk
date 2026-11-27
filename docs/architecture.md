@@ -76,7 +76,9 @@ calls into the core.
 
 ## openxaml
 
-`Microsoft.UI.Xaml.Internal.dll` replacement.
+`Microsoft.ui.xaml.dll` replacement. That DLL is the WinRT server for every XAML
+class and exports only `DllGetActivationFactory`; `Microsoft.UI.Xaml.Internal.dll`
+is the Line Services text engine, not the XAML ABI.
 
 - XBF loader: parse `resources.pri` and the embedded XBF into an object graph.
   References: the WinUI OSS `dxaml` sources (MIT), `XbfDump`, `XbfDecompiler`,
@@ -88,15 +90,15 @@ calls into the core.
   reference for the property/binding system.
 - Text: Skia paragraph or HarfBuzz + ICU; DirectWrite is not required.
 
-`Microsoft.UI.Xaml.dll` itself can come from the OSS WinUI sources (MIT) once
-the build is portable; until then the official binary can be used, because the
-contract between it and `Internal.dll` is what `openxaml` implements.
+The OSS WinUI sources (MIT) are the upstream of that DLL. Until they build
+portably the official binary can be used, because the contract between it and
+the compositor is only 73 interfaces plus 16 private identifiers.
 
 ### Reactor
 
 `Microsoft.UI.Reactor` is a declarative C# authoring layer over WinUI 3: every
 element it renders is a real WinUI control. It is not a XAML-free runtime, so it
-still needs `Microsoft.UI.Xaml`/`Internal`; what it does not need is the XAML
+still needs the XAML engine; what it does not need is the XAML
 compiler or an application XBF, because the tree is built by C# calls.
 
 That makes it the best first target for `openxaml`: a small, open-source corpus
@@ -163,13 +165,17 @@ private interface is counted.
 
 ## Milestones
 
+The binaries themselves are measured in [`winui-anatomy.md`](winui-anatomy.md):
+73 Composition interfaces are all the XAML engine asks for, and 16 private IIDs
+cross the boundary.
+
 | # | Milestone | Exit criterion |
 | --- | --- | --- |
 | 0 | `comptrace` | A proxy logs WinUI 3 Gallery's Composition calls and produces the interface list |
 | 1 | `xwinui` | An unmodified WinUI 3 sample builds on Linux and runs under Wine with the official runtime |
 | 2 | `opencomp` | A Composition-only program creates a visual tree on our DLL and draws it |
 | 3 | composition-only host | The same program hosts its tree in an HWND through `Microsoft.UI.Content`/`Windowing`, with no XAML loaded |
-| 4 | `openxaml` | A WinUI 3 sample runs without `Microsoft.UI.Xaml.Internal.dll` |
+| 4 | `openxaml` | A WinUI 3 sample runs on our `Microsoft.ui.xaml.dll` |
 | 5 | `openhost` | No Microsoft runtime DLL remains; only Wine's platform layer |
 
 ## Risks
