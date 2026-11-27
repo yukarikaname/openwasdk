@@ -107,6 +107,37 @@ That is why `opencomp-core` builds without wgpu, why the Windows backend is D3D1
 (the device XAML hands over), and why a second backend stays possible without a
 second set of semantics. It is not a promise to run applications natively.
 
+## The compiler question
+
+An open runtime should not need a closed compiler, and the way out is not to
+write one. WinUI compiles markup because its runtime loads a compiled form; a
+runtime we own can load XAML source instead — Microsoft's own `XamlReader.Load`
+does exactly that today — or a precompiled form we define, in which case we own
+both ends.
+
+So the fork is which runtime we target, not which compiler we write:
+
+| | runtime | markup input | Microsoft's compiler |
+| --- | --- | --- | --- |
+| now | the official `Microsoft.ui.xaml.dll` | the XBF *it* defines | needed, run under Wine |
+| later | `openxaml` | XAML source, or our own format | not needed at all |
+
+Writing an XBF *writer* now would be the expensive option that gets discarded the
+day `openxaml` takes over: weeks of work to satisfy a contract defined by a
+closed engine, thrown away when the engine goes. Reading XBF is the opposite
+trade — MIT reference, a few thousand lines, and it stays useful, because every
+existing application ships XBF.
+
+Two things follow that are easy to get wrong:
+
+- The compiler is a **build-time** tool on a developer's machine. A user running
+  an application never invokes it, so it is not part of the runtime claim; the
+  final milestone is "no Microsoft runtime DLL", not "no Wine anywhere". Wine is
+  open source; the compiler is not, and it is invoked only while we still target
+  Microsoft's engine.
+- The same reasoning applies to packaging: `makemsix` is MIT and cross-platform,
+  so there is nothing to replace, and unpackaged runs do not need it at all.
+
 ## The acceptance ladder
 
 The goal is not "our tests pass", it is "an unmodified application runs". Each
