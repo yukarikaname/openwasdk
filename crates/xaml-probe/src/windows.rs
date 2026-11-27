@@ -129,7 +129,18 @@ struct Outcome {
 /// The call goes through the generated `IApplicationStatics::Start`, not a hand-written
 /// slot: the delegate ABI is part of the call, and a wrong slot returns `S_OK` without
 /// running anything, which is exactly what the hand-written probe did on both hosts.
+///
+// XAML installs a dispatcher on the calling thread and expects it to be an apartment.
+// A process that never called `RoInitialize` gets whatever the engine picks.
+#[link(name = "combase.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+unsafe extern "system" {
+    fn RoInitialize(init_type: i32) -> i32;
+}
+
 fn start_gate(module: HMODULE) -> i32 {
+    // Safety: the apartment is process state and this is the first COM call the probe makes.
+    let hr = unsafe { RoInitialize(0) };
+    eprintln!("xaml-probe: RoInitialize(STA) hr=0x{:08x}", hr as u32);
     let Some(get_factory) = export(module, "DllGetActivationFactory") else {
         eprintln!("xaml-probe: DllGetActivationFactory missing");
         return 1;
