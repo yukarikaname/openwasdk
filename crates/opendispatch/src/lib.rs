@@ -154,7 +154,18 @@ fn class_of(name: &str) -> Option<Class> {
 }
 
 #[cfg(windows)]
+/// Refuse a call, saying which one when `OPENCOMP_TRACE` is set.
+///
+/// A caller that gets `E_NOTIMPL` back has no way to know which member answered it;
+/// the caller location is the cheapest way to make that visible.
+#[track_caller]
 pub(crate) fn not_implemented<T>() -> windows_core::Result<T> {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!(
+            "opendispatch: E_NOTIMPL at {}",
+            std::panic::Location::caller()
+        );
+    }
     Err(windows_core::Error::from_hresult(windows_core::HRESULT(
         E_NOTIMPL,
     )))
