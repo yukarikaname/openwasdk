@@ -46,7 +46,7 @@ pub fn imports(path: &Path) -> Result<Vec<Dependency>, String> {
             Dependency { dll, names }
         })
         .collect();
-    out.sort_by(|left, right| left.dll.to_lowercase().cmp(&right.dll.to_lowercase()));
+    out.sort_by_key(|dependency| dependency.dll.to_lowercase());
     Ok(out)
 }
 
