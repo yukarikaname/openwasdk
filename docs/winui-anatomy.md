@@ -109,6 +109,14 @@ answers `DllGetActivationFactory` for `Compositor` covers the composition half.
 The `Content` half is where the window comes from, which matches the hosting
 section of [`architecture.md`](architecture.md).
 
+Those `Content` names are activation strings inside `Microsoft.ui.xaml.dll`
+itself, and that DLL exports `DllGetActivationFactory`, so the Content classes
+belong to the XAML server rather than to a DLL of their own: `Microsoft.UI.dll` is
+a 131 KB shim with the same two exports, and `dcompi.dll` answers for
+`Microsoft.UI.Composition.Compositor` only. A composition-only program that uses
+`DesktopChildSiteBridge` therefore loads the XAML DLL even though it renders no
+XAML.
+
 ## The private boundary
 
 Of the 2,158 unresolved identifiers, 14 also appear in `dcompi.dll`. Those are
