@@ -18,7 +18,7 @@ impl comp::ICompositor2_Impl for crate::compositor::Compositor_Impl {
         not_implemented()
     }
     fn CreateAnimationGroup(&self) -> windows_core::Result<comp::CompositionAnimationGroup> {
-        not_implemented()
+        crate::animation_group::create()
     }
     fn CreateBackdropBrush(&self) -> windows_core::Result<comp::CompositionBackdropBrush> {
         not_implemented()
@@ -50,13 +50,13 @@ impl comp::ICompositor2_Impl for crate::compositor::Compositor_Impl {
         not_implemented()
     }
     fn CreateStepEasingFunction(&self) -> windows_core::Result<comp::StepEasingFunction> {
-        not_implemented()
+        crate::step_easing::create()
     }
     fn CreateStepEasingFunctionWithStepCount(
         &self,
-        _stepCount: i32,
+        stepCount: i32,
     ) -> windows_core::Result<comp::StepEasingFunction> {
-        not_implemented()
+        crate::step_easing::create_with_step_count(stepCount)
     }
 }
 

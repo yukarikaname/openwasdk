@@ -10,8 +10,8 @@ use crate::animation::{easing_of, insert};
 use crate::bindings::Microsoft::UI::Composition::{
     ColorKeyFrameAnimation, CompositionColorSpace, CompositionEasingFunction,
     IColorKeyFrameAnimation, IColorKeyFrameAnimation_Impl, ICompositionAnimation,
-    ICompositionAnimationBase, ICompositionObject, ICompositionObject2, ICompositionObject4,
-    ICompositionObject5, IKeyFrameAnimation,
+    ICompositionAnimation2, ICompositionAnimationBase, ICompositionObject, ICompositionObject2,
+    ICompositionObject4, ICompositionObject5, IKeyFrameAnimation,
 };
 use crate::bindings::Windows::UI::Color;
 use crate::object::composition_object;
@@ -24,12 +24,14 @@ use windows_core::{Interface, Ref, Result};
     ICompositionObject4,
     ICompositionObject5,
     ICompositionAnimationBase,
+    ICompositionAnimation2,
     ICompositionAnimation,
     IKeyFrameAnimation,
     IColorKeyFrameAnimation
 )]
 pub struct ColorAnimation {
     state: Arc<Mutex<Keyframes>>,
+    target: Mutex<String>,
 }
 
 composition_object!(ColorAnimation_Impl);
@@ -74,6 +76,7 @@ pub fn color() -> ::windows_core::Result<ColorKeyFrameAnimation> {
     let state = Arc::new(Mutex::new(Keyframes::default()));
     let animation: IColorKeyFrameAnimation = ColorAnimation {
         state: state.clone(),
+        target: Mutex::new(String::new()),
     }
     .into();
     crate::identity::publish(&animation, &state);

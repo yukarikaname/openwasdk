@@ -31,6 +31,15 @@ pub(crate) fn not_implemented<T>() -> windows_core::Result<T> {
     Err(Error::from_hresult(E_NOTIMPL))
 }
 
+/// Where a composition object keeps its visual, if it has one.
+///
+/// The follow-on impls are shared by visuals and plain objects, and a macro
+/// cannot pass its caller's `self` to a nested macro. This trait carries the
+/// one piece that differs back to the macro that has `self` in scope.
+pub(crate) trait GroupTarget {
+    fn group_target(&self) -> Option<&crate::node::NodeRef>;
+}
+
 macro_rules! composition_followups {
     ($impl_type:ident) => {
         impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject2_Impl for $impl_type {
@@ -57,11 +66,20 @@ macro_rules! composition_followups {
             }
             fn StartAnimationGroup(
                 &self,
-                _value: ::windows_core::Ref<
+                value: ::windows_core::Ref<
                     $crate::bindings::Microsoft::UI::Composition::ICompositionAnimationBase,
                 >,
             ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                // The group is ours when the identity table knows it. An object
+                // without a visual has nowhere to start anything, and `group_target`
+                // is what tells the two kinds of object apart.
+                match (
+                    $crate::object::GroupTarget::group_target(self),
+                    value.as_ref(),
+                ) {
+                    (Some(node), Some(group)) => $crate::animation_group::start(node, group),
+                    _ => $crate::object::not_implemented(),
+                }
             }
             fn StopAnimationGroup(
                 &self,
@@ -148,6 +166,11 @@ macro_rules! composition_object {
                 Ok(())
             }
         }
+        impl $crate::object::GroupTarget for $impl_type {
+            fn group_target(&self) -> Option<&$crate::node::NodeRef> {
+                Some(&self.node)
+            }
+        }
         $crate::object::composition_followups!($impl_type);
     };
     ($impl_type:ident) => {
@@ -179,6 +202,11 @@ macro_rules! composition_object {
                 _property: &::windows_core::HSTRING,
             ) -> windows_core::Result<()> {
                 Ok(())
+            }
+        }
+        impl $crate::object::GroupTarget for $impl_type {
+            fn group_target(&self) -> Option<&$crate::node::NodeRef> {
+                None
             }
         }
         $crate::object::composition_followups!($impl_type);

@@ -11,7 +11,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::bindings::Microsoft::UI::Composition::{
-    CompositionAnimation, CompositionEasingFunction, ICompositionAnimation,
+    CompositionAnimation, CompositionEasingFunction, ICompositionAnimation, ICompositionAnimation2,
     ICompositionAnimationBase, ICompositionObject, ICompositionObject2, ICompositionObject4,
     ICompositionObject5, IKeyFrameAnimation, IScalarKeyFrameAnimation,
     IScalarKeyFrameAnimation_Impl, IVector2KeyFrameAnimation, IVector2KeyFrameAnimation_Impl,
@@ -35,20 +35,38 @@ pub(crate) fn ticks(value: f32) -> TimeSpan {
     }
 }
 
+/// The fraction of a step at which a step easing moves on.
+///
+/// The metadata this crate binds has no jump-gap position, and WinUI documents
+/// its default as halfway through the step. Keeping the choice here means the
+/// core curve stays a general step function.
+pub(crate) const STEP_JUMP: f32 = 0.5;
+
 /// The curve a client attached to a key frame.
 pub(crate) fn easing_of(easing: Ref<CompositionEasingFunction>) -> Easing {
     let Some(easing) = easing.as_ref() else {
         return Easing::Linear;
     };
-    let Ok(bezier) =
+    if let Ok(bezier) =
         easing.cast::<crate::bindings::Microsoft::UI::Composition::ICubicBezierEasingFunction>()
-    else {
-        return Easing::Linear;
-    };
-    let (Ok(first), Ok(second)) = (bezier.ControlPoint1(), bezier.ControlPoint2()) else {
-        return Easing::Linear;
-    };
-    Easing::CubicBezier(first.x, first.y, second.x, second.y)
+    {
+        let (Ok(first), Ok(second)) = (bezier.ControlPoint1(), bezier.ControlPoint2()) else {
+            return Easing::Linear;
+        };
+        return Easing::CubicBezier(first.x, first.y, second.x, second.y);
+    }
+    if let Ok(step) =
+        easing.cast::<crate::bindings::Microsoft::UI::Composition::IStepEasingFunction>()
+    {
+        // Only the count matters to the curve; `InitialStep` and `FinalStep`
+        // narrow the range in the real API, which the renderer does not model.
+        let steps = step.StepCount().unwrap_or(1).max(1) as u32;
+        return Easing::Step {
+            steps,
+            jump: STEP_JUMP,
+        };
+    }
+    Easing::Linear
 }
 
 /// The curve behind a client's animation, for `StartAnimation`.
@@ -81,6 +99,35 @@ macro_rules! animation_shared {
         impl $crate::bindings::Microsoft::UI::Composition::ICompositionAnimationBase_Impl
             for $impl_type
         {
+        }
+
+        impl $crate::bindings::Microsoft::UI::Composition::ICompositionAnimation2_Impl
+            for $impl_type
+        {
+            // A boolean parameter exists for expression animations, which are not
+            // implemented; accepting it keeps a configuring client alive.
+            fn SetBooleanParameter(
+                &self,
+                _key: &::windows_core::HSTRING,
+                _value: bool,
+            ) -> ::windows_core::Result<()> {
+                Ok(())
+            }
+            // The target is the property an animation group starts this animation
+            // on. It lives on the animation, not on the start call, so a group can
+            // carry animations for several properties.
+            fn Target(&self) -> ::windows_core::Result<::windows_core::HSTRING> {
+                Ok(::windows_core::HSTRING::from(
+                    self.target.lock().unwrap().clone(),
+                ))
+            }
+            fn SetTarget(
+                &self,
+                value: &::windows_core::HSTRING,
+            ) -> ::windows_core::Result<()> {
+                *self.target.lock().unwrap() = value.to_string_lossy();
+                Ok(())
+            }
         }
 
         impl $crate::bindings::Microsoft::UI::Composition::ICompositionAnimation_Impl
@@ -285,12 +332,14 @@ pub(crate) type Shared = Arc<Mutex<Keyframes>>;
     ICompositionObject4,
     ICompositionObject5,
     ICompositionAnimationBase,
+    ICompositionAnimation2,
     ICompositionAnimation,
     IKeyFrameAnimation,
     IScalarKeyFrameAnimation
 )]
 pub struct ScalarAnimation {
     state: Shared,
+    target: Mutex<String>,
 }
 
 composition_object!(ScalarAnimation_Impl);
@@ -308,12 +357,14 @@ insert_impl!(
     ICompositionObject4,
     ICompositionObject5,
     ICompositionAnimationBase,
+    ICompositionAnimation2,
     ICompositionAnimation,
     IKeyFrameAnimation,
     IVector2KeyFrameAnimation
 )]
 pub struct Vector2Animation {
     state: Shared,
+    target: Mutex<String>,
 }
 
 composition_object!(Vector2Animation_Impl);
@@ -331,12 +382,14 @@ insert_impl!(
     ICompositionObject4,
     ICompositionObject5,
     ICompositionAnimationBase,
+    ICompositionAnimation2,
     ICompositionAnimation,
     IKeyFrameAnimation,
     IVector3KeyFrameAnimation
 )]
 pub struct Vector3Animation {
     state: Shared,
+    target: Mutex<String>,
 }
 
 composition_object!(Vector3Animation_Impl);
@@ -356,6 +409,7 @@ pub fn scalar() -> ::windows_core::Result<ScalarKeyFrameAnimation> {
     let state = empty();
     let animation: IScalarKeyFrameAnimation = ScalarAnimation {
         state: state.clone(),
+        target: Mutex::new(String::new()),
     }
     .into();
     crate::identity::publish(&animation, &state);
@@ -366,6 +420,7 @@ pub fn vector2() -> ::windows_core::Result<Vector2KeyFrameAnimation> {
     let state = empty();
     let animation: IVector2KeyFrameAnimation = Vector2Animation {
         state: state.clone(),
+        target: Mutex::new(String::new()),
     }
     .into();
     crate::identity::publish(&animation, &state);
@@ -376,6 +431,7 @@ pub fn vector3() -> ::windows_core::Result<Vector3KeyFrameAnimation> {
     let state = empty();
     let animation: IVector3KeyFrameAnimation = Vector3Animation {
         state: state.clone(),
+        target: Mutex::new(String::new()),
     }
     .into();
     crate::identity::publish(&animation, &state);

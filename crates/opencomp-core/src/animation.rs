@@ -11,6 +11,18 @@ pub enum Easing {
     Linear,
     /// The four control points of a cubic bezier, `(x1, y1, x2, y2)`.
     CubicBezier(f32, f32, f32, f32),
+    /// `steps` equal parts, with the value moving on `jump` of the way through
+    /// each part.
+    ///
+    /// `jump` is a fraction in `0..=1` measured from the start of a step: `0`
+    /// jumps at the boundary (a "jump-start" step) and `1` holds the old value
+    /// for the whole step (a "jump-end" step). The composition API also has a
+    /// jump gap that this crate's metadata does not expose, so `opencomp` fixes
+    /// it at the documented default of one half.
+    Step {
+        steps: u32,
+        jump: f32,
+    },
 }
 
 impl Easing {
@@ -39,6 +51,23 @@ impl Easing {
                     }
                 }
                 y((low + high) / 2.0)
+            }
+            Easing::Step { steps, jump } => {
+                let steps = steps.max(1);
+                let jump = jump.clamp(0.0, 1.0);
+                let scaled = progress * steps as f32;
+                let index = scaled.floor();
+                // `scaled` can land exactly on `steps` at the end of the range; there
+                // is no step past the last one, and the curve has to end at one.
+                if index >= steps as f32 {
+                    return 1.0;
+                }
+                let step = if scaled - index < jump {
+                    index
+                } else {
+                    index + 1.0
+                };
+                (step / steps as f32).clamp(0.0, 1.0)
             }
         }
     }
@@ -218,6 +247,51 @@ mod tests {
         ]);
         // That curve is close to "stay put, then jump": at half the time it is under a fifth.
         assert!(animation.sample(0.5).unwrap()[0] < 0.25);
+    }
+
+    #[test]
+    fn a_step_function_holds_until_the_jump_and_then_moves_on() {
+        let eased = Easing::Step {
+            steps: 4,
+            jump: 0.5,
+        };
+        // Each quarter holds its value for the first half, then jumps to the next.
+        assert_eq!(eased.apply(0.0), 0.0);
+        assert_eq!(eased.apply(0.1), 0.0);
+        assert_eq!(eased.apply(0.2), 0.25);
+        assert_eq!(eased.apply(0.3), 0.25);
+        assert_eq!(eased.apply(0.6), 0.5);
+        assert_eq!(eased.apply(1.0), 1.0);
+    }
+
+    #[test]
+    fn a_step_jump_at_the_boundary_is_a_jump_start_and_a_full_step_is_a_jump_end() {
+        let start = Easing::Step {
+            steps: 2,
+            jump: 0.0,
+        };
+        assert_eq!(start.apply(0.0), 0.5);
+        assert_eq!(start.apply(0.49), 0.5);
+        assert_eq!(start.apply(0.5), 1.0);
+
+        let end = Easing::Step {
+            steps: 2,
+            jump: 1.0,
+        };
+        assert_eq!(end.apply(0.0), 0.0);
+        assert_eq!(end.apply(0.49), 0.0);
+        assert_eq!(end.apply(0.5), 0.5);
+        assert_eq!(end.apply(1.0), 1.0);
+    }
+
+    #[test]
+    fn a_step_function_with_no_steps_still_has_a_value() {
+        let eased = Easing::Step {
+            steps: 0,
+            jump: 0.5,
+        };
+        assert_eq!(eased.apply(0.25), 0.0);
+        assert_eq!(eased.apply(0.75), 1.0);
     }
 
     #[test]

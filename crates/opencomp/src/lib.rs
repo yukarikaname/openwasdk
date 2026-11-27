@@ -19,6 +19,8 @@
 
 #[cfg(windows)]
 mod animation;
+#[cfg(windows)]
+mod animation_group;
 // Generated from metadata by `comptrace generate`; its lints are the generator's to fix.
 #[cfg(windows)]
 #[allow(clippy::all)]
@@ -43,6 +45,8 @@ mod node;
 mod object;
 #[cfg(windows)]
 mod propertyset;
+#[cfg(windows)]
+mod step_easing;
 #[cfg(windows)]
 mod visual;
 
