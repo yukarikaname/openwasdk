@@ -1,10 +1,13 @@
 //! `xwinui` turns the Windows App SDK NuGet packages into things a cross-build
-//! needs: a compiler layout, an activation manifest and a layout audit.
+//! needs: a compiler layout, an activation manifest, a layout audit, and a
+//! `dotnet build` whose XAML compiler runs under Wine.
 
+mod build;
 mod check;
 mod layout;
 mod manifest;
 mod packages;
+mod probe;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -47,20 +50,75 @@ enum Command {
         #[arg(long)]
         layout: PathBuf,
     },
+    /// Build a .NET WinUI 3 project, running its XAML compiler under Wine
+    ///
+    /// The WinUI 3 targets run `tools/net472/XamlCompiler.exe` as a build step
+    /// (`Microsoft.UI.Xaml.Markup.Compiler.interop.targets`, property
+    /// `XamlCompilerExePath`). That file is a .NET Framework PE, which no
+    /// non-Windows kernel can execute, so `build` writes an executable wrapper
+    /// script that runs the real compiler under Wine and passes its path as
+    /// `XamlCompilerExePath`. Wine is needed only for that step: nothing here
+    /// runs the application.
+    Build {
+        /// Directory holding the project (or the project file itself)
+        #[arg(long)]
+        project: PathBuf,
+        /// Build configuration
+        #[arg(long, default_value = "Debug")]
+        configuration: String,
+        /// wine executable; defaults to `wine` on PATH
+        #[arg(long)]
+        wine: Option<PathBuf>,
+        /// Where the wrapper is written; defaults to ~/.cache/xwinui
+        #[arg(long)]
+        cache: Option<PathBuf>,
+    },
+    /// List the .exe, .dll and .xbf files a build produced, with sizes
+    Probe {
+        /// Directory holding the project (or the project file itself)
+        #[arg(long)]
+        project: PathBuf,
+        /// Build configuration to look in
+        #[arg(long, default_value = "Debug")]
+        configuration: String,
+    },
+}
+
+/// An error plus the exit status it deserves. A missing Wine is not a failed
+/// build: it is a step this host cannot perform, hence its own code.
+#[derive(Debug)]
+struct Failure {
+    message: String,
+    code: u8,
+}
+
+impl From<String> for Failure {
+    fn from(message: String) -> Self {
+        Failure { message, code: 1 }
+    }
+}
+
+impl Failure {
+    fn step(message: impl Into<String>, code: u8) -> Self {
+        Failure {
+            message: message.into(),
+            code,
+        }
+    }
 }
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
     match run(cli) {
         Ok(()) => ExitCode::SUCCESS,
-        Err(message) => {
+        Err(Failure { message, code }) => {
             eprintln!("xwinui: {message}");
-            ExitCode::FAILURE
+            ExitCode::from(code)
         }
     }
 }
 
-fn run(cli: Cli) -> Result<(), String> {
+fn run(cli: Cli) -> Result<(), Failure> {
     match cli.command {
         Command::Layout { out, cache } => {
             let cache = match cache {
@@ -75,13 +133,40 @@ fn run(cli: Cli) -> Result<(), String> {
             println!("layout at {}", out.display());
             Ok(())
         }
-        Command::Manifest { out, dll, class } => manifest::write(&out, &dll, &class),
+        Command::Manifest { out, dll, class } => {
+            manifest::write(&out, &dll, &class).map_err(Failure::from)
+        }
         Command::Check { layout } => {
             let report = check::report(&layout)?;
             print!("{}", report.text);
             if report.missing > 0 {
-                return Err(format!("{} required file(s) missing", report.missing));
+                return Err(format!("{} required file(s) missing", report.missing).into());
             }
+            Ok(())
+        }
+        Command::Build {
+            project,
+            configuration,
+            wine,
+            cache,
+        } => {
+            let cache = match cache {
+                Some(cache) => cache,
+                None => packages::default_cache()?,
+            };
+            build::run(&build::Request {
+                project: &project,
+                configuration: &configuration,
+                wine: wine.as_deref(),
+                cache: &cache,
+            })
+        }
+        Command::Probe {
+            project,
+            configuration,
+        } => {
+            let report = probe::report(&project, &configuration)?;
+            print!("{}", report);
             Ok(())
         }
     }
