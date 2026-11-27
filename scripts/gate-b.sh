@@ -63,9 +63,17 @@ if [ -z "$msix" ]; then
 	msix=$(find "$sdk/.." -maxdepth 1 -name 'Microsoft.WindowsAppRuntime*.msix' 2>/dev/null | head -1)
 fi
 if [ -n "$msix" ] && [ -f "$msix" ]; then
+	# Replace only the classes this project actually serves, one by one. A prefix
+	# replace points every class in the namespace at our DLL, and combase fails fast the
+	# first time the engine asks for one we do not answer -- which is what
+	# `CompositionEasingFunction` did.
 	cargo run -q -p xwinui -- activation --sdk "$msix" \
-		--replace Microsoft.UI.Composition.=opencomp.dll \
-		--replace Microsoft.UI.Dispatching.=opendispatch.dll \
+		--replace Microsoft.UI.Composition.Compositor=opencomp.dll \
+		--replace Microsoft.UI.Dispatching.DispatcherQueueController=opendispatch.dll \
+		--replace Microsoft.UI.Dispatching.DispatcherQueue=opendispatch.dll \
+		--replace Microsoft.UI.Dispatching.DispatcherQueueTimer=opendispatch.dll \
+		--replace Microsoft.UI.Dispatching.DispatcherExitDeferral=opendispatch.dll \
+		--replace Microsoft.UI.Dispatching.DispatcherQueueShutdownStartingEventArgs=opendispatch.dll \
 		--out "probe.exe.manifest"
 else
 	echo "gate-b: no activation manifest (set ACTIVATION_MSIX); activations will fail"

@@ -127,7 +127,76 @@ pub(crate) enum Class {
     Compositor,
     ContentIsland,
     DesktopChildSiteBridge,
+    /// A class this DLL answers for but does not implement: it refuses activation with
+    /// `E_NOTIMPL` instead of leaving combase to fail the whole process.
+    Unmodelled,
 }
+
+/// Every runtime class the activation manifest points at this DLL.
+///
+/// Wine's combase treats "the manifest names a class and the DLL does not serve it" as a
+/// fatal error rather than `REGDB_E_CLASSNOTREG`, so a missing name ends the process
+/// instead of returning a code the engine can act on. Serving the name and refusing the
+/// activation is both honest and survivable; each one that gains a real implementation
+/// moves out of `Unmodelled`.
+const MANIFEST_CLASSES: &[&str] = &[
+    "Microsoft.UI.Composition.AnimationController",
+    "Microsoft.UI.Composition.CompositionAnimation",
+    "Microsoft.UI.Composition.CompositionApiInformation",
+    "Microsoft.UI.Composition.CompositionBrush",
+    "Microsoft.UI.Composition.CompositionCapabilities",
+    "Microsoft.UI.Composition.CompositionClip",
+    "Microsoft.UI.Composition.CompositionDrawingSurface",
+    "Microsoft.UI.Composition.CompositionEasingFunction",
+    "Microsoft.UI.Composition.CompositionEffectSourceParameter",
+    "Microsoft.UI.Composition.CompositionEngine",
+    "Microsoft.UI.Composition.CompositionGeometry",
+    "Microsoft.UI.Composition.CompositionGradientBrush",
+    "Microsoft.UI.Composition.CompositionLight",
+    "Microsoft.UI.Composition.CompositionObject",
+    "Microsoft.UI.Composition.CompositionPath",
+    "Microsoft.UI.Composition.CompositionProjectedShadowCasterCollection",
+    "Microsoft.UI.Composition.CompositionShadow",
+    "Microsoft.UI.Composition.CompositionShape",
+    "Microsoft.UI.Composition.CompositionTransform",
+    "Microsoft.UI.Composition.CompositionVirtualDrawingSurface",
+    "Microsoft.UI.Composition.Compositor",
+    "Microsoft.UI.Composition.ContainerVisual",
+    "Microsoft.UI.Composition.Core.CompositorController",
+    "Microsoft.UI.Composition.Diagnostics.CompositionDebugSettings",
+    "Microsoft.UI.Composition.Effects.SceneLightingEffect",
+    "Microsoft.UI.Composition.Experimental.ExpCompositionVisualSurface",
+    "Microsoft.UI.Composition.Interactions.CompositionConditionalValue",
+    "Microsoft.UI.Composition.Interactions.InteractionTracker",
+    "Microsoft.UI.Composition.Interactions.InteractionTrackerInertiaModifier",
+    "Microsoft.UI.Composition.Interactions.InteractionTrackerInertiaMotion",
+    "Microsoft.UI.Composition.Interactions.InteractionTrackerInertiaNaturalMotion",
+    "Microsoft.UI.Composition.Interactions.InteractionTrackerInertiaRestingValue",
+    "Microsoft.UI.Composition.Interactions.InteractionTrackerVector2InertiaModifier",
+    "Microsoft.UI.Composition.Interactions.InteractionTrackerVector2InertiaNaturalMotion",
+    "Microsoft.UI.Composition.Interactions.VisualInteractionSource",
+    "Microsoft.UI.Composition.KeyFrameAnimation",
+    "Microsoft.UI.Composition.NaturalMotionAnimation",
+    "Microsoft.UI.Composition.ScalarNaturalMotionAnimation",
+    "Microsoft.UI.Composition.Scenes.SceneComponent",
+    "Microsoft.UI.Composition.Scenes.SceneMaterial",
+    "Microsoft.UI.Composition.Scenes.SceneMaterialInput",
+    "Microsoft.UI.Composition.Scenes.SceneMesh",
+    "Microsoft.UI.Composition.Scenes.SceneMeshRendererComponent",
+    "Microsoft.UI.Composition.Scenes.SceneMetallicRoughnessMaterial",
+    "Microsoft.UI.Composition.Scenes.SceneNode",
+    "Microsoft.UI.Composition.Scenes.SceneObject",
+    "Microsoft.UI.Composition.Scenes.ScenePbrMaterial",
+    "Microsoft.UI.Composition.Scenes.SceneRendererComponent",
+    "Microsoft.UI.Composition.Scenes.SceneSurfaceMaterialInput",
+    "Microsoft.UI.Composition.Scenes.SceneVisual",
+    "Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController",
+    "Microsoft.UI.Composition.SystemBackdrops.MicaController",
+    "Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration",
+    "Microsoft.UI.Composition.Vector2NaturalMotionAnimation",
+    "Microsoft.UI.Composition.Vector3NaturalMotionAnimation",
+    "Microsoft.UI.Composition.Visual",
+];
 
 impl Class {
     /// The name combase, a manifest or a host uses for this class.
@@ -136,6 +205,8 @@ impl Class {
             Class::Compositor => "Microsoft.UI.Composition.Compositor",
             Class::ContentIsland => "Microsoft.UI.Content.ContentIsland",
             Class::DesktopChildSiteBridge => "Microsoft.UI.Content.DesktopChildSiteBridge",
+            // A stub factory reports no runtime class name; it makes nothing.
+            Class::Unmodelled => "",
         }
     }
 }
@@ -191,6 +262,9 @@ fn known(class: &str) -> bool {
 /// This is the one place that maps a name to a class, so the export and the
 /// in-process registration cannot disagree about which classes exist.
 fn class_of(name: &str) -> Option<Class> {
+    if !MANIFEST_CLASSES.contains(&name) && !name.starts_with("Microsoft.UI.Content.") {
+        return None;
+    }
     match name {
         "Microsoft.UI.Composition.Compositor" => Some(Class::Compositor),
         "Microsoft.UI.Content.ContentIsland" => Some(Class::ContentIsland),
@@ -202,6 +276,15 @@ fn class_of(name: &str) -> Option<Class> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A name in the manifest that this DLL does not recognise is a process failure under
+    /// Wine, not a return code, so the table and the router must agree.
+    #[test]
+    fn every_manifest_class_is_served() {
+        for name in MANIFEST_CLASSES {
+            assert!(class_of(name).is_some(), "{name} is not served");
+        }
+    }
 
     #[test]
     fn the_router_knows_compositor_and_rejects_the_rest() {

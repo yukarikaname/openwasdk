@@ -1025,7 +1025,7 @@
     <activatableClass name="Microsoft.UI.Text.FontWeights" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Text.TextConstants" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
   </file>
-  <file name="opencomp.dll">
+  <file name="dcompi.dll">
     <activatableClass name="Microsoft.UI.Composition.AnimationController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.CompositionAnimation" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.CompositionApiInformation" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
@@ -1046,7 +1046,6 @@
     <activatableClass name="Microsoft.UI.Composition.CompositionShape" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.CompositionTransform" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.CompositionVirtualDrawingSurface" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
-    <activatableClass name="Microsoft.UI.Composition.Compositor" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.ContainerVisual" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Core.CompositorController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Diagnostics.CompositionDebugSettings" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
@@ -1076,16 +1075,21 @@
     <activatableClass name="Microsoft.UI.Composition.Scenes.SceneRendererComponent" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Scenes.SceneSurfaceMaterialInput" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Scenes.SceneVisual" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
-    <activatableClass name="Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
-    <activatableClass name="Microsoft.UI.Composition.SystemBackdrops.MicaController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
-    <activatableClass name="Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Vector2NaturalMotionAnimation" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Vector3NaturalMotionAnimation" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Composition.Visual" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
+  </file>
+  <file name="opencomp.dll">
+    <activatableClass name="Microsoft.UI.Composition.Compositor" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
   </file>
   <file name="opendispatch.dll">
     <activatableClass name="Microsoft.UI.Dispatching.DispatcherExitDeferral" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Dispatching.DispatcherQueue" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
     <activatableClass name="Microsoft.UI.Dispatching.DispatcherQueueController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
+  </file>
+  <file name="wuceffectsi.dll">
+    <activatableClass name="Microsoft.UI.Composition.SystemBackdrops.DesktopAcrylicController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass name="Microsoft.UI.Composition.SystemBackdrops.MicaController" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
+    <activatableClass name="Microsoft.UI.Composition.SystemBackdrops.SystemBackdropConfiguration" threadingModel="both" xmlns="urn:schemas-microsoft-com:winrt.v1" />
   </file>
 </assembly>

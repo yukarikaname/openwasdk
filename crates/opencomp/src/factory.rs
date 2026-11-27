@@ -218,6 +218,11 @@ unsafe extern "system" fn activate_instance(this: *mut c_void, out: *mut *mut c_
                 unsafe { *out = std::ptr::null_mut() };
                 E_NOTIMPL
             }
+            // Served by name so combase does not fail the process; nothing to create.
+            Class::Unmodelled => {
+                unsafe { *out = std::ptr::null_mut() };
+                E_NOTIMPL
+            }
         }
     }
     #[cfg(not(windows))]
