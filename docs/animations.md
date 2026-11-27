@@ -148,8 +148,9 @@ held for as long as the animation is attached.
 | `Target` | implemented: every key-frame object answers `ICompositionAnimation2`, and a group uses the target to decide which property to start |
 | controllers | `TryGetAnimationController`, `CreateAnimationController`, `StartAnimationWithController` are `E_NOTIMPL`: no pause, seek or playback rate |
 | natural motion | spring, bounce, quaternion, vector4, boolean and path animations are `E_NOTIMPL` |
-| completion | scoped batches are `E_NOTIMPL`; nothing signals that an animation ended |
-| clock | no `CompositionTarget` is served and nothing ticks; frames are whatever the host presents |
+| completion | commit and scoped batches are real: a commit batch closes at the next frame and `Completed` runs on the compositor clock |
+| clock | each compositor owns one; `present.rs` advances it after every presented frame, and animations sample that time |
+| `RequestCommitAsync` | completes after the next frame tick; `GetCommitBatch().Completed` is the event form |
 
 Three smaller mismatches: `IterationCount` reads back `1` after `Forever`, because the getter
 answers `max(1)` for a stored `0`; `SetIterationBehavior(Count)` leaves the stored count alone; and

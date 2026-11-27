@@ -120,8 +120,8 @@ impl ISpriteVisual_Impl for SpriteVisualObject_Impl {
 }
 
 /// A `ContainerVisual` with no children.
-pub fn container() -> Result<ContainerVisual> {
-    let node = Node::new();
+pub fn container(clock: std::sync::Arc<crate::clock::Clock>) -> Result<ContainerVisual> {
+    let node = Node::with_clock(clock);
     let object: IContainerVisual = ContainerVisualObject {
         node: node.clone(),
         clip: Mutex::new(None),
@@ -133,8 +133,8 @@ pub fn container() -> Result<ContainerVisual> {
 }
 
 /// A `SpriteVisual` with no brush, which draws nothing until one is set.
-pub fn sprite() -> Result<SpriteVisual> {
-    let node = Node::new();
+pub fn sprite(clock: std::sync::Arc<crate::clock::Clock>) -> Result<SpriteVisual> {
+    let node = Node::with_clock(clock);
     let object: ISpriteVisual = SpriteVisualObject {
         node: node.clone(),
         clip: Mutex::new(None),

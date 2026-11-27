@@ -9,8 +9,8 @@
 //! that dies leaves nothing behind.
 
 use std::sync::{Arc, Mutex};
-use std::time::Instant;
 
+use crate::clock::{Clock, Playback};
 use opencomp_core::{Keyframes, Visual as CoreVisual};
 use windows_core::Interface;
 use windows_numerics::{Vector2, Vector3};
@@ -19,6 +19,8 @@ use windows_numerics::{Vector2, Vector3};
 pub type NodeRef = Arc<Mutex<Node>>;
 
 pub struct Node {
+    /// The compositor clock every animation on this node reads.
+    pub clock: Arc<Clock>,
     pub offset: Vector3,
     pub size: Vector2,
     pub opacity: f32,
@@ -69,12 +71,37 @@ impl Property {
 pub struct Running {
     pub property: Property,
     pub keyframes: Keyframes,
-    pub started: Instant,
+    /// The clock time at which the animation began.
+    pub started: f32,
+    /// The controller driving it, if the client started it with one.
+    pub playback: Option<Arc<Playback>>,
+}
+
+impl Running {
+    /// The animation's local time at the clock instant `now`.
+    fn local_time(&self, now: f32) -> f32 {
+        let mut span = self.keyframes.duration;
+        if span <= 0.0 {
+            span = self.keyframes.frames.last().map_or(0.0, |frame| frame.time);
+        }
+        let delay = self.keyframes.delay.max(0.0);
+        match &self.playback {
+            Some(playback) => playback.local_time(now, span, delay),
+            None => now - self.started,
+        }
+    }
 }
 
 impl Default for Node {
     fn default() -> Self {
+        Self::detached(Clock::new())
+    }
+}
+
+impl Node {
+    fn detached(clock: Arc<Clock>) -> Self {
         Self {
+            clock,
             offset: Vector3::default(),
             size: Vector2::default(),
             opacity: 1.0,
@@ -98,20 +125,22 @@ impl Default for Node {
             children: Vec::new(),
         }
     }
-}
 
-impl Node {
+    /// A node bound to a compositor clock.
+    pub fn with_clock(clock: Arc<Clock>) -> NodeRef {
+        Arc::new(Mutex::new(Self::detached(clock)))
+    }
+
     pub fn new() -> NodeRef {
         Arc::new(Mutex::new(Self::default()))
     }
 
-    /// The animated value of each property at this instant, in draw order.
-    fn animation_values(&self) -> impl Iterator<Item = (Property, [f32; 4])> + '_ {
-        self.animations.iter().filter_map(|running| {
-            let time = running.started.elapsed().as_secs_f32();
+    /// The animated value of each property at `now`, in draw order.
+    fn animation_values(&self, now: f32) -> impl Iterator<Item = (Property, [f32; 4])> + '_ {
+        self.animations.iter().filter_map(move |running| {
             running
                 .keyframes
-                .sample(time)
+                .sample(running.local_time(now))
                 .map(|value| (running.property, value))
         })
     }
@@ -134,10 +163,16 @@ pub fn snapshot(node: &NodeRef) -> Option<CoreVisual> {
 
 /// The same, with `parent` as the size a relative root resolves against.
 pub fn snapshot_in(node: &NodeRef, parent: Vector2) -> Option<CoreVisual> {
-    snapshot_at(node, parent, 0)
+    let now = node.lock().unwrap().clock.now();
+    snapshot_at(node, parent, 0, now)
 }
 
-fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32) -> Option<CoreVisual> {
+/// The same, sampled at an explicit compositor time.
+pub fn snapshot_in_at(node: &NodeRef, parent: Vector2, now: f32) -> Option<CoreVisual> {
+    snapshot_at(node, parent, 0, now)
+}
+
+fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<CoreVisual> {
     let (mut visual, size, children) = {
         let node = node.lock().unwrap();
         if !node.visible {
@@ -156,7 +191,7 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32) -> Option<CoreVisual
         // storing the product here would apply every ancestor twice.
         let mut opacity = node.opacity.clamp(0.0, 1.0);
         let mut color = node.color;
-        for (property, value) in node.animation_values() {
+        for (property, value) in node.animation_values(now) {
             match property {
                 Property::Offset => offset = [value[0], value[1]],
                 Property::Size => {
@@ -194,7 +229,7 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32) -> Option<CoreVisual
         (visual, size, children)
     };
     for child in &children {
-        if let Some(child) = snapshot_at(child, size, depth + 1) {
+        if let Some(child) = snapshot_at(child, size, depth + 1, now) {
             visual.children.push(child);
         }
     }
@@ -203,14 +238,48 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32) -> Option<CoreVisual
 
 /// Start an animation, replacing one already running on the same property.
 pub fn start_animation(node: &NodeRef, property: Property, keyframes: Keyframes) {
+    start_with(node, property, keyframes, None);
+}
+
+/// Start an animation driven by a controller.
+pub fn start_animation_with_controller(
+    node: &NodeRef,
+    property: Property,
+    keyframes: Keyframes,
+    playback: Arc<Playback>,
+) {
+    start_with(node, property, keyframes, Some(playback));
+}
+
+fn start_with(
+    node: &NodeRef,
+    property: Property,
+    keyframes: Keyframes,
+    playback: Option<Arc<Playback>>,
+) {
     let mut node = node.lock().unwrap();
+    let now = node.clock.now();
+    if let Some(playback) = &playback {
+        playback.bind(now);
+    }
     node.animations
         .retain(|running| running.property != property);
     node.animations.push(Running {
         property,
         keyframes,
-        started: Instant::now(),
+        started: now,
+        playback,
     });
+}
+
+/// The controller behind the animation running on `property`, if it has one.
+pub fn playback_for(node: &NodeRef, property: Property) -> Option<Arc<Playback>> {
+    node.lock()
+        .unwrap()
+        .animations
+        .iter()
+        .find(|running| running.property == property)
+        .and_then(|running| running.playback.clone())
 }
 
 /// Stop an animation and leave the property at the value it had reached.
@@ -223,11 +292,11 @@ pub fn stop_animation(node: &NodeRef, property: Property) {
         .animations
         .iter()
         .position(|running| running.property == property);
+    let now = node.clock.now();
     let Some(running) = running.map(|at| node.animations.remove(at)) else {
         return;
     };
-    let time = running.started.elapsed().as_secs_f32();
-    let Some(value) = running.keyframes.sample(time) else {
+    let Some(value) = running.keyframes.sample(running.local_time(now)) else {
         return;
     };
     match property {
@@ -270,193 +339,4 @@ pub fn resolve<T: Interface>(object: &T) -> Option<NodeRef> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    fn node(opacity: f32) -> NodeRef {
-        let node = Node::new();
-        node.lock().unwrap().opacity = opacity;
-        node
-    }
-
-    #[test]
-    fn a_snapshot_carries_the_offset_and_size() {
-        let root = node(1.0);
-        {
-            let mut root = root.lock().unwrap();
-            root.offset = Vector3 {
-                x: 4.0,
-                y: 8.0,
-                z: 0.0,
-            };
-            root.size = Vector2 { x: 16.0, y: 32.0 };
-            root.color = [1.0, 0.0, 0.0, 1.0];
-        }
-        let visual = snapshot(&root).unwrap();
-        assert_eq!(visual.offset, [4.0, 8.0]);
-        assert_eq!(visual.size, [16.0, 32.0]);
-        assert_eq!(visual.color, [1.0, 0.0, 0.0, 1.0]);
-    }
-
-    #[test]
-    fn a_relative_root_fills_the_host() {
-        let root = node(1.0);
-        {
-            let mut root = root.lock().unwrap();
-            root.relative_size = Some(Vector2 { x: 1.0, y: 0.5 });
-            root.relative_offset = Some(Vector3 {
-                x: 0.0,
-                y: 0.5,
-                z: 0.0,
-            });
-        }
-        let visual = snapshot_in(&root, Vector2 { x: 800.0, y: 600.0 }).unwrap();
-        assert_eq!(visual.size, [800.0, 300.0]);
-        assert_eq!(visual.offset, [0.0, 300.0]);
-    }
-
-    #[test]
-    fn a_relative_child_resolves_against_its_parent() {
-        let parent = node(1.0);
-        {
-            let mut parent = parent.lock().unwrap();
-            parent.size = Vector2 { x: 200.0, y: 100.0 };
-        }
-        let child = node(1.0);
-        child.lock().unwrap().relative_size = Some(Vector2 { x: 0.5, y: 0.5 });
-        parent.lock().unwrap().children.push(child);
-
-        let visual = snapshot(&parent).unwrap();
-        assert_eq!(visual.children[0].size, [100.0, 50.0]);
-    }
-
-    #[test]
-    fn each_node_carries_only_its_own_opacity() {
-        // The core multiplies down the tree; a product here would apply ancestors twice.
-        let parent = node(0.5);
-        let child = node(0.5);
-        parent.lock().unwrap().children.push(child);
-        let visual = snapshot(&parent).unwrap();
-        assert_eq!(visual.opacity, 0.5);
-        assert_eq!(visual.children[0].opacity, 0.5);
-    }
-
-    #[test]
-    fn an_invisible_child_is_dropped_with_its_subtree() {
-        let parent = node(1.0);
-        let child = node(1.0);
-        {
-            let grandchild = node(1.0);
-            child.lock().unwrap().children.push(grandchild);
-            child.lock().unwrap().visible = false;
-        }
-        parent.lock().unwrap().children.push(child);
-        let visual = snapshot(&parent).unwrap();
-        assert!(visual.children.is_empty());
-    }
-
-    #[test]
-    fn insets_become_a_clip_inside_the_visual() {
-        let root = node(1.0);
-        {
-            let mut root = root.lock().unwrap();
-            root.size = Vector2 { x: 100.0, y: 50.0 };
-            root.insets = Some([10.0, 5.0, 20.0, 5.0]);
-        }
-        let visual = snapshot(&root).unwrap();
-        assert_eq!(visual.clip, Some((10.0, 5.0, 70.0, 40.0)));
-    }
-
-    #[test]
-    fn insets_larger_than_the_visual_clip_everything() {
-        let root = node(1.0);
-        {
-            let mut root = root.lock().unwrap();
-            root.size = Vector2 { x: 10.0, y: 10.0 };
-            root.insets = Some([20.0, 20.0, 20.0, 20.0]);
-        }
-        let visual = snapshot(&root).unwrap();
-        assert_eq!(visual.clip, Some((20.0, 20.0, 0.0, 0.0)));
-    }
-
-    #[test]
-    fn an_invisible_root_yields_nothing() {
-        let root = node(1.0);
-        root.lock().unwrap().visible = false;
-        assert!(snapshot(&root).is_none());
-    }
-
-    #[test]
-    fn an_animation_drives_the_property_it_names() {
-        use opencomp_core::Frame;
-        let root = node(1.0);
-        root.lock().unwrap().opacity = 1.0;
-        start_animation(
-            &root,
-            Property::Opacity,
-            Keyframes {
-                frames: vec![Frame {
-                    time: 0.0,
-                    value: [0.25, 0.25, 0.25, 0.25],
-                    easing: opencomp_core::Easing::Linear,
-                }],
-                ..Keyframes::default()
-            },
-        );
-        let visual = snapshot(&root).unwrap();
-        assert_eq!(visual.opacity, 0.25);
-
-        // LeaveCurrentValue: the property keeps what the animation reached.
-        stop_animation(&root, Property::Opacity);
-        assert_eq!(snapshot(&root).unwrap().opacity, 0.25);
-    }
-
-    #[test]
-    fn a_centred_anchor_places_the_offset_at_the_middle() {
-        let root = node(1.0);
-        {
-            let mut root = root.lock().unwrap();
-            root.size = Vector2 { x: 100.0, y: 40.0 };
-            root.offset = Vector3 {
-                x: 50.0,
-                y: 20.0,
-                z: 0.0,
-            };
-            root.anchor = Vector2 { x: 0.5, y: 0.5 };
-        }
-        let visual = snapshot(&root).unwrap();
-        assert_eq!(visual.offset, [0.0, 0.0]);
-        assert_eq!(visual.size, [100.0, 40.0]);
-    }
-
-    #[test]
-    fn scale_and_rotation_reach_the_snapshot() {
-        let root = node(1.0);
-        {
-            let mut root = root.lock().unwrap();
-            root.scale = Vector3 {
-                x: 2.0,
-                y: 3.0,
-                z: 1.0,
-            };
-            root.rotation = std::f32::consts::FRAC_PI_4;
-            root.center = Vector3 {
-                x: 4.0,
-                y: 5.0,
-                z: 0.0,
-            };
-        }
-        let visual = snapshot(&root).unwrap();
-        assert_eq!(visual.scale, [2.0, 3.0]);
-        assert_eq!(visual.rotation, std::f32::consts::FRAC_PI_4);
-        assert_eq!(visual.center, [4.0, 5.0]);
-    }
-
-    #[test]
-    fn a_cycle_stops_at_the_depth_limit() {
-        let parent = node(1.0);
-        parent.lock().unwrap().children.push(parent.clone());
-        let visual = snapshot(&parent).unwrap();
-        assert_eq!(visual.children.len(), 1);
-    }
-}
+mod tests;

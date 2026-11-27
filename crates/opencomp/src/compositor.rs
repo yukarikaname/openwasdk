@@ -4,7 +4,10 @@
 //! constructor is generated from the metadata and currently reports `E_NOTIMPL`; the compositor
 //! grows one method at a time behind the same ABI.
 
+use std::sync::{Arc, Mutex, OnceLock};
+
 use crate::bindings::Microsoft::UI::Composition::*;
+use crate::clock::Clock;
 use crate::interop::ICompositorInterop;
 use windows_core::{Error, HRESULT, Interface, Result};
 
@@ -12,6 +15,15 @@ const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
 
 fn not_implemented<T>() -> Result<T> {
     Err(Error::from_hresult(E_NOTIMPL))
+}
+
+/// Every compositor this DLL made that is still alive. `ICompositionObject.Compositor`
+/// has to hand one back, and a visual only carries the clock, not the object that
+/// created it; the table finds the live compositor with the same clock.
+static LIVE: OnceLock<Mutex<Vec<windows_core::Weak<ICompositor>>>> = OnceLock::new();
+
+fn live() -> &'static Mutex<Vec<windows_core::Weak<ICompositor>>> {
+    LIVE.get_or_init(|| Mutex::new(Vec::new()))
 }
 
 /// `ICompositor` as an object the runtime can hand out.
@@ -28,27 +40,71 @@ fn not_implemented<T>() -> Result<T> {
     ICompositorWithVisualSurface
 )]
 pub struct Compositor {
-    state: std::sync::Mutex<State>,
+    pub(crate) state: Arc<State>,
 }
 
-/// The two pieces of state the compositor itself keeps. Everything else is created
-/// per object, so this stays small.
-#[derive(Default)]
+/// The state the compositor itself keeps. The clock is the compositor's; every visual
+/// and animation it creates samples that one, and the frame loop of the bridge that
+/// was created from this compositor advances it.
 pub struct State {
-    pub comment: String,
-    pub playback_rate: f32,
+    pub clock: Arc<Clock>,
+    pub comment: Mutex<String>,
+    pub playback_rate: Mutex<f32>,
+}
+
+impl State {
+    fn new(clock: Arc<Clock>) -> Arc<Self> {
+        Arc::new(Self {
+            clock,
+            comment: Mutex::new(String::new()),
+            playback_rate: Mutex::new(1.0),
+        })
+    }
+}
+
+fn create(clock: Arc<Clock>) -> Result<ICompositor> {
+    let state = State::new(clock);
+    let compositor: ICompositor = Compositor {
+        state: state.clone(),
+    }
+    .into();
+    // The identity table is how the clock is found from the object a client passes
+    // back, whether that object is the compositor or something it made.
+    crate::identity::publish(&compositor, &state);
+    if let Ok(weak) = compositor.downgrade() {
+        live().lock().unwrap().push(weak);
+    }
+    Ok(compositor)
 }
 
 /// The object as `IInspectable`, which is what `IActivationFactory::ActivateInstance` returns.
 pub fn instance() -> Result<windows_core::IInspectable> {
-    let compositor: ICompositor = Compositor {
-        state: std::sync::Mutex::new(State {
-            comment: String::new(),
-            playback_rate: 1.0,
-        }),
+    create(Clock::new())?.cast()
+}
+
+/// A compositor bound to `clock`, preferring the live one if it still exists.
+pub fn for_clock(clock: &Arc<Clock>) -> Result<ICompositor> {
+    {
+        let mut table = live().lock().unwrap();
+        table.retain(|weak| weak.upgrade().is_some());
+        for weak in table.iter() {
+            let Some(compositor) = weak.upgrade() else {
+                continue;
+            };
+            let Some(state) = crate::identity::lookup::<_, State>(&compositor) else {
+                continue;
+            };
+            if Arc::ptr_eq(&state.clock, clock) {
+                return Ok(compositor);
+            }
+        }
     }
-    .into();
-    compositor.cast()
+    create(clock.clone())
+}
+
+/// The clock of a compositor this DLL made.
+pub fn clock_of<T: Interface>(object: &T) -> Option<Arc<Clock>> {
+    crate::identity::lookup::<_, State>(object).map(|state| state.clock.clone())
 }
 
 impl ICompositor_Impl for Compositor_Impl {
@@ -65,7 +121,7 @@ impl ICompositor_Impl for Compositor_Impl {
         crate::brush::create_with(*color)
     }
     fn CreateContainerVisual(&self) -> windows_core::Result<ContainerVisual> {
-        crate::visual::container()
+        crate::visual::container(self.state.clock.clone())
     }
     fn CreateCubicBezierEasingFunction(
         &self,
@@ -130,12 +186,12 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn CreateScopedBatch(
         &self,
-        _batchType: CompositionBatchTypes,
+        batchType: CompositionBatchTypes,
     ) -> windows_core::Result<CompositionScopedBatch> {
-        not_implemented()
+        crate::batch::scoped(self.state.clock.clone(), batchType)
     }
     fn CreateSpriteVisual(&self) -> windows_core::Result<SpriteVisual> {
-        crate::visual::sprite()
+        crate::visual::sprite(self.state.clock.clone())
     }
     fn CreateSurfaceBrush(&self) -> windows_core::Result<CompositionSurfaceBrush> {
         crate::brush::surface_brush()
@@ -157,8 +213,8 @@ impl ICompositor_Impl for Compositor_Impl {
     }
     fn GetCommitBatch(
         &self,
-        _batchType: CompositionBatchTypes,
+        batchType: CompositionBatchTypes,
     ) -> windows_core::Result<CompositionCommitBatch> {
-        not_implemented()
+        crate::batch::commit(self.state.clock.clone(), batchType)
     }
 }

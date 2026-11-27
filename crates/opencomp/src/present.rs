@@ -17,6 +17,7 @@ use std::time::Duration;
 
 use windows_numerics::Vector2;
 
+use crate::clock::Clock;
 use crate::d2d::Presenter;
 use crate::node::{self, NodeRef};
 
@@ -59,7 +60,10 @@ pub struct Window {
 
 impl Window {
     /// Present `root` on `hwnd`, which the caller keeps alive.
-    pub fn start(root: NodeRef, hwnd: u64, size: (u32, u32)) -> Option<Self> {
+    ///
+    /// `clock` is the compositor's time source. This thread is its only driver: a
+    /// frame is what advances animation time and closes commit batches.
+    pub fn start(root: NodeRef, hwnd: u64, size: (u32, u32), clock: Arc<Clock>) -> Option<Self> {
         let shared = Arc::new(Shared {
             size: Mutex::new(size),
             stop: AtomicBool::new(false),
@@ -70,7 +74,7 @@ impl Window {
             std::thread::Builder::new()
                 .name("opencomp-present".into())
                 .spawn(move || {
-                    frame_loop(root, hwnd, shared);
+                    frame_loop(root, hwnd, shared, clock);
                     let _ = finished.send(());
                 })
                 .ok()?
@@ -110,7 +114,7 @@ impl Drop for Window {
     }
 }
 
-fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>) {
+fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>, clock: Arc<Clock>) {
     let (width, height) = shared.size();
     eprintln!("opencomp: frame thread started for a {width}x{height} window");
     let Some(mut presenter) = Presenter::new(hwnd, width, height) else {
@@ -130,7 +134,7 @@ fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>) {
             x: current.0 as f32,
             y: current.1 as f32,
         };
-        if let Some(tree) = node::snapshot_in(&root, parent) {
+        if let Some(tree) = node::snapshot_in_at(&root, parent, clock.now()) {
             let draws = tree.draws();
             upload_surfaces(&mut presenter, &root);
             let presented = presenter.present(&draws);
@@ -139,6 +143,9 @@ fn frame_loop(root: NodeRef, hwnd: u64, shared: Arc<Shared>) {
                 eprintln!("opencomp: first frame presented");
             }
         }
+        // A commit is the next frame. Close open batches and deliver what they queued
+        // after the frame is on screen, so a handler observes the committed picture.
+        clock.tick(INTERVAL.as_secs_f32());
         std::thread::sleep(INTERVAL);
     }
 }

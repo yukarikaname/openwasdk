@@ -22,7 +22,11 @@ mod activation;
 #[cfg(windows)]
 mod animation;
 #[cfg(windows)]
+mod animation_controller;
+#[cfg(windows)]
 mod animation_group;
+#[cfg(windows)]
+mod batch;
 #[cfg(windows)]
 // Generated from metadata by `comptrace generate`; its lints are the generator's to fix. It is
 // public so a host can name the interfaces it activates by name and build a tree through them.
@@ -32,6 +36,7 @@ pub mod bindings;
 mod brush;
 #[cfg(windows)]
 mod clip;
+mod clock;
 #[cfg(windows)]
 mod collection;
 #[cfg(windows)]

@@ -8,6 +8,7 @@ use crate::bindings::Microsoft::UI::Dispatching::DispatcherQueue;
 use crate::bindings::Microsoft::UI::WindowId;
 use crate::bindings::Windows::Foundation::{IClosable, IClosable_Impl};
 use crate::bindings::Windows::Graphics::RectInt32;
+use crate::clock::Clock;
 use crate::object::not_implemented;
 use windows_core::{Error, HRESULT, Interface, Ref, Result};
 use windows_numerics::Vector2;
@@ -24,12 +25,14 @@ struct BridgeState {
     resize_policy: ContentSizePolicy,
     layout_override: Option<ContentLayoutDirection>,
     island: Option<SharedIsland>,
+    /// The compositor's clock; the frame loop is the only driver of it.
+    clock: Arc<Clock>,
     /// The frame loop, started on the first `Show` and stopped by `Hide` or `Close`.
     presenter: Option<crate::present::Window>,
 }
 
 impl BridgeState {
-    fn new() -> Self {
+    fn new(clock: Arc<Clock>) -> Self {
         Self {
             enabled: true,
             visible: false,
@@ -38,6 +41,7 @@ impl BridgeState {
             resize_policy: ContentSizePolicy::None,
             layout_override: None,
             island: None,
+            clock,
             presenter: None,
         }
     }
@@ -218,7 +222,7 @@ fn start_presenting(bridge: &mut BridgeState, window: WindowId) {
     if size.0 == 0 || size.1 == 0 || window.value == 0 {
         return;
     }
-    match crate::present::Window::start(root, window.value, size) {
+    match crate::present::Window::start(root, window.value, size, bridge.clock.clone()) {
         Some(presenter) => bridge.presenter = Some(presenter),
         None => eprintln!("opencomp: no device for this window; nothing will be presented"),
     }
@@ -246,19 +250,21 @@ impl IDesktopChildSiteBridgeStatics_Impl for BridgeStatics_Impl {
         compositor: Ref<Compositor>,
         parentWindowId: &WindowId,
     ) -> Result<DesktopChildSiteBridge> {
-        // The compositor is not used for the snapshot handoff, but a client that passes
-        // nothing did not mean to create a working bridge.
-        let _compositor = compositor
+        // The bridge presents the compositor's tree, so it has to drive that
+        // compositor's clock. A foreign compositor has no clock this DLL can advance.
+        let compositor = compositor
             .as_ref()
             .ok_or_else(|| Error::from_hresult(E_INVALIDARG))?;
-        create_bridge(*parentWindowId)
+        let clock = crate::compositor::clock_of(compositor)
+            .ok_or_else(|| Error::from_hresult(E_INVALIDARG))?;
+        create_bridge(*parentWindowId, clock)
     }
 }
 
-fn create_bridge(window: WindowId) -> Result<DesktopChildSiteBridge> {
+fn create_bridge(window: WindowId, clock: Arc<Clock>) -> Result<DesktopChildSiteBridge> {
     let bridge: IDesktopChildSiteBridge = Bridge {
         window,
-        state: Mutex::new(BridgeState::new()),
+        state: Mutex::new(BridgeState::new(clock)),
     }
     .into();
     bridge.cast()
@@ -293,7 +299,7 @@ mod tests {
     }
 
     fn bridge(window: u64) -> DesktopChildSiteBridge {
-        create_bridge(WindowId { value: window }).unwrap()
+        create_bridge(WindowId { value: window }, Clock::new()).unwrap()
     }
 
     #[test]

@@ -95,15 +95,17 @@ impl comp::ICompositor4_Impl for crate::compositor::Compositor_Impl {
 
 impl comp::ICompositor5_Impl for crate::compositor::Compositor_Impl {
     fn Comment(&self) -> windows_core::Result<windows_core::HSTRING> {
-        Ok(HSTRING::new())
+        Ok(HSTRING::from(self.state.comment.lock().unwrap().as_str()))
     }
-    fn SetComment(&self, _value: &windows_core::HSTRING) -> windows_core::Result<()> {
+    fn SetComment(&self, value: &windows_core::HSTRING) -> windows_core::Result<()> {
+        *self.state.comment.lock().unwrap() = value.to_string_lossy();
         Ok(())
     }
     fn GlobalPlaybackRate(&self) -> windows_core::Result<f32> {
-        Ok(1.0)
+        Ok(*self.state.playback_rate.lock().unwrap())
     }
-    fn SetGlobalPlaybackRate(&self, _value: f32) -> windows_core::Result<()> {
+    fn SetGlobalPlaybackRate(&self, value: f32) -> windows_core::Result<()> {
+        *self.state.playback_rate.lock().unwrap() = value;
         Ok(())
     }
     fn CreateBounceScalarAnimation(
@@ -166,7 +168,16 @@ impl comp::ICompositor5_Impl for crate::compositor::Compositor_Impl {
         not_implemented()
     }
     fn RequestCommitAsync(&self) -> windows_core::Result<windows_future::IAsyncAction> {
-        not_implemented()
+        // A commit is the next frame. The clock posts the signal after the tree has
+        // been snapshotted and presented; the action finishes once that frame ran.
+        let (send, receive) = std::sync::mpsc::sync_channel(1);
+        self.state.clock.post(move || {
+            let _ = send.send(());
+        });
+        Ok(windows_future::IAsyncAction::spawn(move || {
+            let _ = receive.recv();
+            Ok(())
+        }))
     }
 }
 
@@ -198,7 +209,7 @@ impl comp::ICompositor6_Impl for crate::compositor::Compositor_Impl {
 
 impl comp::ICompositor8_Impl for crate::compositor::Compositor_Impl {
     fn CreateAnimationController(&self) -> windows_core::Result<comp::AnimationController> {
-        not_implemented()
+        crate::animation_controller::create(self.state.clock.clone())
     }
 }
 

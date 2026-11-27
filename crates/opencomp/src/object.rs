@@ -102,26 +102,56 @@ macro_rules! composition_followups {
         impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject4_Impl for $impl_type {
             fn TryGetAnimationController(
                 &self,
-                _property: &::windows_core::HSTRING,
+                property: &::windows_core::HSTRING,
             ) -> windows_core::Result<
                 $crate::bindings::Microsoft::UI::Composition::AnimationController,
             > {
-                $crate::object::not_implemented()
+                // Only a visual has a running animation, and only an animation started
+                // with a controller has one to hand back.
+                let playback = match (
+                    $crate::object::GroupTarget::group_target(self),
+                    $crate::node::Property::parse(&property.to_string_lossy()),
+                ) {
+                    (Some(node), Some(property)) => $crate::node::playback_for(node, property),
+                    _ => None,
+                };
+                match playback {
+                    Some(playback) => $crate::animation_controller::from_playback(playback),
+                    None => $crate::object::not_implemented(),
+                }
             }
         }
 
         impl $crate::bindings::Microsoft::UI::Composition::ICompositionObject5_Impl for $impl_type {
             fn StartAnimationWithController(
                 &self,
-                _property: &::windows_core::HSTRING,
-                _animation: ::windows_core::Ref<
+                property: &::windows_core::HSTRING,
+                animation: ::windows_core::Ref<
                     $crate::bindings::Microsoft::UI::Composition::CompositionAnimation,
                 >,
-                _controller: ::windows_core::Ref<
+                controller: ::windows_core::Ref<
                     $crate::bindings::Microsoft::UI::Composition::AnimationController,
                 >,
             ) -> windows_core::Result<()> {
-                $crate::object::not_implemented()
+                let target = $crate::object::GroupTarget::group_target(self);
+                let keyframes = animation.as_ref().and_then($crate::animation::keyframes);
+                let playback = controller
+                    .as_ref()
+                    .and_then($crate::animation_controller::playback_of);
+                match (
+                    target,
+                    $crate::node::Property::parse(&property.to_string_lossy()),
+                    keyframes,
+                    playback,
+                ) {
+                    (Some(node), Some(property), Some(keyframes), Some(playback)) => {
+                        $crate::node::start_animation_with_controller(
+                            node, property, keyframes, playback,
+                        );
+                        Ok(())
+                    }
+                    _ => $crate::object::not_implemented(),
+                }
             }
         }
     };
@@ -139,7 +169,8 @@ macro_rules! composition_object {
                 &self,
             ) -> windows_core::Result<$crate::bindings::Microsoft::UI::Composition::Compositor>
             {
-                windows_core::Interface::cast(&$crate::compositor::instance()?)
+                let clock = self.node.lock().unwrap().clock.clone();
+                windows_core::Interface::cast(&$crate::compositor::for_clock(&clock)?)
             }
             fn Properties(
                 &self,

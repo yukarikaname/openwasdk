@@ -7,14 +7,18 @@ At survey time there were **129 `E_NOTIMPL` bodies**. After the work recorded he
 
 | state | count |
 | --- | --- |
-| `E_NOTIMPL` bodies remaining | 94 |
-| stub bodies replaced with real code | 36 |
-| methods fully answered | 36 |
-| partial methods (real value, honest fallback) | 7 |
+| `E_NOTIMPL` bodies remaining | 90 |
+| stub bodies replaced with real code | 40 |
+| methods fully answered | 40 |
+| partial methods (real value, honest fallback) | 9 |
 
-The arithmetic is `129 - 36 + 1 = 94`: `animation_group::stop` added one fallback of its own for
+The arithmetic is `129 - 40 + 1 = 90`: `animation_group::stop` added one fallback of its own for
 an animation group this DLL did not make. A fallback that refuses a foreign object is preferable
 to a silent no-op; a caller learns which layer could not answer.
+
+The four bodies removed in this pass are `GetCommitBatch`, `CreateScopedBatch`,
+`RequestCommitAsync` and `CreateAnimationController`. Each one is backed by the compositor clock
+described below.
 
 A method marked **later** stays `E_NOTIMPL` because the thing it needs does not exist here. The
 note says which thing. A method marked **partial** keeps a real value and only returns
@@ -22,6 +26,34 @@ note says which thing. A method marked **partial** keeps a real value and only r
 foreign object.
 
 ## Implemented
+
+### The compositor clock and commit completion
+
+Each `Compositor` owns a clock. A visual created by that compositor carries the clock in its
+node, and every animation start and every snapshot samples that time rather than reading the
+system clock. The frame loop in `present.rs` is the only caller that advances it: it draws the
+tree at the current time, then calls `tick`, which closes open commit batches and runs the
+completions they queued. A bridge created from a compositor drives that compositor's clock, so
+`GetCommitBatch`/`Completed` is tied to the frames the client actually sees.
+
+| interface | method | what it now does |
+| --- | --- | --- |
+| `ICompositor` | `GetCommitBatch` | returns a batch that is active until the next frame |
+| `ICompositor` | `CreateScopedBatch` | returns a batch that stays active until the client ends it |
+| `ICompositor5` | `RequestCommitAsync` | completes after the next frame tick, which is the commit boundary |
+| `ICompositionCommitBatch` | `IsActive` / `IsEnded` | reports the open/closed state of that batch |
+| `ICompositionCommitBatch` | `Completed` / `RemoveCompleted` | queues one completion on the compositor clock when the batch closes |
+| `ICompositionScopedBatch` | `End`, `Suspend`, `Resume` | closes once, and suspends/resumes the active state |
+| `ICompositionScopedBatch` | `Completed` / `RemoveCompleted` | same queued completion, once per batch |
+| `IClosable` on either batch | `Close` | same close as `End`; the metadata has no `Close` on the commit interface itself |
+| `ICompositor8` | `CreateAnimationController` | creates a controller over a persistent playback |
+| `IAnimationController` | `PlaybackRate`, `Progress`, `ProgressBehavior`, `Pause`, `Resume` | drives the playback a visual samples |
+| `ICompositionObject4` | `TryGetAnimationController` | returns the controller of a running animation, if it was started with one |
+| `ICompositionObject5` | `StartAnimationWithController` | starts an animation on a visual through that controller |
+
+A batch that is still open at frame time is not an error: the commit boundary closes it and
+posts its completion. `ICompositorController` stays out because the metadata gives it no
+activation factory, so a client cannot make one to call `CommitNeeded` on; see the last section.
 
 ### `ICompositionClip2`, both clip classes
 
@@ -54,11 +86,13 @@ transform reads as the identity matrix, scale `(1, 1)`, and zero vectors.
 
 These do real work but still contain one `E_NOTIMPL` branch. They also appear in the remaining
 table below, because the table lists current code sites. `StartAnimationGroup`, `Geometry` and
-`Surface` were already partial before this survey; the other four gained their real half here.
+`Surface` were already partial before this survey; the others gained their real half here.
 
 | interface | method | real part | fallback |
 | --- | --- | --- | --- |
 | `ICompositionObject2` | `StopAnimationGroup` | stops every animation the group started, by target name | a foreign group keeps no list here |
+| `ICompositionObject4` | `TryGetAnimationController` | returns the controller of an animation this DLL started with one | no controller is null in the ABI |
+| `ICompositionObject5` | `StartAnimationWithController` | starts on a visual with a controller this DLL made | a foreign controller keeps no playback here |
 | `IContentIsland` | `AppData` | returns stored data | null data cannot be expressed as a return value |
 | `IContentIsland` | `LayoutDirectionOverride` | returns the stored override | null override cannot be expressed |
 | `IVisual2` | `ParentForTransform` | returns the stored visual | null visual cannot be expressed |
@@ -67,7 +101,7 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 
 ## Remaining `E_NOTIMPL`
 
-### `ICompositionObject2` (shared by every composition object)
+### `ICompositionObject2` / `4` / `5` (shared by every composition object)
 
 | method | status | note |
 | --- | --- | --- |
@@ -77,8 +111,8 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `SetImplicitAnimations` | later | same |
 | `StartAnimationGroup` | partial | starts groups this DLL made; a foreign group has no list |
 | `StopAnimationGroup` | partial | stops groups this DLL made; a foreign group has no list |
-| `TryGetAnimationController` | later | needs the `AnimationController` object from `ICompositor8` |
-| `StartAnimationWithController` | later | same controller object |
+| `TryGetAnimationController` | partial | returns the controller of an animation started with one; no controller means null in the ABI |
+| `StartAnimationWithController` | partial | starts on a visual with a controller this DLL made; a foreign controller is refused |
 
 ### `IVisual` / `IVisual2` (shared by both visual classes)
 
@@ -104,9 +138,7 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `CreateExpressionAnimation` | later | needs an expression parser and evaluator |
 | `CreateExpressionAnimationWithExpression` | later | same |
 | `CreateQuaternionKeyFrameAnimation` | later | no quaternion animation object; `Node` has no quaternion channel |
-| `CreateScopedBatch` | later | needs a batch object and commit tracking; there is no renderer commit |
 | `CreateVector4KeyFrameAnimation` | later | no vector4 animation object; `Node` has no vector4 channel |
-| `GetCommitBatch` | later | same batch and commit state |
 
 ### `ICompositor2`
 
@@ -152,7 +184,6 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 | `CreateSpriteShape` | later | sprite shape object and renderer fill/stroke |
 | `CreateSpriteShapeWithGeometry` | later | same |
 | `CreateViewBox` | later | `CompositionViewBox` object type |
-| `RequestCommitAsync` | later | needs a commit scheduler and `IAsyncAction` completion |
 
 ### `ICompositor6`
 
@@ -166,7 +197,6 @@ table below, because the table lists current code sites. `StartAnimationGroup`, 
 
 | interface | method | status | note |
 | --- | --- | --- | --- |
-| `ICompositor8` | `CreateAnimationController` | later | controller object and per-property animation handles |
 | `ICompositorWithProjectedShadow` | `CreateProjectedShadowCaster` | later | projected-shadow object types and renderer pass |
 | `ICompositorWithProjectedShadow` | `CreateProjectedShadow` | later | same |
 | `ICompositorWithProjectedShadow` | `CreateProjectedShadowReceiver` | later | same |
@@ -275,9 +305,20 @@ second renderer path is left out rather than accepted and dropped:
 
 - **Lights, shadows, effects, shapes and gradients** have no draw path in `opencomp-core`, and a
   getter that returned a configured object would promise a picture that never appears.
-- **Expressions and implicit animations** need an evaluator and a trigger, not just a field.
-- **Controllers, scoped batches and commits** need an animation/commit clock; this DLL samples
-  time when a frame asks for a tree.
+- **Expressions** need a parser and an evaluator, not just a field.
+- **`ICompositorController`** needs a controller object, and this metadata gives the class no
+  activation factory, so a client cannot make one to call `CommitNeeded` on. `GetCommitBatch`,
+  `CreateScopedBatch` and `RequestCommitAsync` already signal the same commit boundary.
+- **`ICompositionTarget`** exists in `Windows.UI.Composition`, not `Microsoft.UI.Composition`.
+  Claiming the Windows class would hijack another DLL's activation; the root this DLL can
+  really present is the one `IDesktopChildSiteBridge.Connect` takes. The `Windows.UI` target is
+  left as metadata this DLL does not serve.
+- **Implicit animations** need an `ImplicitAnimationCollection` that implements `IMap` and
+  `IIterable`, plus a trigger at every property setter and a way to express "animate from the
+  current value". The first two are mechanical; the last is not in this key-frame model, which
+  has no null key frame. `CreateImplicitAnimationCollection` and
+  `ICompositionObject2.ImplicitAnimations` stay `E_NOTIMPL` rather than arming an animation
+  from the wrong starting value.
 - **Window z-order and dispatcher queues** belong to the host window manager and message loop.
 - **Null WinRT properties** cannot be returned through the generated `*_Impl` traits. The setter
   is real; the unset read reports `E_NOTIMPL` instead of inventing an object.
