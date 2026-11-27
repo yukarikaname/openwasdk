@@ -36,7 +36,7 @@ jobs:
           for file in $(find crates -name '*.rs'); do
             case "$file" in
               # Generated from metadata; its length is not hand-written.
-              */bindings.rs) continue ;;
+              */bindings.rs|*_bindings.rs) continue ;;
             esac
             lines=$(wc -l < "$file")
             if [ "$lines" -gt 500 ]; then
