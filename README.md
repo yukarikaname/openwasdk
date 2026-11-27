@@ -28,7 +28,8 @@ compiled XAML and the Wine host stay as they are.
 | Component | Role | State |
 | --- | --- | --- |
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
-| `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server on wgpu/Skia | factory only |
+| `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | factory only |
+| `opencomp-core` | Portable visual tree and wgpu renderer, no WinRT | draws rectangles |
 | `openxaml` | `Microsoft.UI.Xaml.Internal` replacement: XBF loader, property system, layout, controls | planned |
 | `openhost` | App model, CoreWindow, activation, PE/WinRT host glue | planned |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | planned |
@@ -91,12 +92,17 @@ cargo check -p opencomp --target x86_64-pc-windows-msvc
 The package target is a Windows DLL (`cdylib`). Checking it from Linux or macOS
 validates the ABI code; linking needs a Windows toolchain.
 
+`opencomp-core` has no WinRT in it, so it builds everywhere and its tests render
+through whatever backend the host has: Metal on macOS, Vulkan or D3D12
+elsewhere. A machine without a GPU skips those tests.
+
 ## Layout
 
 ```
-crates/comptrace   metadata reader, reports and the binding generator
-crates/opencomp    Microsoft.UI.Composition replacement (Windows target)
-docs/              architecture, measured scale, milestones
+crates/comptrace       metadata reader, reports and the binding generator
+crates/opencomp        Microsoft.UI.Composition replacement (Windows target)
+crates/opencomp-core   portable visual tree and wgpu renderer (every host)
+docs/                  architecture, measured scale, milestones
 ```
 
 ## Roadmap

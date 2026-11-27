@@ -68,6 +68,12 @@ Language: Rust. The ABI shell is a `cdylib` built for
 wgpu. `windows`/`windows-bindgen` provide the ABI types; C++/WinRT is only a
 fallback if a private interface turns out to need hand-written vtables.
 
+The renderer lives in `opencomp-core`, which contains no WinRT. That split is
+what makes macOS a first-class host for the compositor: the same visual tree
+renders through Metal on macOS, Vulkan on Linux and D3D12 elsewhere, and its
+tests run on every machine with a GPU. The Windows shell only marshals ABI
+calls into the core.
+
 ## openxaml
 
 `Microsoft.UI.Xaml.Internal.dll` replacement.
