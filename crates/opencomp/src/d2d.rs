@@ -9,6 +9,7 @@
 //! which is why the compositor has no shader of its own.
 
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use opencomp_core::{Draw, TextureId, srgb_from_linear};
 use windows::Win32::Foundation::HWND;
@@ -38,6 +39,17 @@ use windows::Win32::Graphics::Dxgi::{
     IDXGIDevice, IDXGIFactory2, IDXGISurface, IDXGISwapChain1,
 };
 use windows::core::Interface;
+
+/// Frames handed to a window since the process started.
+///
+/// The ABI has no way for a client to ask "did anything reach the screen?", and a
+/// bridge that could not create a device still answers S_OK, so a test needs one
+/// number it can assert. This is that number.
+static FRAMES: AtomicU64 = AtomicU64::new(0);
+
+pub fn frames_presented() -> u64 {
+    FRAMES.load(Ordering::Relaxed)
+}
 
 /// The channel order D2D wants: ours is linear light, D2D speaks sRGB.
 fn color(rgba: [f32; 4]) -> D2D1_COLOR_F {
@@ -378,7 +390,11 @@ impl Presenter {
     /// Hand the drawn back buffer to the window.
     pub fn present_frame(&mut self) -> bool {
         // Safety: the frame was drawn; DXGI takes it from here.
-        unsafe { self.swapchain.Present(1, DXGI_PRESENT(0)).is_ok() }
+        let presented = unsafe { self.swapchain.Present(1, DXGI_PRESENT(0)).is_ok() };
+        if presented {
+            FRAMES.fetch_add(1, Ordering::Relaxed);
+        }
+        presented
     }
 }
 

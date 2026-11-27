@@ -80,6 +80,13 @@ pub fn run() -> i32 {
 
     let state: IContentIsland = step("QueryInterface(IContentIsland)", island.cast());
     let size = step("ActualSize", state.ActualSize());
+    let presented = opencomp::frames_presented();
+    if presented == 0 {
+        eprintln!(
+            "opencomp-client: no frame reached the window; the device or the swapchain failed"
+        );
+        std::process::exit(1);
+    }
     println!(
         "presented {frames} frames through DesktopChildSiteBridge on a {}x{} island",
         size.x, size.y
