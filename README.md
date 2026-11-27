@@ -3,9 +3,11 @@
 An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
 **build them anywhere, and run existing binaries on Linux under Wine**.
 
-> Status: technical validation. `comptrace` works, `opencomp` builds a visual
-> tree through its ABI, and `opencomp-core` draws that tree on a GPU; no WinUI
-> application runs on it yet.
+> Status: Gate A. A composition-only client opens a window, builds a visual tree
+> through our `Microsoft.UI.Composition` ABI and gets a frame onto it, on Windows and
+> under Wine; 129 tests pass on Windows, macOS and Wine. No WinUI application runs on
+> it yet -- that is Gate B, which needs the official `Microsoft.ui.xaml.dll` in front
+> of us.
 >
 > Not affiliated with Microsoft.
 
@@ -29,13 +31,47 @@ compiled XAML and the Wine host stay as they are.
 | Component | Role | State |
 | --- | --- | --- |
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
-| `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server | visuals, brushes, clips, animations, property sets |
+| `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server, and the `Microsoft.UI.Content` host | 58 interface types, 326 methods (197 with behaviour), D3D11/D2D presentation, animation, surfaces |
 | `opencomp-core` | Visual tree, draw list and animation sampler; wgpu renderer behind a `preview` feature | trees with transforms, clip, opacity, bitmaps, rounded corners; previews offscreen or on a swapchain |
 | `xbf` | XBF reader, ported from the MIT sources: header, metadata tables, node stream | parses the theme resources WinUI ships |
 | `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | element model, layout and a composition tree; no controls yet |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 6 conversions, 143 stubs |
-| `openhost` | App model, `Microsoft.UI.Content`/`Windowing` hosting, activation, PE/WinRT host glue | Content hosting lives in `opencomp`; activation and the PE host are planned |
-| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, activation manifest, `dotnet` build through Wine's XAML compiler |
+| `openhost` | App model, `Microsoft.UI.Windowing` hosting, PE host glue | Content hosting and activation live in `opencomp`; the app model is planned |
+| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, activation manifest, `dotnet` build through Wine's XAML compiler; not yet exercised end to end |
+
+## How much of it is implemented
+
+Counted from the code, not estimated. Method numbers come from the `*_Impl` methods
+behind every `#[implement(..)]` type, minus the ones that answer `E_NOTIMPL`; the
+denominators are the metadata counts in [`docs/winui-anatomy.md`](docs/winui-anatomy.md).
+
+| surface | implemented | of | |
+| --- | ---: | ---: | ---: |
+| Composition ABI methods answered | 197 | 326 | **60%** |
+| FrameworkUdk C exports | 6 | 149 | **4%** |
+| XBF node kinds mapped to an element tree | 30 | 39 | **77%** |
+| XAML element kinds | 4 | 91 Reactor builds | **4%** |
+| XAML runtime classes | 4 | 900 | **0.4%** |
+| Acceptance gates | A | A-D | **25%** |
+| Tests | 129 | -- | -- |
+
+What the percentages mean in practice:
+
+- **Composition is the finished layer.** 73 interfaces are everything the XAML engine
+  asks of it; 58 of them are implemented as Rust objects here, counting only the ones
+  the engine actually imports is not possible without the DLL in hand, and the eight a
+  first frame needs are exercised end to end: window, island, bridge, swapchain, D2D
+  target, frame. The 129 methods that still answer `E_NOTIMPL` are paths XAML has not
+  reached.
+- **`openudk` looks worse than it is**: the six real exports are the window
+  conversions a first frame needs, and the other 143 return `FALSE` or `E_NOTIMPL`
+  until something asks for them by name.
+- **The XAML numbers are the honest ones.** Four element kinds and 18 properties can
+  lay out a `StackPanel` of `Border`s, which is enough to check our layout against
+  the real engine -- not enough to run an application.
+- **Gate A is green on Windows and under Wine** (16 ms to the first frame on a
+  Windows runner, 2.8 s on Wine's software rasterizer). Gates B-D are the work the
+  ladder describes.
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
 What this project does **not** do — the boundary against Wine, DXVK and
@@ -147,12 +183,15 @@ class name can call `RoGetActivationFactory` with a manifest entry:
 ```xml
 <file name="opencomp.dll">
   <activatableClass name="Microsoft.UI.Composition.Compositor"
-                    threadingModel="both" />
+                    threadingModel="both"
+                    xmlns="urn:schemas-microsoft-com:winrt.v1" />
 </file>
 ```
 
 inside the `<file>`/`<activatableClass>` group of an application manifest, with
-the DLL next to the executable. Without the manifest, call
+the DLL next to the executable. The namespace is not decoration: without it both
+the Windows SxS parser and Wine read the document as an assembly with no
+activatable classes, and activation fails with `REGDB_E_CLASSNOTAVAILABLE`. Without the manifest, call
 `DllGetActivationFactory` yourself and `QueryInterface` for
 `IActivationFactory`; `crates/opencomp/src/factory.rs` is the same code from the
 other side.
@@ -206,11 +245,11 @@ docs/                  architecture, measured scale, binary anatomy, milestones
 
 1. `comptrace` — metadata reports and the generator (done).
 2. `opencomp` — first frame: `Compositor`, `ContainerVisual`, `SpriteVisual`
-   on wgpu.
+   presented through D3D11 and D2D (done; `wgpu` remains as a preview backend).
 3. **Composition-only apps** — a program that hosts a visual tree in an HWND
-   through `Microsoft.UI.Content`/`Microsoft.UI.Windowing` and never loads XAML.
-   This is the first target that can run end to end, and the smallest one.
-4. `openxaml` — XBF loader and the XAML runtime on top of the same compositor.
+   through `Microsoft.UI.Content` and never loads XAML (done: Gate A).
+4. `openxaml` — the official `Microsoft.ui.xaml.dll` first, on top of this
+   compositor (Gate B), then our own XAML runtime built from XBF.
    Reactor (`microsoft/microsoft-ui-reactor`) is the first XAML-runtime target:
    it builds WinUI controls from C# and loads no application XBF, only the
    framework's own resources.
