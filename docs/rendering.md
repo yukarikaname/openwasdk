@@ -94,19 +94,22 @@ No MSAA (`MultisampleState::default()` is one sample), no depth buffer, no times
 
 ## What is missing
 
-The renderer has one primitive: a solid rectangle, axis-aligned or transformed. So:
+The renderer has three primitives: a rectangle, a rounded rectangle and a textured
+rectangle, all of them transformed. So:
 
 | feature | state |
 | --- | --- |
 | text | absent |
-| bitmaps, composition surfaces | absent; `CreateSurfaceBrush` is `E_NOTIMPL` |
-| rounded corners, ellipses, paths | absent; the geometry factories are `E_NOTIMPL` |
+| bitmaps | present: a visual names a texture id and a uv rectangle; a host uploads `Rgba8UnormSrgb` bytes |
+| composition surfaces | present as CPU bitmaps: `CompositionDrawingSurface` + `CompositionSurfaceBrush`, with no D2D interop |
+| rounded corners | present, per corner, shaped by a distance in the fragment stage |
+| ellipses, paths, arbitrary geometry | absent; the geometry factories answer `E_NOTIMPL` |
 | effects, shadows, lights, backdrop | absent |
 | layers, masks, gradients, nine-grid, 3D | absent |
-| anti-aliasing | none of its own: hard triangle edges, one sample |
+| anti-aliasing | rounded corners only: one device pixel of `fwidth`; a straight edge is still the rasteriser's hard edge |
 
-A rotated or fractional rectangle therefore has jagged edges, its corner pixels being the
-rasteriser's rule rather than a coverage value computed here. `opencomp` accepts the properties it
+A rotated or fractional rectangle therefore has jagged edges unless it is rounded, its corner
+pixels being the rasteriser's rule rather than a coverage value computed here. `opencomp` accepts the properties it
 cannot draw (anchor point, transform matrix, 3D rotation, composite mode, orientation) and drops
 them: the tree stays consistent, the pixels do not change. A few setters are stricter than that and
 throw `E_NOTIMPL` instead, `ISpriteVisual2.Shadow` and `IVisual.Parent` among them.
