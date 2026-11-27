@@ -15,17 +15,27 @@ vm=${1:-${VM_DIR:-$HOME/openwasdk-vm}}
 for file in Win11_arm64.iso autounattend.iso efi.fd win11.qcow2; do
 	[ -f "$vm/$file" ] || { echo "vm: missing $vm/$file" >&2; exit 2; }
 done
-exec qemu-system-aarch64 \
-	-machine virt,highmem=on -accel hvf -cpu host -smp 4 -m 4096 \
+qemu-system-aarch64 \
+	-machine virt -accel hvf -cpu host -smp 4 -m 4096 \
 	-drive if=pflash,format=raw,file="$vm/efi.fd" \
-	-device qemu-xhci -device usb-kbd -device usb-tablet \
+	-device qemu-xhci \
+	-device usb-kbd -device usb-tablet \
 	-device nvme,drive=hd0,serial=hd0 \
 	-drive if=none,id=hd0,file="$vm/win11.qcow2",format=qcow2 \
-	-drive if=none,id=cd0,file="$vm/Win11_arm64.iso",media=cdrom,readonly=on \
 	-device usb-storage,drive=cd0 \
-	-drive if=none,id=cd1,file="$vm/autounattend.iso",media=cdrom,readonly=on \
+	-drive if=none,id=cd0,format=raw,media=cdrom,readonly=on,file="$vm/Win11_arm64.iso" \
 	-device usb-storage,drive=cd1 \
-	-device virtio-gpu-pci -display cocoa,show-cursor=on \
-	-device virtio-net-pci,netdev=n0 -netdev user,id=n0 \
+	-drive if=none,id=cd1,format=raw,media=cdrom,readonly=on,file="$vm/autounattend.iso" \
+	-device ramfb -display cocoa,show-cursor=on \
+	-nic user,model=virtio-net-pci \
 	-device virtio-rng-pci \
-	-boot order=d
+	-monitor unix:"$vm/mon.sock",server,nowait \
+	-boot order=d &
+pid=$!
+# The install media carries `bootfix.bin`: it asks for a key and falls through to PXE if
+# none arrives, so the first minute is spent answering that prompt.
+for _ in $(seq 1 45); do
+	[ -S "$vm/mon.sock" ] && printf 'sendkey spc\n' | nc -U "$vm/mon.sock" >/dev/null 2>&1
+	sleep 2
+done
+wait "$pid"
