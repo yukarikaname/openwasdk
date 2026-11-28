@@ -21,6 +21,8 @@ pub fn compose(element: &Element, layout: &Layout) -> Visual {
     let color = element.background().unwrap_or([0.0; 4]);
     let mut visual =
         Visual::rect(layout.rect.width, layout.rect.height, color).at(layout.rect.x, layout.rect.y);
+    // Opacity applies to the element and everything below it.
+    visual.opacity = element.opacity();
 
     for (child, child_layout) in element.children().iter().zip(&layout.children) {
         visual.push(compose(child, child_layout));

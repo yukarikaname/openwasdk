@@ -578,6 +578,14 @@ impl Element {
     }
 
     /// Straight, unpremultiplied colour in linear light; `None` paints nothing.
+    /// `UIElement.Opacity`, clamped to 0..1 as the property definition requires.
+    pub fn opacity(&self) -> f32 {
+        match self.get(&property::OPACITY) {
+            Value::Number(value) => value.clamp(0.0, 1.0),
+            _ => 1.0,
+        }
+    }
+
     pub fn background(&self) -> Option<[f32; 4]> {
         match self.get(&property::BACKGROUND) {
             Value::Color(color) => Some(*color),

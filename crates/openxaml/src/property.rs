@@ -273,7 +273,12 @@ pub static GRID_COLUMNS: Property = Property::new(
 /// Every descriptor the support table names. The loader indexes this list by
 /// the name in the table; a property missing here is a table error, not a
 /// silent default.
+/// `UIElement.Opacity`: 0..1, default 1, multiplied down the subtree (WinUI:
+/// learn.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.uielement.opacity).
+pub static OPACITY: Property = Property::new("Opacity", ValueType::Double, &Value::Number(1.0), false);
+
 pub static PROPERTIES: &[&Property] = &[
+    &OPACITY,
     &WIDTH,
     &HEIGHT,
     &MARGIN,

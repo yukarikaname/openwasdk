@@ -189,6 +189,13 @@ fn load_property_with(
              * a namespace ("http://schemas.microsoft.com/client/2007.Expander.Header") or
              * join it to the member with an underscore ("FrameworkElement_Width").
              */
+            /*
+             * An accessibility name is not the element's name: it belongs to the UI
+             * automation tree, which no visual consumer reads.
+             */
+            if name.contains("AutomationProperties.") {
+                return Ok(());
+            }
             let member = name
                 .rsplit_once(['_', '.'])
                 .map_or(name, |(_, tail)| tail);
@@ -291,6 +298,13 @@ fn load_property_with(
                     | "IsIconVisible"
                     | "MaxLines"
                     | "ChildrenTransitions"
+                    | "Tag"
+                    | "Placement"
+                    | "RightHeader"
+                    | "TabStripFooter"
+                    | "Layout"
+                    | "QueryIcon"
+                    | "KeyboardAcceleratorPlacementMode"
                     | "IsSpellCheckEnabled"
                     | "Fill"
             ) {
@@ -347,6 +361,14 @@ fn load_property_with(
                         | "CornerRadius"
                         | "BorderThickness"
                         | "BorderBrush"
+                        /*
+                         * Text travels the same way: any control that shows a string has a
+                         * Text member, and the descriptor is the same one everywhere.
+                         */
+                        | "Text"
+                        | "FontSize"
+                        // Opacity is a member of UIElement, so every element has it.
+                        | "Opacity"
                 ) =>
                 {
                     crate::property::PROPERTIES
