@@ -314,18 +314,18 @@ cross the boundary.
 | 0 | `comptrace` and symbols | Interface list and fault offsets resolved from the metadata and the symbol server, never from a guessed vtable slot (done) |
 | 1 | `dcompi` shim | Our `dcompi.dll` in front of the engine and the Gallery window renders -- `WinUIDesktopWin32WindowClass`, title `WinUI Gallery` -- with no class taken over (done, 3b2e015) |
 | 2 | class takeover | Each class moved into `OPENCOMP_MINE` keeps that window; a class that breaks it goes back, it is not patched blind |
-| 3 | XBF to pixels off Windows | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: 71 of the Gallery's 195 `.xbf` files materialise and render, up from 0. The rest stop on a control type the element table does not carry (a `ListView`, an `Image`, an `Ellipse`), or on a page that derives from a base class compiled into the app's DLL, whose body no `.xbf` carries |
-| 4 | text and images in the preview | A `TextBlock`/`Image` page shows glyphs and bitmaps, compared against a screenshot of the same page on Windows |
-| 5 | window and input off Windows | The same tree in a winit window, with hit-testing and scrolling |
-| 6 | `openxaml` | A WinUI 3 application runs on our `Microsoft.ui.xaml.dll`, with no Microsoft XAML loaded |
+| 3 | `xbf` as a page tool | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: 71 of the Gallery's 195 pages load, arrange and draw as PNG. That is an inspector and a layout oracle for pages -- not a claim to run an application; the rest stop on a control the element table does not carry, or on a page whose tree is built in code |
+| 4 | text in the tool | A `TextBlock` shapes through parley and rasterises, so a dumped page shows its strings |
+| 5 | (dropped) | A window and input off Windows would mean owning an engine: that is Uno's job, not this project's |
+| 6 | (dropped) | `Microsoft.ui.xaml.dll` is Microsoft's; replacing it is a rewrite of an engine that already exists. `openxaml` stays a tool |
 
-Not a milestone: an unmodified WinUI Gallery -- a Windows PE and a .NET application --
-running natively on macOS. It needs the engine, D3D and the lifted DWM; Wine was measured
-not to supply them, so that target is a Windows VM, not this project. What
-runs off Windows is the track above: our own `.xbf` reader, layout, compositor and
-renderer. A source-level C# facade can also run managed WinUI code on macOS, and one
-exists (`refs/winui3-mac-test-runtime`); it needs the application rebuilt against its
-types, which is a different answer to a different question.
+Not a milestone, and not a goal: a XAML engine of our own. Neither an unmodified WinUI
+Gallery running natively on macOS nor a `Microsoft.ui.xaml.dll` of ours. The engine
+binary is Microsoft's, it needs D3D and the lifted DWM, and Wine was measured not to
+supply them; a second engine is a rewrite of one that already exists (Uno, Avalonia and
+`refs/winui3-mac-test-runtime` are the ones that exist, all C#). What this repository
+keeps of that track is the tool: `.xbf` in, element tree out, arranged and drawn, so a
+page can be inspected and its layout compared against the engine's numbers.
 
 ## Risks
 

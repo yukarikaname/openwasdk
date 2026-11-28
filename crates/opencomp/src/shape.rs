@@ -317,6 +317,8 @@ pub(crate) fn visual(shape: &CompositionShape, size: Vector2) -> Option<CoreVisu
         radius: [0.0; 4],
         shape: Some(primitive),
         children: Vec::new(),
+        // A shape paints geometry; only the XAML path carries text.
+        text: None,
     })
 }
 

@@ -37,7 +37,7 @@ binaries and there is no host to run them on.
 | `opencomp-core` | Visual tree, draw list and animation sampler; wgpu renderer behind a `preview` feature | trees with transforms, clip, opacity, bitmaps, rounded corners; previews offscreen or on a swapchain |
 | `xbf` | XBF reader, ported from the MIT sources: header, metadata tables, node stream | parses the theme resources WinUI ships |
 | `dcompi` | The lifted compositor's activation shim: asks the engine's own `dcompi-ms.dll` first and takes a class over only when `OPENCOMP_MINE` names it | runs the unmodified Gallery on Windows (`docs/composition-baseline.md`) |
-| `openxaml` | The preview engine subset: XBF loader, property store, measure/arrange, composition tree | 93 element kinds, real layout for StackPanel/Grid/Border/Canvas, text through the preview renderer; 71 of the Gallery's 195 published pages draw |
+| `openxaml` | Page tool, not an engine: XBF loader, property store, measure/arrange, composition tree | 93 element kinds, real layout for StackPanel/Grid/Border/Canvas, text through the preview renderer; 71 of the Gallery's 195 published pages draw |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 22 of 149 exports implemented, the rest stubs with a stated reason |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, a 1033-class activation manifest generated from the SDK's own MSIX, `dotnet` build through the SDK's XAML compiler on Windows; not yet exercised end to end |
 
@@ -77,13 +77,13 @@ each needs in [`docs/opencomp-stubs.md`](docs/opencomp-stubs.md): lights and eff
 a second renderer path, expressions need an evaluator, commits needed a clock (being
 added), z-order belongs to the host window manager.
 
-### Replacing the engine: `openxaml`
+### The page tool: `openxaml`
 
 | surface | implemented | of | |
 | --- | ---: | ---: | ---: |
 | XAML element kinds | 93 | - | 4 panels are real layout; the rest are content or non-visual hosts |
 | Dependency properties | 26 | - | - |
-| Gallery pages that draw | 71 | 195 | **36%** (measured, `docs/openxaml-scope.md`) |
+| Pages the page tool loads and draws | 71 | 195 | **36%** (an inspector, not a runtime) |
 
 The four real layout panels are enough to check our layout rules against the real engine's numbers --
 the first such check says 38 px on both sides -- but they are not enough to run an

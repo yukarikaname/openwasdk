@@ -1,16 +1,15 @@
-//! Glyph rasterisation for the preview renderer.
+//! Glyph shaping and rasterisation for the preview renderer.
 //!
-//! A `TextBlock` reaches the compositor as a string and a font size; this module turns
-//! that into an RGBA bitmap the renderer draws like any other texture. One system font is
-//! loaded on first use, glyphs are laid out by advance width, and the result is cached by
-//! (text, size) because a preview re-renders the same strings every frame.
-//!
-//! Shaping is per glyph: kerning, ligatures and complex scripts are not applied. That is
-//! the next step (parley over swash); what it replaces today is a blank box.
+//! A `TextBlock` reaches the compositor as a string and a font size. Parley does the work
+//! a text stack needs doing -- font fallback, shaping, bidi, line breaking -- and this
+//! module only rasterises the glyphs it returns, with ab_glyph, into an RGBA bitmap the
+//! renderer draws like any other texture. Results are cached by (text, size) because a
+//! preview re-renders the same strings every frame.
 
 use std::collections::HashMap;
 
-use ab_glyph::{Font, FontVec, PxScale, ScaleFont, point};
+use ab_glyph::{Font, PxScale, point};
+use parley::{FontContext, LayoutContext};
 
 /// One rasterised run: straight RGBA8, row-major, with its natural size.
 pub struct Raster {
@@ -20,84 +19,81 @@ pub struct Raster {
 }
 
 struct Engine {
-    font: FontVec,
+    fonts: FontContext,
+    layouts: LayoutContext<()>,
     cache: HashMap<(String, u32), Raster>,
 }
 
 static ENGINE: std::sync::OnceLock<std::sync::Mutex<Option<Engine>>> = std::sync::OnceLock::new();
 
 fn engine() -> &'static std::sync::Mutex<Option<Engine>> {
-    ENGINE.get_or_init(|| std::sync::Mutex::new(Engine::load()))
+    ENGINE.get_or_init(|| {
+        std::sync::Mutex::new(Some(Engine {
+            fonts: FontContext::new(),
+            layouts: LayoutContext::new(),
+            cache: HashMap::new(),
+        }))
+    })
 }
 
 impl Engine {
-    fn load() -> Option<Engine> {
-        let mut db = fontdb::Database::new();
-        db.load_system_fonts();
-        let query = fontdb::Query {
-            families: &[fontdb::Family::SansSerif],
-            weight: fontdb::Weight::NORMAL,
-            stretch: fontdb::Stretch::Normal,
-            style: fontdb::Style::Normal,
-        };
-        let id = db
-            .query(&query)
-            .or_else(|| db.faces().next().map(|face| face.id))?;
-        let (data, index) = db.with_face_data(id, |data, index| (data.to_vec(), index))?;
-        let font = FontVec::try_from_vec_and_index(data, index).ok()?;
-        Some(Engine {
-            font,
-            cache: HashMap::new(),
-        })
-    }
-
+    /// Shape and rasterise one string. Sizes come back in the string's own scale.
     fn rasterize(&mut self, text: &str, px: f32, color: [f32; 4]) -> Raster {
-        let scale = PxScale::from(px.max(1.0));
-        let scaled = self.font.as_scaled(scale);
-        let ascent = scaled.ascent();
-        let descent = scaled.descent();
-        let height = (ascent - descent).ceil().max(1.0) as u32;
-        let mut advances = Vec::new();
-        let mut total = 0.0f32;
-        for ch in text.chars() {
-            let id = self.font.glyph_id(ch);
-            advances.push((id, total));
-            total += scaled.h_advance(id);
-        }
-        let width = total.ceil().max(1.0) as u32;
+        let size = px.max(1.0);
+        let mut builder = self
+            .layouts
+            .ranged_builder(&mut self.fonts, text, 1.0, true);
+        builder.push_default(parley::StyleProperty::FontSize(size));
+        let mut layout = builder.build(text);
+        layout.break_all_lines(None);
 
+        let trace = std::env::var_os("OPENCOMP_TEXT_TRACE").is_some();
+        let mut drawn = 0usize;
+        let mut failed_fonts = 0usize;
+        let width = layout.width().ceil().max(1.0) as u32;
+        let height = layout.height().ceil().max(1.0) as u32;
         let mut pixels = vec![0u8; (width * height * 4) as usize];
-        for (id, x) in advances {
-            let Some(outline) = self.font.outline_glyph(ab_glyph::Glyph {
-                id,
-                scale,
-                position: point(x, ascent),
-            }) else {
-                continue;
-            };
-            let bounds = outline.px_bounds();
-            outline.draw(|gx, gy, coverage| {
-                let px_x = bounds.min.x as i32 + gx as i32;
-                let px_y = bounds.min.y as i32 + gy as i32;
-                if px_x < 0 || px_y < 0 || px_x >= width as i32 || px_y >= height as i32 {
-                    return;
+
+        for line in layout.lines() {
+            for item in line.items() {
+                let parley::PositionedLayoutItem::GlyphRun(run) = item else {
+                    continue;
+                };
+                let data = run.run().font();
+                let Ok(font) =
+                    ab_glyph::FontRef::try_from_slice_and_index(data.data.as_ref(), data.index)
+                else {
+                    failed_fonts += 1;
+                    continue;
+                };
+                let scale = PxScale::from(size);
+                for glyph in run.positioned_glyphs() {
+                    let outline = font.outline_glyph(ab_glyph::Glyph {
+                        id: ab_glyph::GlyphId(glyph.id as u16),
+                        scale,
+                        position: point(glyph.x, glyph.y),
+                    });
+                    let Some(outline) = outline else {
+                        continue;
+                    };
+                    let bounds = outline.px_bounds();
+                    drawn += 1;
+                    outline.draw(|gx, gy, coverage| {
+                        let x = bounds.min.x as i32 + gx as i32;
+                        let y = bounds.min.y as i32 + gy as i32;
+                        blend(&mut pixels, width, height, x, y, coverage, color);
+                    });
                 }
-                let offset = ((px_y as u32 * width + px_x as u32) * 4) as usize;
-                let alpha = (coverage * color[3]).clamp(0.0, 1.0);
-                let existing = pixels[offset + 3] as f32 / 255.0;
-                let combined = alpha + existing * (1.0 - alpha);
-                if combined <= 0.0 {
-                    return;
-                }
-                for channel in 0..3 {
-                    let old = pixels[offset + channel] as f32 / 255.0;
-                    let new = color[channel];
-                    pixels[offset + channel] =
-                        ((old * existing * (1.0 - alpha) + new * alpha) / combined * 255.0)
-                            .clamp(0.0, 255.0) as u8;
-                }
-                pixels[offset + 3] = (combined * 255.0) as u8;
-            });
+            }
+        }
+
+        if trace {
+            eprintln!(
+                "text: {text:?} size={size} layout={}x{} raster={width}x{height} lines={} drawn={drawn} nofont={failed_fonts}",
+                layout.width(),
+                layout.height(),
+                layout.lines().count()
+            );
         }
         Raster {
             width,
@@ -107,7 +103,37 @@ impl Engine {
     }
 }
 
-/// Rasterise `text` at `px`, or nothing when no system font could be loaded.
+/// Composite one glyph pixel into the run, source-over, premultiplied by coverage.
+fn blend(
+    pixels: &mut [u8],
+    width: u32,
+    height: u32,
+    x: i32,
+    y: i32,
+    coverage: f32,
+    color: [f32; 4],
+) {
+    if x < 0 || y < 0 || x >= width as i32 || y >= height as i32 {
+        return;
+    }
+    let offset = ((y as u32 * width + x as u32) * 4) as usize;
+    let alpha = (coverage * color[3]).clamp(0.0, 1.0);
+    let existing = pixels[offset + 3] as f32 / 255.0;
+    let combined = alpha + existing * (1.0 - alpha);
+    if combined <= 0.0 {
+        return;
+    }
+    for channel in 0..3 {
+        let old = pixels[offset + channel] as f32 / 255.0;
+        let new = color[channel];
+        pixels[offset + channel] = ((old * existing * (1.0 - alpha) + new * alpha) / combined
+            * 255.0)
+            .clamp(0.0, 255.0) as u8;
+    }
+    pixels[offset + 3] = (combined * 255.0) as u8;
+}
+
+/// Rasterise `text` at `px`, or nothing when the font stack cannot be built.
 pub fn rasterize(text: &str, px: f32, color: [f32; 4]) -> Option<Raster> {
     let key = (text.to_string(), px.max(1.0).to_bits());
     let mut guard = engine().lock().ok()?;

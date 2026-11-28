@@ -241,6 +241,8 @@ fn snapshot_at(node: &NodeRef, parent: Vector2, depth: u32, now: f32) -> Option<
             shape: None,
             clip: node.insets.map(|insets| clip_of(size, insets)),
             children: Vec::new(),
+            // Text reaches the compositor through XAML's own glyph run, not this path.
+            text: None,
         };
         // A visual inserted into its own subtree would recurse until the stack runs out; the
         // bound keeps such a tree renderable instead of fatal.
