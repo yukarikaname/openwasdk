@@ -15,3 +15,14 @@ engine's own implementation exists.
 
 The ISO is Microsoft's own ARM64 multi-edition image, downloaded from the Windows 11
 download page; it is not committed.
+
+## Reaching the guest
+
+`ssh.py` runs one command over `hostfwd` (host port 2222) as `dev`/`dev`. Password auth is
+answered from a pty: there is no sshpass on the host, and the server's capability line
+contains the word "password" too, so the first prompt that counts is `'s password:`.
+
+The guest needs a network card first. Windows 11 ARM64 has no driver for `e1000`, `e1000e`,
+`rtl8139` or QEMU's `usb-net` (which is CDC-ECM, not RNDIS), so the VM boots with
+`virtio-net-pci` and `pnputil /add-driver` installs `NetKVM/w11/ARM64` from the virtio-win
+ISO. `OpenSSH.Server` then comes from Windows Update over the slirp network.
