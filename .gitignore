@@ -20,3 +20,6 @@ __pycache__/
 # .NET build output (the Gate C project is published in the VM)
 [Oo]bj/
 [Bb]in/
+/refs/
+/wine-ultimate/
+/microsoft-ui-xaml/

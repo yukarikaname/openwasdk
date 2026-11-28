@@ -79,3 +79,31 @@ writing a probe or guessing an ABI, and record what was found.
   direct-composition notes: background for the private DComp interfaces.
 
 Next step: pick the runtime track first. For each App SDK component the baseline VM answers: which object, which interface, which slot, which out parameter. Start with `Microsoft.UI.Composition` core objects (Compositor, Visual, CompositionObject), write the ABI test against the official DLL on Windows, then make the Rust implementation pass the same test. In parallel, `xbf` plus `xwinui activation` should render a XAML document without the engine, so the XAML side can be checked without Wine or Windows.
+## Reference checkouts
+
+Read-only copies of projects used as references. They are never modified and never copied
+into a crate; the licence rule in `docs/scope.md` applies.
+
+| project | URL | local path | read it for |
+| --- | --- | --- | --- |
+| wine-ultimate | `github.com/ZhymabekRoman/wine-ultimate` | `../wine-ultimate` (full, 506M) | dcomp server protocol and the privates, `dlls/frameworkudk.system`, XAML activation generator, CoreMessaging build-number knob |
+| wine-uwp (designgears) | `github.com/designgears/wine-uwp` | not cloned | own `dlls/dcomp`, composition swap chains, `wineuwp` app-model host |
+| wine-uwp (geoffwoollams) | `github.com/geoffwoollams/wine-uwp` | not cloned | UWP `CoreWindow`, input, package identity |
+| Avalonia | `github.com/AvaloniaUI/Avalonia` | `refs/Avalonia` (sparse) | XAML parser, styling, layout |
+| Uno Platform | `github.com/unoplatform/uno` | `refs/uno` (sparse: `src/Uno.UI`) | WinUI-compatible API, dependency properties, parser |
+| microsoft-ui-xaml | `github.com/microsoft/microsoft-ui-xaml` | `../microsoft-ui-xaml` (partial: `dxaml`, `src`; `controls` not checked out) | XAML engine (`dxaml`), XAML compiler |
+| LiberNT (ReactOS fork) | `github.com/LiberNT/LiberNT` | not cloned | the host layer only: PE loading, ntdll/win32ss semantics; it has no Composition or XAML |
+| ReactOS | `github.com/reactos/reactos` | not cloned | the upstream of the same host-layer material |
+| Darling | `github.com/darlinghq/darling` | not cloned | architecture analogy for a host compatibility layer, not code |
+| OpenSwiftUI | `github.com/OpenSwiftUIProject/OpenSwiftUI` | not cloned | architecture analogy for a framework reimplementation, not code |
+
+These checkouts live outside the repository or under `refs/`, which is gitignored; keep them
+out of commits. To recreate a sparse one:
+
+```sh
+git clone --depth 1 --filter=blob:none --sparse <url> refs/<name>
+cd refs/<name> && git sparse-checkout set <paths>
+```
+
+Adding a path later only fetches that path: `git sparse-checkout add controls` in the
+`microsoft-ui-xaml` checkout, for example.
