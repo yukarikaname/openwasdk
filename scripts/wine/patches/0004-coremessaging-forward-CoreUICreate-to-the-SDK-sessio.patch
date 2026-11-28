@@ -1,6 +1,6 @@
-From 960ff2865c5b294138d75b9cbb297b7ca2097bbb Mon Sep 17 00:00:00 2001
+From d09c4b96b6109ecf71f7bd93788adab6d8c418c7 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:34:14 +0800
+Date: Sat, 28 Nov 2026 19:35:51 +0800
 Subject: [PATCH 04/10] coremessaging: forward CoreUICreate to the SDK session
  creator
 

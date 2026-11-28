@@ -1,6 +1,6 @@
-From f76ccaba6349be7ba7ff19c11e928cb03af8d61c Mon Sep 17 00:00:00 2001
+From 01d5ebe6039b3a621549960f26d085cd1cb5247f Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:34:15 +0800
+Date: Sat, 28 Nov 2026 19:35:52 +0800
 Subject: [PATCH 09/10] bcp47langs: answer the application language list
 
 ---
