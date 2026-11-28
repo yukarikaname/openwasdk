@@ -80,6 +80,8 @@ pub struct Renderer {
     background: [f32; 4],
     textures: Textures,
     root: Visual,
+    /// The next id handed to a rasterised string. High, so a client's own ids do not collide.
+    next_text: TextureId,
 }
 
 impl Renderer {
@@ -164,6 +166,7 @@ impl Renderer {
             background,
             textures,
             root: Visual::default(),
+            next_text: 0x1000_0000,
         }
     }
 
@@ -189,8 +192,32 @@ impl Renderer {
         &mut self.root
     }
 
-    pub fn set_root(&mut self, root: Visual) {
+    /// Give the renderer the tree to draw.
+    ///
+    /// Text is rasterised here rather than in the draw loop: the glyphs become a texture
+    /// like any bitmap the client uploaded, so flattening and drawing stay unchanged.
+    pub fn set_root(&mut self, mut root: Visual) {
+        self.paint_text(&mut root);
         self.root = root;
+    }
+
+    fn paint_text(&mut self, visual: &mut Visual) {
+        if let Some(text) = visual.text.take()
+            && !text.text.trim().is_empty()
+            && let Some(raster) = crate::text::rasterize(&text.text, text.size, text.color)
+        {
+            let id = self.next_text;
+            self.next_text = self.next_text.wrapping_add(1);
+            self.upload_rgba(id, raster.width, raster.height, &raster.pixels);
+            visual.image = Some(id);
+            visual.size = [raster.width as f32, raster.height as f32];
+            // The raster already carries the colour; the quad multiplies by white.
+            visual.color = [1.0, 1.0, 1.0, 1.0];
+            visual.uv = [0.0, 0.0, 1.0, 1.0];
+        }
+        for child in &mut visual.children {
+            self.paint_text(child);
+        }
     }
 
     /// Upload a bitmap under a caller-chosen [`TextureId`], sRGB RGBA8 and row-major.

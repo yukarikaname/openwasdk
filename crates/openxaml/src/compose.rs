@@ -11,7 +11,7 @@
 //! element and layout layers stay free of the compositor so the ABI shell can
 //! use them without a GPU.
 
-use opencomp_core::Visual;
+use opencomp_core::{Text, Visual};
 
 use crate::element::Element;
 use crate::layout::Layout;
@@ -23,6 +23,17 @@ pub fn compose(element: &Element, layout: &Layout) -> Visual {
         Visual::rect(layout.rect.width, layout.rect.height, color).at(layout.rect.x, layout.rect.y);
     // Opacity applies to the element and everything below it.
     visual.opacity = element.opacity();
+
+    // A TextBlock paints its string; the renderer rasterises it, this layer only says what.
+    if matches!(element.kind(), crate::element::Kind::TextBlock) && !element.text().is_empty() {
+        visual.text = Some(Text {
+            text: element.text().to_string(),
+            size: element.font_size(),
+            // WinUI's default foreground is the theme's text colour; the preview has no
+            // theme, so it uses black on the light background.
+            color: [0.0, 0.0, 0.0, 1.0],
+        });
+    }
 
     for (child, child_layout) in element.children().iter().zip(&layout.children) {
         visual.push(compose(child, child_layout));

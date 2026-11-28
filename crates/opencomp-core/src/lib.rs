@@ -17,12 +17,14 @@ mod host;
 mod render;
 #[cfg(feature = "preview")]
 mod texture;
+#[cfg(feature = "preview")]
+pub mod text;
 
 pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};
 pub use gradient::{Gradient, GradientShape, GradientStop, RAMP_ENTRIES};
 pub use texture_id::{TextureId, WHITE};
-pub use tree::{Draw, Rect, Shape, Visual};
+pub use tree::{Draw, Rect, Shape, Text, Visual};
 
 #[cfg(feature = "preview")]
 pub use host::Host;

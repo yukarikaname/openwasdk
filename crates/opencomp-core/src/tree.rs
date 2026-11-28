@@ -47,6 +47,19 @@ impl Rect {
     }
 }
 
+/// A string a node paints with its own glyphs, laid out by the renderer.
+///
+/// The element layer hands text over as text rather than as a bitmap: only the renderer
+/// knows about the device, and a preview re-renders the same string every frame.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Text {
+    pub text: String,
+    /// Font size in the node's own units.
+    pub size: f32,
+    /// Straight colour, as [`Visual::color`].
+    pub color: [f32; 4],
+}
+
 /// One node of the tree. The shape is deliberately the WinRT one: an offset, a size, a colour and
 /// children, so `opencomp` can hand `ContainerVisual` and `SpriteVisual` onto it one to one.
 #[derive(Clone, Debug, PartialEq)]
@@ -79,6 +92,8 @@ pub struct Visual {
     /// A primitive painted inside the node's rectangle; `None` fills the rectangle itself.
     pub shape: Option<Shape>,
     pub children: Vec<Visual>,
+    /// When set, the node paints this string; the renderer rasterises it once and draws a quad.
+    pub text: Option<Text>,
 }
 
 impl Default for Visual {
@@ -98,6 +113,7 @@ impl Default for Visual {
             radius: [0.0; 4],
             shape: None,
             children: Vec::new(),
+            text: None,
         }
     }
 }

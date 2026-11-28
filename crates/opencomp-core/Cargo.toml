@@ -10,10 +10,12 @@ rust-version.workspace = true
 [features]
 # The wgpu renderer and the window host, for previews on the machine you are on.
 # The DLL does not enable it: the Windows compositor is D3D11.
-preview = ["dep:bytemuck", "dep:pollster", "dep:wgpu"]
+preview = ["dep:ab_glyph", "dep:bytemuck", "dep:fontdb", "dep:pollster", "dep:wgpu"]
 
 [dependencies]
+ab_glyph = { version = "0.2", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
+fontdb = { version = "0.23", optional = true }
 pollster = { version = "0.4", optional = true }
 wgpu = { version = "30", optional = true }
 

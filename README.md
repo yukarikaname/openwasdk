@@ -24,19 +24,21 @@ app.exe + resources.pri + *.xbf
 ```
 
 A Windows host replaces the bottom row and runs the closed DLLs unmodified. OpenWASDK
-replaces the two closed DLLs in the middle instead, so the compositor and the XAML engine
-stop depending on DirectComposition or DWM, and the runtime is the same DLLs on Windows,
-macOS, or any other host.
+works on the two closed DLLs in the middle instead. On Windows that means the engine runs
+on our `dcompi` shim and draws with Microsoft's lifted compositor; off Windows the same
+XAML is drawn by our own `.xbf` reader, layout and renderer, because those DLLs are Windows
+binaries and there is no host to run them on.
 
 | Component | Role | State |
 | --- | --- | --- |
+| `opencomp-client` | A Composition-only client: a window, a tree built through the ABI, and a bridge that presents | the Gate A program, run on Windows |
 | `comptrace` | Read WinRT metadata, generate bindings and implementation traits, map a traced IID back to its interface | works |
 | `opencomp` | `Microsoft.UI.Composition` replacement: ABI-compatible WinRT server, and the `Microsoft.UI.Content` host | 58 interface types, 326 methods (197 with behaviour), D3D11/D2D presentation, animation, surfaces |
 | `opencomp-core` | Visual tree, draw list and animation sampler; wgpu renderer behind a `preview` feature | trees with transforms, clip, opacity, bitmaps, rounded corners; previews offscreen or on a swapchain |
 | `xbf` | XBF reader, ported from the MIT sources: header, metadata tables, node stream | parses the theme resources WinUI ships |
-| `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | element model, layout and a composition tree; no controls yet |
+| `dcompi` | The lifted compositor's activation shim: asks the engine's own `dcompi-ms.dll` first and takes a class over only when `OPENCOMP_MINE` names it | runs the unmodified Gallery on Windows (`docs/composition-baseline.md`) |
+| `openxaml` | The preview engine subset: XBF loader, property store, measure/arrange, composition tree | 93 element kinds, real layout for StackPanel/Grid/Border/Canvas, text through the preview renderer; 71 of the Gallery's 195 published pages draw |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 22 of 149 exports implemented, the rest stubs with a stated reason |
-| `openhost` | App model, `Microsoft.UI.Windowing` hosting, PE host glue | Content hosting and activation live in `opencomp`; the app model is planned |
 | `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, a 1033-class activation manifest generated from the SDK's own MSIX, `dotnet` build through the SDK's XAML compiler on Windows; not yet exercised end to end |
 
 ## How much of it is implemented
@@ -59,14 +61,14 @@ the ones that answer `E_NOTIMPL`; denominators from the metadata in
 | surface | implemented | of | |
 | --- | ---: | ---: | ---: |
 | XAML runtime classes hosted | 900 | 900 | **100%** (Microsoft's code, and it starts) |
-| Composition ABI methods | 232 | 326 | **71%** |
+| Composition ABI methods | 232 | 326 | **71%** (94 bodies still `E_NOTIMPL`) |
 | `Microsoft.UI.Dispatching` classes | 5 | 5 | **100%** |
 | FrameworkUdk C exports | 22 | 149 | **15%** |
 | App SDK classes with an activation entry | 1033 | 1033 | **100%** (generated) |
 | XBF node kinds mapped to an element tree | 30 | 39 | **77%** |
 | XBF value kinds | 11 | 11 | **100%** |
-| Acceptance | Gallery window under our `dcompi`; 10 of 195 pages render off Windows | - | - |
-| Tests | 186 | - | - |
+| Acceptance | The Gallery window under our `dcompi` on Windows; 71 of 195 pages draw off Windows | - | - |
+| Tests | 180 | - | - |
 
 Fifty-eight composition interface types are implemented; the engine imports 73, and the
 intersection is not measurable without the binary, so no percentage is claimed for it.
@@ -79,17 +81,17 @@ added), z-order belongs to the host window manager.
 
 | surface | implemented | of | |
 | --- | ---: | ---: | ---: |
-| XAML element kinds | 4 | 91 Reactor builds | **4%** |
-| XAML runtime classes | 4 | 900 | **0.4%** |
-| Dependency properties | 18 | - | - |
+| XAML element kinds | 93 | - | 4 panels are real layout; the rest are content or non-visual hosts |
+| Dependency properties | 26 | - | - |
+| Gallery pages that draw | 71 | 195 | **36%** (measured, `docs/openxaml-scope.md`) |
 
-Those four are enough to check our layout rules against the real engine's numbers --
+The four real layout panels are enough to check our layout rules against the real engine's numbers --
 the first such check says 38 px on both sides -- but they are not enough to run an
 application, and they do not need to be until milestone 6. Until then the 900 classes
 come from Microsoft's DLL, which is what the row above means by "hosted": the engine is
 theirs and the layers beneath it are ours.
 
-The 186 tests run on Windows and macOS.
+The 180 tests run on Windows and macOS.
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
 What this project does **not** do — the boundary against Wine, DXVK and
@@ -271,7 +273,7 @@ docs/                  architecture, measured scale, binary anatomy, milestones
    Reactor (`microsoft/microsoft-ui-reactor`) is the first XAML-runtime target:
    it builds WinUI controls from C# and loads no application XBF, only the
    framework's own resources.
-5. `openhost` — run without the Microsoft runtime DLLs.
+5. `openxaml` grows until an application runs without Microsoft's XAML DLLs.
 6. `xwinui` — cross-compilation, packaging and deployment.
 
 ## License
