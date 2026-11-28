@@ -4,10 +4,39 @@
 //! another; a child module reaches the private fields the same way the parent does.
 
 use crate::element::Element;
-use crate::property;
+use crate::property::{self, Property};
 use crate::value::{Orientation, Value};
 
 impl Element {
+    /// Record that this element's `property` comes from the control's `source` property.
+    pub(crate) fn bind_template(&mut self, property: &'static Property, source: String) {
+        self.bindings.push((property.name, source));
+    }
+
+    /// Resolve a template's `{TemplateBinding X}` markers against the control the template
+    /// was instantiated for: the body says `Panel_Background = Control_Background`, and the
+    /// instance is where `Control_Background` has a value.
+    pub(crate) fn bind_from(&mut self, source: &Element) {
+        let bindings = std::mem::take(&mut self.bindings);
+        for (target, name) in bindings {
+            // The binding names a property by its declaring type: `Control_Background`.
+            let member = name
+                .rsplit_once(['_', '.'])
+                .map_or(name.as_str(), |(_, tail)| tail);
+            let Some(read) = property::lookup(member) else {
+                continue;
+            };
+            let Some(write) = property::lookup(target) else {
+                continue;
+            };
+            let value = source.get(read).clone();
+            let _ = self.set(write, value);
+        }
+        for child in &mut self.children {
+            child.bind_from(source);
+        }
+    }
+
     /// `UIElement.Opacity`, clamped to 0..1 as the property definition requires.
     pub fn opacity(&self) -> f32 {
         match self.get(&property::OPACITY) {

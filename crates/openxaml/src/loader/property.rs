@@ -265,6 +265,19 @@ pub(super) fn load_property_with(
              * extension. The property stays at its default, which is what the runtime
              * shows until something resolves it.
              */
+            /*
+             * A template binding is not a value yet: it says which control property this one
+             * reads, and is resolved when the template is instantiated for a control.
+             */
+            if let xbf::model::Value::TemplateBinding { name, .. } = &property.value {
+                let member = name
+                    .rsplit_once(['_', '.'])
+                    .map_or(name.as_str(), |(_, tail)| tail);
+                if let Some(target) = support.property(member) {
+                    element.bind_template(target, name.clone());
+                }
+                return Ok(());
+            }
             if matches!(
                 property.value,
                 xbf::model::Value::Resource { .. }

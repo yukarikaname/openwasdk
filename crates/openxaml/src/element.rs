@@ -51,6 +51,9 @@ pub struct Element {
     /// Values received from an ancestor for an inheriting property.
     inherited: BTreeMap<PropertyId, Value>,
     children: Vec<Element>,
+    /// `{TemplateBinding X}` markers this element carries: the property to fill and the
+    /// control property it reads from. Resolved when a template is instantiated.
+    bindings: Vec<(PropertyId, String)>,
     name: Option<String>,
     key: Option<String>,
     /// Set by any mutation that changes measure or arrange; cleared by
@@ -65,6 +68,7 @@ impl Element {
             properties: BTreeMap::new(),
             inherited: BTreeMap::new(),
             children: Vec::new(),
+            bindings: Vec::new(),
             name: None,
             key: None,
             layout_dirty: true,

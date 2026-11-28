@@ -275,7 +275,9 @@ fn build_with(
          * that fails to load is no picture.
          */
         match load_with_tolerance(body, controls, depth + 1, true) {
-            Ok(template) => {
+            Ok(mut template) => {
+                // The body's {TemplateBinding X} markers name the control's own properties.
+                template.bind_from(&element);
                 if std::env::var_os("OPENCOMP_TRACE").is_some() {
                     eprintln!("openxaml: template for {} instantiated", source.type_name);
                 }
