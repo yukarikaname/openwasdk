@@ -280,6 +280,19 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::SelectorBar
         | Kind::Unrealized
         | Kind::ColorPicker
+        | Kind::NavigationView
+        | Kind::NavigationViewItem
+        | Kind::DropDownButton
+        | Kind::AppBarButton
+        | Kind::AppBarToggleButton
+        | Kind::Frame
+        | Kind::FlipView
+        | Kind::ProgressBar
+        | Kind::TeachingTip
+        | Kind::CommandBar
+        | Kind::MenuFlyout
+        | Kind::MenuFlyoutItem
+        | Kind::TabViewItem
         | Kind::NumberBox
         | Kind::RadioButtons
         | Kind::Slider
@@ -413,6 +426,19 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::SelectorBar
         | Kind::Unrealized
         | Kind::ColorPicker
+        | Kind::NavigationView
+        | Kind::NavigationViewItem
+        | Kind::DropDownButton
+        | Kind::AppBarButton
+        | Kind::AppBarToggleButton
+        | Kind::Frame
+        | Kind::FlipView
+        | Kind::ProgressBar
+        | Kind::TeachingTip
+        | Kind::CommandBar
+        | Kind::MenuFlyout
+        | Kind::MenuFlyoutItem
+        | Kind::TabViewItem
         | Kind::NumberBox
         | Kind::RadioButtons
         | Kind::Slider

@@ -113,6 +113,19 @@ pub enum Kind {
     ImplicitAnimationSet,
     MenuFlyoutSeparator,
     ImageIconSource,
+    NavigationView,
+    NavigationViewItem,
+    DropDownButton,
+    AppBarButton,
+    AppBarToggleButton,
+    Frame,
+    FlipView,
+    ProgressBar,
+    TeachingTip,
+    CommandBar,
+    MenuFlyout,
+    MenuFlyoutItem,
+    TabViewItem,
     NumberBox,
     RadioButtons,
     Slider,
@@ -193,6 +206,19 @@ impl Kind {
             Self::Canvas => "Microsoft.UI.Xaml.Controls.Canvas",
             Self::UniformGridLayout => "Microsoft.UI.Xaml.Controls.UniformGridLayout",
             Self::ColorPicker => "Microsoft.UI.Xaml.Controls.ColorPicker",
+            Self::NavigationView => "Microsoft.UI.Xaml.Controls.NavigationView",
+            Self::NavigationViewItem => "Microsoft.UI.Xaml.Controls.NavigationViewItem",
+            Self::DropDownButton => "Microsoft.UI.Xaml.Controls.DropDownButton",
+            Self::AppBarButton => "Microsoft.UI.Xaml.Controls.AppBarButton",
+            Self::AppBarToggleButton => "Microsoft.UI.Xaml.Controls.AppBarToggleButton",
+            Self::Frame => "Microsoft.UI.Xaml.Controls.Frame",
+            Self::FlipView => "Microsoft.UI.Xaml.Controls.FlipView",
+            Self::ProgressBar => "Microsoft.UI.Xaml.Controls.ProgressBar",
+            Self::TeachingTip => "Microsoft.UI.Xaml.Controls.TeachingTip",
+            Self::CommandBar => "Microsoft.UI.Xaml.Controls.CommandBar",
+            Self::MenuFlyout => "Microsoft.UI.Xaml.Controls.MenuFlyout",
+            Self::MenuFlyoutItem => "Microsoft.UI.Xaml.Controls.MenuFlyoutItem",
+            Self::TabViewItem => "Microsoft.UI.Xaml.Controls.TabViewItem",
             Self::ImplicitAnimationSet => "Microsoft.UI.Xaml.Media.ImplicitAnimationSet",
             Self::MenuFlyoutSeparator => "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator",
             Self::ImageIconSource => "Microsoft.UI.Xaml.Media.ImageIconSource",
@@ -303,6 +329,29 @@ impl Kind {
                 Some(Self::SelectorBarItem)
             }
             "ColorPicker" | "Microsoft.UI.Xaml.Controls.ColorPicker" => Some(Self::ColorPicker),
+            "NavigationView" | "Microsoft.UI.Xaml.Controls.NavigationView" => {
+                Some(Self::NavigationView)
+            }
+            "NavigationViewItem" | "Microsoft.UI.Xaml.Controls.NavigationViewItem" => {
+                Some(Self::NavigationViewItem)
+            }
+            "DropDownButton" | "Microsoft.UI.Xaml.Controls.DropDownButton" => {
+                Some(Self::DropDownButton)
+            }
+            "AppBarButton" | "Microsoft.UI.Xaml.Controls.AppBarButton" => Some(Self::AppBarButton),
+            "AppBarToggleButton" | "Microsoft.UI.Xaml.Controls.AppBarToggleButton" => {
+                Some(Self::AppBarToggleButton)
+            }
+            "Frame" | "Microsoft.UI.Xaml.Controls.Frame" => Some(Self::Frame),
+            "FlipView" | "Microsoft.UI.Xaml.Controls.FlipView" => Some(Self::FlipView),
+            "ProgressBar" | "Microsoft.UI.Xaml.Controls.ProgressBar" => Some(Self::ProgressBar),
+            "TeachingTip" | "Microsoft.UI.Xaml.Controls.TeachingTip" => Some(Self::TeachingTip),
+            "CommandBar" | "Microsoft.UI.Xaml.Controls.CommandBar" => Some(Self::CommandBar),
+            "MenuFlyout" | "Microsoft.UI.Xaml.Controls.MenuFlyout" => Some(Self::MenuFlyout),
+            "MenuFlyoutItem" | "Microsoft.UI.Xaml.Controls.MenuFlyoutItem" => {
+                Some(Self::MenuFlyoutItem)
+            }
+            "TabViewItem" | "Microsoft.UI.Xaml.Controls.TabViewItem" => Some(Self::TabViewItem),
             "AutoSuggestBox" | "Microsoft.UI.Xaml.Controls.AutoSuggestBox" => {
                 Some(Self::AutoSuggestBox)
             }
