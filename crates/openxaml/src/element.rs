@@ -113,6 +113,13 @@ pub enum Kind {
     ImplicitAnimationSet,
     MenuFlyoutSeparator,
     ImageIconSource,
+    NumberBox,
+    RadioButtons,
+    Slider,
+    BreadcrumbBar,
+    RelativePanel,
+    Canvas,
+    UniformGridLayout,
 }
 
 impl Kind {
@@ -178,6 +185,13 @@ impl Kind {
             Self::ProgressRing => "Microsoft.UI.Xaml.Controls.ProgressRing",
             Self::SelectorBar => "Microsoft.UI.Xaml.Controls.SelectorBar",
             Self::Unrealized => "Microsoft.UI.Xaml.Unrealized",
+            Self::NumberBox => "Microsoft.UI.Xaml.Controls.NumberBox",
+            Self::RadioButtons => "Microsoft.UI.Xaml.Controls.RadioButtons",
+            Self::Slider => "Microsoft.UI.Xaml.Controls.Slider",
+            Self::BreadcrumbBar => "Microsoft.UI.Xaml.Controls.BreadcrumbBar",
+            Self::RelativePanel => "Microsoft.UI.Xaml.Controls.RelativePanel",
+            Self::Canvas => "Microsoft.UI.Xaml.Controls.Canvas",
+            Self::UniformGridLayout => "Microsoft.UI.Xaml.Controls.UniformGridLayout",
             Self::ColorPicker => "Microsoft.UI.Xaml.Controls.ColorPicker",
             Self::ImplicitAnimationSet => "Microsoft.UI.Xaml.Media.ImplicitAnimationSet",
             Self::MenuFlyoutSeparator => "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator",
@@ -283,7 +297,14 @@ impl Kind {
             "ImageIconSource" | "Microsoft.UI.Xaml.Media.ImageIconSource" => {
                 Some(Self::ImageIconSource)
             }
-            "Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
+"Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
+            "NumberBox" | "Microsoft.UI.Xaml.Controls.NumberBox" => Some(Self::NumberBox),
+            "RadioButtons" | "Microsoft.UI.Xaml.Controls.RadioButtons" => Some(Self::RadioButtons),
+            "Slider" | "Microsoft.UI.Xaml.Controls.Slider" => Some(Self::Slider),
+            "BreadcrumbBar" | "Microsoft.UI.Xaml.Controls.BreadcrumbBar" => Some(Self::BreadcrumbBar),
+            "RelativePanel" | "Microsoft.UI.Xaml.Controls.RelativePanel" => Some(Self::RelativePanel),
+            "Canvas" | "Microsoft.UI.Xaml.Controls.Canvas" => Some(Self::Canvas),
+            "UniformGridLayout" | "Microsoft.UI.Xaml.Controls.UniformGridLayout" => Some(Self::UniformGridLayout),
             "ImplicitAnimationSet" | "Microsoft.UI.Xaml.Media.ImplicitAnimationSet" => {
                 Some(Self::ImplicitAnimationSet)
             }
@@ -383,6 +404,7 @@ impl Element {
                 | Kind::ToolTip
                 | Kind::Flyout
                 | Kind::ImplicitAnimationSet
+                | Kind::UniformGridLayout
                 | Kind::MenuFlyoutSeparator
                 | Kind::ImageIconSource
                 | Kind::Binding
