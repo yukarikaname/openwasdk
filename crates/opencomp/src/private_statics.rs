@@ -61,6 +61,44 @@ pub(crate) fn create() -> *mut c_void {
     .cast()
 }
 
+/// Who called the statics, as `module+offset`, so the caller can be read.
+///
+/// The engine does not ask the returned value for an interface; it reads it as a layout.
+/// That layout is only visible at the call site, and the call site is only visible from
+/// here.
+fn trace_stack() {
+    #[link(name = "ntdll.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn RtlCaptureStackBackTrace(
+            skip: u32,
+            count: u32,
+            frames: *mut *mut c_void,
+            hash: *mut u32,
+        ) -> u16;
+        fn RtlPcToFileHeader(pc: *mut c_void, base: *mut *mut c_void) -> *mut c_void;
+    }
+    #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn GetModuleFileNameW(module: *mut c_void, name: *mut u16, size: u32) -> u32;
+    }
+
+    let mut frames = [std::ptr::null_mut::<c_void>(); 8];
+    // 0 = this function, 1 = `method`; the caller is the third frame.
+    let count = unsafe { RtlCaptureStackBackTrace(2, 8, frames.as_mut_ptr(), std::ptr::null_mut()) };
+    for (index, frame) in frames[..count as usize].iter().enumerate() {
+        let mut base = std::ptr::null_mut();
+        unsafe { RtlPcToFileHeader(*frame, &mut base) };
+        let mut name = [0u16; 260];
+        let written = unsafe { GetModuleFileNameW(base, name.as_mut_ptr(), name.len() as u32) };
+        let name = String::from_utf16_lossy(&name[..written as usize]);
+        let short = name.rsplit(['\\', '/']).next().unwrap_or("?");
+        eprintln!(
+            "opencomp:   frame[{index}] {short}+{:#x}",
+            *frame as usize - base as usize
+        );
+    }
+}
+
 unsafe extern "system" fn method(
     _this: *mut c_void,
     first: *mut c_void,
@@ -68,6 +106,7 @@ unsafe extern "system" fn method(
 ) -> i32 {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!("opencomp: private Compositor statics called with {first:?} {second:?}");
+        trace_stack();
     }
     // The caller does not ask what it got back for an interface: it treats the value as a
     // known layout and reads it, so handing it one of ours is worse than not answering at
