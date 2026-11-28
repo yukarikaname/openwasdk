@@ -60,5 +60,7 @@ interface question ("what does the engine expect here") in the measurement, not 
     SSH_TIMEOUT=60 scripts/vm/ssh.py 'schtasks /run /tn galrun'
     # then: Get-Process WinUIGallery | Select Id,MainWindowTitle
 
-Symbols for any offset in those DLLs come from `annotate.py <dll> --pdb`; see
-`AGENTS.md`, "Symbols before disassembly".
+Symbols for any offset in those DLLs come from `annotate.py <dll> --pdb`, which prints the
+symbol-server URL; download the PDB, copy it beside the DLL (llvm finds it through the
+CodeView record) and run `llvm-symbolizer --obj=<dll> 0x180091178` with a virtual address.
+Resolve the address before reading any disassembly.

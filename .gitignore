@@ -10,6 +10,9 @@
 # gate-b run output
 probe-*.log
 
+# Agent instructions are local to a checkout
+/AGENTS.md
+
 # QEMU screendumps from the baseline VM
 *.ppm
 
