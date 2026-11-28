@@ -56,6 +56,9 @@ pub struct Element {
     bindings: Vec<(PropertyId, String)>,
     name: Option<String>,
     key: Option<String>,
+    /// Attached properties another type owns: `RelativePanel.RightOf` and its siblings.
+    /// They are anchors for a panel's layout, not values of the element itself.
+    attached: BTreeMap<String, Value>,
     /// The bitmap's own size, when the element shows one: an `Image` measures and scales
     /// against it, and the layout layer never decodes pixels to learn it.
     intrinsic: Option<(f32, f32)>,
@@ -74,9 +77,20 @@ impl Element {
             bindings: Vec::new(),
             name: None,
             key: None,
+            attached: BTreeMap::new(),
             intrinsic: None,
             layout_dirty: true,
         }
+    }
+
+    /// An attached property, by its member name (`RightOf`, `AlignLeftWithPanel`).
+    pub fn attached(&self, name: &str) -> Option<&Value> {
+        self.attached.get(name)
+    }
+
+    pub fn set_attached(&mut self, name: &str, value: Value) {
+        self.attached.insert(name.to_string(), value);
+        self.layout_dirty = true;
     }
 
     /// The `x:Name` the source gave this element, kept apart from the store.

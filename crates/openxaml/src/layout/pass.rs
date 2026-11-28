@@ -84,6 +84,11 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
             Panel::Stack => measure_stack(element, available),
             Panel::Grid => grid::measure(element, available),
             Panel::Canvas => canvas::measure_canvas(element, available),
+            Panel::Wrap => super::panels::measure_wrap(element, available),
+            Panel::Uniform => super::panels::measure_uniform(element, available),
+            Panel::Viewbox => super::panels::measure_viewbox(element, available),
+            Panel::VariableSize => super::panels::measure_uniform(element, available),
+            Panel::Relative => super::relative::measure(element, available),
         },
         // A content host carries only chrome: border thickness and padding deflate the one
         // child, and nothing else is laid out.
@@ -95,6 +100,14 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
 
 fn measure_text(element: &Element) -> Size {
     let font_size = element.font_size();
+    /*
+     * The same shaping stack that rasterises the string measures it, so a line breaks and a
+     * row aligns where the pixels actually are. Without a font stack the old approximation
+     * stays: half the size per character, 1.2 lines high.
+     */
+    if let Some((width, height)) = crate::text::measure(element.text(), font_size) {
+        return Size::new(width, height);
+    }
     let characters = element.text().chars().count() as f32;
     Size::new(characters * font_size * 0.5, font_size * 1.2)
 }
@@ -154,6 +167,11 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
             Panel::Stack => arrange_stack(element, content),
             Panel::Grid => grid::arrange(element, content),
             Panel::Canvas => canvas::arrange_canvas(element, content),
+            Panel::Wrap => super::panels::arrange_wrap(element, content),
+            Panel::Uniform => super::panels::arrange_uniform(element, content),
+            Panel::Viewbox => super::panels::arrange_viewbox(element, content),
+            Panel::VariableSize => super::panels::arrange_uniform(element, content),
+            Panel::Relative => super::relative::arrange(element, content),
         },
         Role::ContentHost => arrange_border(element, content),
         // Nothing below a non-visual host is arranged, so nothing of it is composed.

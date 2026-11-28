@@ -24,6 +24,7 @@ mod layout;
 mod loader;
 pub mod property;
 mod support;
+pub mod text;
 pub mod theme;
 mod value;
 

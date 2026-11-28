@@ -22,4 +22,14 @@ pub enum Panel {
     Stack,
     Grid,
     Canvas,
+    /// Items left to right, wrapping when the line is full.
+    Wrap,
+    /// Equal cells, counted or squared off from the child count.
+    Uniform,
+    /// One child scaled into the whole slot.
+    Viewbox,
+    /// Equal cells with row and column spans, wrapping by column.
+    VariableSize,
+    /// Children anchored to the panel's edges or to each other by name.
+    Relative,
 }

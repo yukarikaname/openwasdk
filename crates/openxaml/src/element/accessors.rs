@@ -103,6 +103,26 @@ impl Element {
         self.layout_dirty = true;
     }
 
+    /// A panel's item cell, when it names one; `None` lets the content decide.
+    pub fn item_size(&self) -> (Option<f32>, Option<f32>) {
+        (
+            self.positive(&property::ITEM_WIDTH),
+            self.positive(&property::ITEM_HEIGHT),
+        )
+    }
+
+    /// A count a panel asks for: rows, columns, first column.
+    pub fn count(&self, property: &'static crate::property::Property) -> Option<usize> {
+        self.positive(property).map(|value| value as usize)
+    }
+
+    fn positive(&self, property: &'static crate::property::Property) -> Option<f32> {
+        match self.local(property.name) {
+            Some(Value::Number(value)) if *value > 0.0 => Some(*value),
+            _ => None,
+        }
+    }
+
     /// A transform's offset or factors; the kind decides which of them matter.
     pub fn translate(&self) -> (f32, f32) {
         (

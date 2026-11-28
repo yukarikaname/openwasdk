@@ -104,6 +104,15 @@ pub(super) fn load_property_with(
                 return Ok(());
             }
             /*
+             * RelativePanel anchors are attached properties: any element can carry them, so
+             * they bypass the owner's table and land in the element's attached store, where
+             * that panel's layout reads them.
+             */
+            if let Some(value) = attached_value(member, &property.value) {
+                element.set_attached(member, value);
+                return Ok(());
+            }
+            /*
              * A SwitchPresenter shows exactly one case. The page names the cases and their
              * values; which value is current arrives through a binding, and this loader does
              * not evaluate bindings, so the first case is the one shown -- for the Gallery's
@@ -343,4 +352,35 @@ fn convert(
         element: element.to_string(),
         property: property.name.clone(),
     })
+}
+
+/// The anchor members a RelativePanel reads, as the value the element stores.
+fn attached_value(member: &str, value: &xbf::model::Value) -> Option<Value> {
+    const BOOLEAN: &[&str] = &[
+        "AlignLeftWithPanel",
+        "AlignTopWithPanel",
+        "AlignRightWithPanel",
+        "AlignBottomWithPanel",
+        "AlignHorizontalCenterWithPanel",
+        "AlignVerticalCenterWithPanel",
+    ];
+    const NAMED: &[&str] = &[
+        "LeftOf",
+        "RightOf",
+        "Above",
+        "Below",
+        "AlignLeftWith",
+        "AlignRightWith",
+        "AlignTopWith",
+        "AlignBottomWith",
+        "AlignHorizontalCenterWith",
+        "AlignVerticalCenterWith",
+    ];
+    match value {
+        xbf::model::Value::Bool(flag) if BOOLEAN.contains(&member) => Some(Value::Bool(*flag)),
+        xbf::model::Value::String(name) if NAMED.contains(&member) => {
+            Some(Value::Text(name.clone().into()))
+        }
+        _ => None,
+    }
 }

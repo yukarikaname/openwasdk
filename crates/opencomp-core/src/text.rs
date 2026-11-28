@@ -133,6 +133,38 @@ fn blend(
     pixels[offset + 3] = (combined * 255.0) as u8;
 }
 
+/// Measured sizes, keyed by (text, font size bits).
+type Measurements = HashMap<(String, u32), (f32, f32)>;
+
+/// The size `text` occupies at `px`, from the same shaping stack that rasterises it.
+///
+/// Layout asks this for every string; the answer is cached by (text, size) because a page
+/// repeats its strings on every pass. `None` means the font stack could not be built, and
+/// the caller keeps its own approximation.
+pub fn measure(text: &str, px: f32) -> Option<(f32, f32)> {
+    static CACHE: std::sync::OnceLock<std::sync::Mutex<Measurements>> = std::sync::OnceLock::new();
+    let cache = CACHE.get_or_init(|| std::sync::Mutex::new(HashMap::new()));
+    let size = px.max(1.0);
+    let key = (text.to_string(), size.to_bits());
+    if let Ok(map) = cache.lock()
+        && let Some(measured) = map.get(&key)
+    {
+        return Some(*measured);
+    }
+    let mut guard = engine().lock().ok()?;
+    let engine = guard.as_mut()?;
+    let mut builder = engine
+        .layouts
+        .ranged_builder(&mut engine.fonts, text, 1.0, true);
+    builder.push_default(parley::StyleProperty::FontSize(size));
+    let mut layout = builder.build(text);
+    layout.break_all_lines(None);
+    let measured = (layout.width(), layout.height());
+    if let Ok(mut map) = cache.lock() {
+        map.insert(key, measured);
+    }
+    Some(measured)
+}
 /// Rasterise `text` at `px`, or nothing when the font stack cannot be built.
 pub fn rasterize(text: &str, px: f32, color: [f32; 4]) -> Option<Raster> {
     let key = (text.to_string(), px.max(1.0).to_bits());

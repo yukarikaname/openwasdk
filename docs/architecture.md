@@ -162,6 +162,25 @@ The OSS WinUI sources (MIT) are the upstream of that DLL. Until they build
 portably the official binary can be used, because the contract between it and
 the compositor is only 73 interfaces plus 16 private identifiers.
 
+### Layout
+
+The pass that answers "how big, and where":
+
+- panels: `Grid` (pixel, auto and star tracks, spans, spacing), `StackPanel` in both
+  orientations, `Canvas`, `WrapPanel`, `UniformGrid`, `Viewbox`,
+  `VariableSizedWrapGrid` (fixed cells) and `RelativePanel` (panel-edge and
+  named-sibling anchors);
+- chrome: margin, padding and border thickness deflate the child slot; corner radius
+  stays out of layout;
+- text: measured through the metrics the host installs
+  (`openxaml::text::set_metrics`). The preview installs the same parley stack that
+  rasterises the glyphs, so a line measures where it draws;
+- scrolling: a `ScrollViewer` clips to its viewport. Scroll offset and the bars are
+  not implemented, so a long page shows its first screen;
+- not yet: `HorizontalContentAlignment`/`VerticalContentAlignment`, min/max
+  constraints, row and column spans in `VariableSizedWrapGrid`, and items generated
+  from `ItemsSource` -- that last one needs binding evaluation.
+
 ### Reactor
 
 `Microsoft.UI.Reactor` is a declarative C# authoring layer over WinUI 3: every

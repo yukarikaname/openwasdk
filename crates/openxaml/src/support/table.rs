@@ -229,6 +229,9 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::BORDER_BRUSH,
         &property::BORDER_THICKNESS,
         &property::CORNER_RADIUS,
+        &property::ITEM_WIDTH,
+        &property::ITEM_HEIGHT,
+        &property::MAXIMUM_ROWS_OR_COLUMNS,
     ),
     type_support!(
         Kind::MediaPlayerElement,
@@ -379,6 +382,8 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::BORDER_BRUSH,
         &property::BORDER_THICKNESS,
         &property::CORNER_RADIUS,
+        &property::ITEM_WIDTH,
+        &property::ITEM_HEIGHT,
     ),
     type_support!(
         Kind::WebView2,
@@ -409,6 +414,9 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::BORDER_BRUSH,
         &property::BORDER_THICKNESS,
         &property::CORNER_RADIUS,
+        &property::ROWS,
+        &property::COLUMNS,
+        &property::FIRST_COLUMN,
     ),
     type_support!(
         Kind::ItemsPanelTemplate,

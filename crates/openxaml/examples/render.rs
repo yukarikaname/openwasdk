@@ -16,6 +16,8 @@ use opencomp_core::{Renderer, srgb};
 use openxaml::{Controls, Rect, Size};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // The layout pass measures with the same shaping stack the renderer draws with.
+    openxaml::text::set_metrics(opencomp_core::text::measure);
     let mut args = std::env::args().skip(1);
     let source = args
         .next()

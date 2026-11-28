@@ -36,6 +36,15 @@ pub fn compose_with(
     // Opacity applies to the element and everything below it.
     visual.opacity = element.opacity();
 
+    /*
+     * A scrolling viewport clips what it holds. Content is arranged against the viewer's
+     * size, and a page that asks for more room than the viewport has is scrolled, not drawn
+     * over its neighbours -- this is the clip the runtime applies to the scroll content.
+     */
+    if matches!(element.kind(), crate::element::Kind::ScrollViewer) {
+        visual.clip = Some((0.0, 0.0, layout.rect.width, layout.rect.height));
+    }
+
     // A TextBlock paints its string; the renderer rasterises it, this layer only says what.
     if matches!(element.kind(), crate::element::Kind::TextBlock) && !element.text().is_empty() {
         visual.text = Some(Text {

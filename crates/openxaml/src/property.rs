@@ -307,7 +307,30 @@ pub static CENTER_X: Property =
 pub static CENTER_Y: Property =
     Property::new("CenterY", ValueType::Double, &Value::Number(0.0), false);
 
+/// An item panel's cell size and shape: a wrap panel's item box, a uniform grid's counts.
+pub static ITEM_WIDTH: Property =
+    Property::new("ItemWidth", ValueType::Double, &Value::Number(0.0), false);
+pub static ITEM_HEIGHT: Property =
+    Property::new("ItemHeight", ValueType::Double, &Value::Number(0.0), false);
+pub static ROWS: Property = Property::new("Rows", ValueType::Double, &Value::Number(0.0), false);
+pub static COLUMNS: Property =
+    Property::new("Columns", ValueType::Double, &Value::Number(0.0), false);
+pub static FIRST_COLUMN: Property =
+    Property::new("FirstColumn", ValueType::Double, &Value::Number(0.0), false);
+pub static MAXIMUM_ROWS_OR_COLUMNS: Property = Property::new(
+    "MaximumRowsOrColumns",
+    ValueType::Double,
+    &Value::Number(0.0),
+    false,
+);
+
 pub static PROPERTIES: &[&Property] = &[
+    &ITEM_WIDTH,
+    &ITEM_HEIGHT,
+    &ROWS,
+    &COLUMNS,
+    &FIRST_COLUMN,
+    &MAXIMUM_ROWS_OR_COLUMNS,
     &TRANSLATE_X,
     &TRANSLATE_Y,
     &SCALE_X,
