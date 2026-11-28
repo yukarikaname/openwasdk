@@ -308,7 +308,9 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::Thickness
         | Kind::Ellipse
         | Kind::Rectangle
-        | Kind::Line => Ok(Size::new(0.0, 0.0)),
+        | Kind::Line
+        | Kind::ToolTip
+        | Kind::Binding => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
     }
@@ -421,7 +423,9 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::Thickness
         | Kind::Ellipse
         | Kind::Rectangle
-        | Kind::Line => Ok(Vec::new()),
+        | Kind::Line
+        | Kind::ToolTip
+        | Kind::Binding => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }

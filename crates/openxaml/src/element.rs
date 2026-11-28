@@ -96,6 +96,10 @@ pub enum Kind {
     Ellipse,
     Rectangle,
     Line,
+    /* Shown on hover, not laid out with the page. */
+    ToolTip,
+    /* A markup extension instance, not a box. */
+    Binding,
 }
 
 impl Kind {
@@ -155,6 +159,8 @@ impl Kind {
             Self::Ellipse => "Microsoft.UI.Xaml.Shapes.Ellipse",
             Self::Rectangle => "Microsoft.UI.Xaml.Shapes.Rectangle",
             Self::Line => "Microsoft.UI.Xaml.Shapes.Line",
+            Self::ToolTip => "Microsoft.UI.Xaml.Controls.ToolTip",
+            Self::Binding => "Microsoft.UI.Xaml.Data.Binding",
         }
     }
 
@@ -237,7 +243,9 @@ impl Kind {
 "ToggleButton" | "Microsoft.UI.Xaml.Controls.ToggleButton" => Some(Self::ToggleButton),
             "Ellipse" | "Microsoft.UI.Xaml.Shapes.Ellipse" => Some(Self::Ellipse),
             "Rectangle" | "Microsoft.UI.Xaml.Shapes.Rectangle" => Some(Self::Rectangle),
-            "Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
+"Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
+            "ToolTip" | "Microsoft.UI.Xaml.Controls.ToolTip" => Some(Self::ToolTip),
+            "Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
             _ => None,
         }
     }
@@ -331,6 +339,8 @@ impl Element {
                 | Kind::Ellipse
                 | Kind::Rectangle
                 | Kind::Line
+                | Kind::ToolTip
+                | Kind::Binding
         )
     }
 

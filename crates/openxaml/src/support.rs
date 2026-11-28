@@ -40,6 +40,24 @@ macro_rules! type_support {
 
 static TABLE: &[TypeSupport] = &[
     type_support!(
+        Kind::ToolTip,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+    ),
+    type_support!(
+        Kind::Binding,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+    ),
+    type_support!(
         Kind::Ellipse,
         &property::WIDTH,
         &property::HEIGHT,
@@ -152,6 +170,7 @@ static TABLE: &[TypeSupport] = &[
     ),
     type_support!(
         Kind::RichEditBox,
+        &property::FONT_SIZE,
         &property::WIDTH,
         &property::HEIGHT,
         &property::MARGIN,
@@ -320,6 +339,7 @@ static TABLE: &[TypeSupport] = &[
     ),
     type_support!(
         Kind::FontIcon,
+        &property::FONT_SIZE,
         &property::WIDTH,
         &property::HEIGHT,
         &property::MARGIN,
@@ -375,6 +395,9 @@ static TABLE: &[TypeSupport] = &[
     ),
     type_support!(
         Kind::ContentPresenter,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
         &property::WIDTH,
         &property::HEIGHT,
         &property::MARGIN,
@@ -458,6 +481,7 @@ static TABLE: &[TypeSupport] = &[
     ),
     type_support!(
         Kind::TextBox,
+        &property::FONT_SIZE,
         &property::WIDTH,
         &property::HEIGHT,
         &property::MARGIN,

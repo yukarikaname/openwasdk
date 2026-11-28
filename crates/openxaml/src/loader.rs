@@ -261,6 +261,12 @@ fn load_property_with(
                     | "IsItemClickEnabled"
                     | "PrimaryButtonText"
                     | "SecondaryButtonText"
+                    | "IsTextSelectionEnabled"
+                    | "SelectionMode"
+                    | "ItemContainerStyle"
+                    | "ItemTemplate"
+                    | "IsSpellCheckEnabled"
+                    | "Fill"
             ) {
                 return Ok(());
             }
@@ -303,7 +309,18 @@ fn load_property_with(
                  */
                 None if matches!(
                     member,
-                    "Grid.Row" | "Grid.Column" | "Grid.RowSpan" | "Grid.ColumnSpan"
+                    "Grid.Row"
+                        | "Grid.Column"
+                        | "Grid.RowSpan"
+                        | "Grid.ColumnSpan"
+                        /*
+                         * Chrome travels: a style or a control body sets a corner radius on
+                         * whatever box it decorates, and the writer names the element it was
+                         * applied to. Storing it on the element is what the runtime does.
+                         */
+                        | "CornerRadius"
+                        | "BorderThickness"
+                        | "BorderBrush"
                 ) =>
                 {
                     crate::property::PROPERTIES
