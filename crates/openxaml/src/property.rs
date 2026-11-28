@@ -213,6 +213,14 @@ pub static TEXT: Property = Property::new(
     &Value::Text(Cow::Borrowed("")),
     false,
 );
+/// `Image.Source`: the picture an `Image` shows, as the page wrote it.
+pub static SOURCE: Property = Property::new(
+    "Source",
+    ValueType::Text,
+    &Value::Text(Cow::Borrowed("")),
+    false,
+);
+
 /// The one inherited property in the current table. A value set on a container
 /// reaches every descendant that has no local value of its own.
 pub static FONT_SIZE: Property = Property::new(
@@ -285,6 +293,7 @@ pub static CANVAS_TOP: Property =
     Property::new("Canvas.Top", ValueType::Double, &Value::Number(0.0), false);
 
 pub static PROPERTIES: &[&Property] = &[
+    &SOURCE,
     &CANVAS_LEFT,
     &CANVAS_TOP,
     &OPACITY,

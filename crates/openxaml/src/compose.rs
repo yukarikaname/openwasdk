@@ -11,6 +11,8 @@
 //! element and layout layers stay free of the compositor so the ABI shell can
 //! use them without a GPU.
 
+use std::collections::HashMap;
+
 use opencomp_core::{Text, Visual};
 
 use crate::element::Element;
@@ -18,6 +20,16 @@ use crate::layout::Layout;
 
 /// Build the visual tree for an element and its arranged layout.
 pub fn compose(element: &Element, layout: &Layout) -> Visual {
+    compose_with(element, layout, &HashMap::new())
+}
+
+/// The same, with pictures the caller has already uploaded: an `Image` names a source and
+/// the map says which texture that source became.
+pub fn compose_with(
+    element: &Element,
+    layout: &Layout,
+    images: &HashMap<String, opencomp_core::TextureId>,
+) -> Visual {
     let color = element.background().unwrap_or([0.0; 4]);
     let mut visual =
         Visual::rect(layout.rect.width, layout.rect.height, color).at(layout.rect.x, layout.rect.y);
@@ -36,8 +48,21 @@ pub fn compose(element: &Element, layout: &Layout) -> Visual {
         });
     }
 
+    /*
+     * An Image paints its picture, which the caller uploaded under the source it named. The
+     * colour multiplies the texel, so it has to be white: a transparent one would sample the
+     * bitmap and then erase it.
+     */
+    if matches!(element.kind(), crate::element::Kind::Image)
+        && let Some(texture) = images.get(element.image_source())
+    {
+        visual.image = Some(*texture);
+        visual.uv = [0.0, 0.0, 1.0, 1.0];
+        visual.color = [1.0, 1.0, 1.0, 1.0];
+    }
+
     for (child, child_layout) in element.children().iter().zip(&layout.children) {
-        visual.push(compose(child, child_layout));
+        visual.push(compose_with(child, child_layout, images));
     }
     visual
 }
@@ -46,5 +71,14 @@ impl Element {
     /// Compose this element with the layout `arrange` produced for it.
     pub fn compose(&self, layout: &Layout) -> Visual {
         compose(self, layout)
+    }
+
+    /// Compose with pictures: an `Image` whose source is in `images` paints that texture.
+    pub fn compose_with(
+        &self,
+        layout: &Layout,
+        images: &HashMap<String, opencomp_core::TextureId>,
+    ) -> Visual {
+        compose_with(self, layout, images)
     }
 }

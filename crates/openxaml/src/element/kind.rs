@@ -91,6 +91,7 @@ kinds! {
     (MicaBackdrop, "MicaBackdrop", "Microsoft.UI.Xaml.Media.MicaBackdrop", NonVisual),
     (SystemBackdropElement, "SystemBackdropElement", "Microsoft.UI.Xaml.Media.SystemBackdropElement", NonVisual),
     (FontIcon, "FontIcon", "Microsoft.UI.Xaml.Controls.FontIcon", NonVisual),
+    (PathIcon, "PathIcon", "Microsoft.UI.Xaml.Controls.PathIcon", ContentHost),
     (Double, "Double", "Double", NonVisual),
     (String, "String", "String", NonVisual),
     (Boolean, "Boolean", "Boolean", NonVisual),
@@ -120,7 +121,8 @@ kinds! {
     (Binding, "Binding", "Microsoft.UI.Xaml.Data.Binding", NonVisual),
     (Expander, "Expander", "Microsoft.UI.Xaml.Controls.Expander", ContentHost),
     (ProgressRing, "ProgressRing", "Microsoft.UI.Xaml.Controls.ProgressRing", ContentHost),
-    (SelectorBar, "SelectorBar", "Microsoft.UI.Xaml.Controls.SelectorBar", ContentHost),
+    (SelectorBar, "SelectorBar", "Microsoft.UI.Xaml.Controls.SelectorBar", Panel(Stack)),
+    (SwitchPresenter, "SwitchPresenter", "CommunityToolkit.WinUI.Controls.SwitchPresenter", ContentHost),
     (SelectorBarItem, "SelectorBarItem", "Microsoft.UI.Xaml.Controls.SelectorBarItem", ContentHost),
     (AutoSuggestBox, "AutoSuggestBox", "Microsoft.UI.Xaml.Controls.AutoSuggestBox", ContentHost),
     (Flyout, "Flyout", "Microsoft.UI.Xaml.Controls.Flyout", NonVisual),
@@ -193,6 +195,8 @@ impl Kind {
             "Microsoft.UI.Xaml.Media.",
             "Microsoft.UI.Xaml.",
             "http://schemas.microsoft.com/client/2007.",
+            /* A type the writer marked as coming from a namespace the page imports. */
+            "using:",
         ];
         PREFIXES.iter().find_map(|prefix| {
             let rest = name.strip_prefix(prefix)?;

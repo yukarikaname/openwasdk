@@ -26,7 +26,7 @@ mod support;
 pub mod theme;
 mod value;
 
-pub use compose::compose;
+pub use compose::{compose, compose_with};
 pub use element::{
     CornerRadius, Element, GridLength, GridTrack, HorizontalAlignment, Kind, Length, Orientation,
     Thickness, Value, VerticalAlignment, Visibility,

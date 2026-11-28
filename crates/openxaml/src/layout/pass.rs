@@ -46,17 +46,16 @@ pub fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> 
         Length::Pixels(height) => height.max(0.0),
         Length::Auto => content.height,
     };
-    let mut desired = Size::new(
+    let desired = Size::new(
         layout_round(content_width) + layout_round(margin.horizontal()),
         layout_round(content_height) + layout_round(margin.vertical()),
     );
 
-    if available.width.is_finite() {
-        desired.width = desired.width.min(available.width.max(0.0));
-    }
-    if available.height.is_finite() {
-        desired.height = desired.height.min(available.height.max(0.0));
-    }
+    /*
+     * The desired size is deliberately not clamped to the available one: XAML lets a child
+     * ask for more room than it was offered, and a star track learns its content that way.
+     * Clamping here is what collapsed a centred stack inside a star row to zero height.
+     */
     Ok(desired)
 }
 

@@ -63,6 +63,15 @@ impl Element {
     }
 
     pub fn orientation(&self) -> Orientation {
+        /*
+         * A selector bar's items run across: its template puts them in a repeater the runtime
+         * lays out horizontally, and the page sets no orientation on the bar itself. The
+         * default is checked on the local value, because `get` would hand back Orientation's
+         * own default and never reach this.
+         */
+        if self.kind() == crate::element::Kind::SelectorBar && self.local("Orientation").is_none() {
+            return Orientation::Horizontal;
+        }
         match self.get(&property::ORIENTATION) {
             Value::Orientation(orientation) => *orientation,
             _ => Orientation::Vertical,
@@ -82,6 +91,14 @@ impl Element {
 
     pub fn set_spacing(&mut self, spacing: f32) {
         self.store(&property::SPACING, Value::Number(spacing.max(0.0)));
+    }
+
+    /// The picture an `Image` names.
+    pub fn image_source(&self) -> &str {
+        match self.get(&property::SOURCE) {
+            Value::Text(text) => text,
+            _ => "",
+        }
     }
 
     pub fn text(&self) -> &str {

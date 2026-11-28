@@ -47,8 +47,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         dump_layout(&root, &layout, 0);
     }
-    let tree = root.compose(&layout);
-
     // The window in the page's own theme: the Gallery is a light application.
     let background = openxaml::theme::palette::color("SolidBackgroundFillColorBase")
         .or_else(|| openxaml::theme::palette::color("ApplicationPageBackgroundThemeBrush"))
@@ -57,6 +55,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Some(mut renderer) = Renderer::headless((width, height), background) else {
         return Err("no GPU adapter available".into());
     };
+
+    // A page's pictures are part of its data, not our drawing: decode what it names.
+    let mut images = HashMap::new();
+    upload_images(&root, app_root(path), &mut renderer, &mut images);
+    let tree = root.compose_with(&layout, &images);
     /*
      * A window that declares a Mica backdrop gets one: the recipe runs over a simulated
      * desktop, because a page render has no wallpaper to sample. The material code is the
@@ -225,10 +228,12 @@ fn collect(dir: &Path, out: &mut HashMap<String, PathBuf>) {
 /// Print what the layout produced for the controls that matter, when tracing.
 fn dump_layout(element: &openxaml::Element, layout: &openxaml::Layout, depth: usize) {
     use openxaml::Kind;
-    if matches!(
-        element.kind(),
-        Kind::Button | Kind::TextBlock | Kind::ContentPresenter
-    ) {
+    if std::env::var("OPENCOMP_TRACE").as_deref() == Ok("2")
+        || matches!(
+            element.kind(),
+            Kind::Button | Kind::TextBlock | Kind::ContentPresenter
+        )
+    {
         eprintln!(
             "{:indent$}{:?} {}x{} at {:.1},{:.1} children {}",
             "",
@@ -309,4 +314,39 @@ fn read_ppm(path: &str) -> Option<Vec<u8>> {
         ]);
     }
     Some(pixels)
+}
+
+/// Decode every picture the tree names and hand it to the renderer, so compose can paint it.
+fn upload_images(
+    element: &openxaml::Element,
+    root: PathBuf,
+    renderer: &mut Renderer,
+    images: &mut HashMap<String, opencomp_core::TextureId>,
+) {
+    let source = element.image_source().to_string();
+    if !source.is_empty()
+        && let Some(relative) = picture_path(&source)
+    {
+        let path = root.join(relative);
+        if let Ok(picture) = image::open(&path) {
+            let rgba = picture.to_rgba8();
+            let (width, height) = (rgba.width(), rgba.height());
+            let id = 0x100 + images.len() as u32;
+            renderer.upload_rgba(id, width, height, rgba.as_raw());
+            images.insert(source, id);
+        }
+    }
+    for child in element.children() {
+        upload_images(child, root.clone(), renderer, images);
+    }
+}
+
+/// `ms-appx:///Assets/X.png` or `/Assets/X.png` as a path under the application root.
+fn picture_path(source: &str) -> Option<&str> {
+    let rest = source
+        .strip_prefix("ms-appx:///")
+        .or_else(|| source.strip_prefix("ms-appx://"))
+        .or_else(|| source.strip_prefix('/'))
+        .unwrap_or(source);
+    (!rest.is_empty()).then_some(rest)
 }

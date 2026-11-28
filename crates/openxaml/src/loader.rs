@@ -69,8 +69,13 @@ pub struct Controls {
 
 impl Controls {
     /// Register one control body. The key is the simple name a page refers to.
+    ///
+    /// A body is the stronger claim: a type registered as unrealized by the namespace pass
+    /// is realized anyway once its shipped XAML turns out to hold a tree.
     pub fn insert(&mut self, name: &str, body: xbf::Model) {
-        self.bodies.insert(name.to_ascii_lowercase(), body);
+        let key = name.to_ascii_lowercase();
+        self.unrealized.remove(&key);
+        self.bodies.insert(key, body);
     }
 
     /// Use the framework's theme dictionary for the controls that have a template.
@@ -158,22 +163,34 @@ fn load_body(
         name: source.type_name.clone(),
     };
     /*
-     * An unrealized control does not recurse -- it is one empty box -- so it is answered
-     * before the depth guard, which exists to stop a control whose body contains itself.
+     * Three answers, in order. A registered body is the strongest claim and comes first,
+     * because a type can be in the application's namespace and still ship a tree. A control
+     * that does not recurse -- one empty box -- is answered before the depth guard, which
+     * exists to stop a body that contains itself. Anything else in the application's own
+     * namespace has its content built in code, and an empty box is the honest picture.
      */
-    /*
-     * A type from the application's own namespace that no body answers is a control whose
-     * content is built in code: an empty box is the honest picture. The registration list
-     * only sees types in the root stream, and a template body can name one that lives in a
-     * deferred stream, so the namespace itself is the test.
-     */
+    if let Some(body) = controls.body(&source.type_name) {
+        return realize_body(body, source, controls, depth);
+    }
     if controls.has_unrealized(&source.type_name) || source.type_name.starts_with("using:") {
         return unrealized(source, controls, depth);
     }
+    Err(unsupported)
+}
+
+/// Realize one instance from the body its application shipped.
+fn realize_body(
+    body: &xbf::Model,
+    source: &xbf::Element,
+    controls: &Controls,
+    depth: usize,
+) -> Result<Element, LoadError> {
+    let unsupported = LoadError::UnsupportedType {
+        name: source.type_name.clone(),
+    };
     if depth >= MAX_DEPTH {
         return Err(unsupported);
     }
-    let body = controls.body(&source.type_name).ok_or(unsupported)?;
     let Some(root) = body.roots.first() else {
         return Err(LoadError::UnsupportedType {
             name: source.type_name.clone(),
@@ -186,15 +203,24 @@ fn load_body(
     let Some(support) = support else {
         return Ok(element);
     };
+    /*
+     * A member the page sets is named against the control it wrote, while the body is a
+     * different kind of element underneath -- HorizontalScrollContainer.Source lands on a
+     * ScrollViewer. Such a member has no place to go and is dropped with a trace line, the
+     * same tolerance a template body gets; the control's own values still apply.
+     */
     for property in &source.properties {
-        load_property_with(
+        if let Err(error) = load_property_with(
             &mut element,
             support,
             &source.type_name,
             property,
             controls,
             depth,
-        )?;
+        ) && std::env::var_os("OPENCOMP_TRACE").is_some()
+        {
+            eprintln!("openxaml: body of {} drops {error:?}", source.type_name);
+        }
     }
     for child in &source.children {
         element.push(load_element(child, controls, depth + 1)?);

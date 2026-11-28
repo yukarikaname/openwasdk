@@ -71,6 +71,49 @@ pub(super) fn load_property_with(
                 return Ok(());
             }
             /*
+             * A control that shows a string -- SelectorBarItem, TabViewItem, MenuFlyoutItem --
+             * keeps it in a Text member the template presents. The template has no text of
+             * its own, so the string becomes a text child, which is what the runtime's
+             * content presenter does with it. Editable controls are not in this list: their
+             * Text is what the user typed, not something to draw.
+             */
+            if member == "Text"
+                && !matches!(
+                    element.kind(),
+                    Kind::TextBlock | Kind::TextBox | Kind::PasswordBox | Kind::RichEditBox
+                )
+            {
+                if let Some(text) = match &property.value {
+                    xbf::model::Value::String(text) => Some(Value::Text(text.clone().into())),
+                    _ => None,
+                } && element.set(&crate::property::TEXT, text).is_ok()
+                {
+                    element.push(Element::text_block(string_value(type_name, property)?));
+                }
+                return Ok(());
+            }
+            /*
+             * A SwitchPresenter shows exactly one case. The page names the cases and their
+             * values; which value is current arrives through a binding, and this loader does
+             * not evaluate bindings, so the first case is the one shown -- for the Gallery's
+             * filter bar that is the value its SelectorBar already marks selected.
+             */
+            if member == "SwitchCases" {
+                if let xbf::model::Value::Elements(cases) = &property.value
+                    && let Some(first) = cases.first()
+                    && let Some(content) = first.properties.iter().find(|case| {
+                        case.name
+                            .rsplit_once(['_', '.'])
+                            .map_or(case.name.as_str(), |(_, tail)| tail)
+                            == "Content"
+                    })
+                    && let xbf::model::Value::Element(child) = &content.value
+                {
+                    element.push(load_element(child, controls, depth)?);
+                }
+                return Ok(());
+            }
+            /*
              * A content property holds its child, and XAML names it "...Content" or
              * "...Items" (MenuItems, TabItems). Only an element value is a child; a scalar
              * such as ToggleSwitch.OnContent is state and is dropped.
@@ -147,7 +190,6 @@ pub(super) fn load_property_with(
                     | "FontStyle"
                     | "Foreground"
                     | "Stretch"
-                    | "Source"
                     | "Value"
                     | "Glyph"
                     | "AcceptsReturn"

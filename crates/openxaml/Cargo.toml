@@ -13,4 +13,5 @@ xbf = { path = "../xbf" }
 
 # The example draws, so it needs the renderer; the crate itself does not.
 [dev-dependencies]
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 opencomp-core = { path = "../opencomp-core", features = ["preview", "materials"] }
