@@ -45,6 +45,30 @@ With `opencomp`'s recording device answering `IDCompositionDevice2`:
 not satisfy it, because the engine is not looking for a stand-in: it is looking for the
 real lifted compositor object, which `dcompi.dll` + `dwmcorei.dll` construct.
 
+## Milestone 2, measured on the first class
+
+`OPENCOMP_MINE=CompositionEasingFunction` makes `dcompi` ask us for the class, and it
+does:
+
+    dcompi: ours: "Microsoft.UI.Composition.CompositionEasingFunction"
+
+The page then dies before a window exists:
+
+    WinUIGallery.exe  Last Result -1073741189  (0xC000027B, STATUS_STOWED_EXCEPTION)
+    processes: 0        log: one line, the activation above
+
+With the same tree and `OPENCOMP_MINE` unset the window comes back (pid 8268, dcompi.dll
+and dcompi-ms.dll beside dwmcorei.dll), so the class is the cause and the environment is
+fine. The reason is in our code, not in the engine: `CreateCubicBezierEasingFunction`
+takes the owner compositor and ignores it (`crates/opencomp/src/easing.rs`), and the
+objects are declared `composition_object!(X_Impl)` without a node, so `Compositor()`
+answers with the process-wide instance instead of the one the caller handed to the static.
+An easing object that claims the wrong compositor is a stowed exception waiting for the
+first animation.
+
+The class stays with the engine until the object is bound to that owner: bind the clock
+through `compositor::clock_of(&owner)`, give the object a node, and rerun this gate.
+
 ## The rule this gives
 
 Composition is the engine's, not ours. `dcompi.dll` here is a shim: it asks `dcompi-ms.dll`
