@@ -245,11 +245,15 @@ impl<'a> Builder<'a> {
             }
 
             /* Direct property assignment. */
-            NodeKind::SetValueConstant { property, value }
-            | NodeKind::SetValueTypeConvertedConstant { property, value } => {
+            NodeKind::SetValueConstant { property, value } => {
                 let default = self.default_namespace();
                 let (name, namespace) = self.resolve_property(*property, &default);
                 self.set_property(index, kind, name, namespace, convert(value))?;
+            }
+            NodeKind::SetValueTypeConvertedConstant { property, value } => {
+                let default = self.default_namespace();
+                let (name, namespace) = self.resolve_property(*property, &default);
+                self.set_property(index, kind, name, namespace, converted(value))?;
             }
             NodeKind::SetValueTypeConvertedResolvedType { property, ty } => {
                 let default = self.default_namespace();
@@ -435,6 +439,27 @@ impl<'a> Builder<'a> {
             }
         }
         Ok(())
+    }
+}
+
+/*
+ * A type-converted constant is the text form of the property's type: "8" for a
+ * CornerRadius, "8,8,0,0" for its four corners. The wire carries no other shape
+ * information, so one number becomes a scalar and four become a thickness.
+ */
+fn converted(value: &WireValue) -> Value {
+    let resolved = convert(value);
+    let Value::String(text) = &resolved else {
+        return resolved;
+    };
+    let parts: Vec<f32> = text
+        .split(',')
+        .filter_map(|part| part.trim().parse().ok())
+        .collect();
+    match parts.len() {
+        1 => Value::Float(parts[0]),
+        4 => Value::Thickness([parts[0], parts[1], parts[2], parts[3]]),
+        _ => resolved,
     }
 }
 

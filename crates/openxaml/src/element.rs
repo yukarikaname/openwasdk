@@ -62,6 +62,18 @@ pub enum Kind {
     InfoBar,
     TitleBar,
     SplitButton,
+    ContentPresenter,
+    PasswordBox,
+    SymbolIcon,
+    MicaBackdrop,
+    SystemBackdropElement,
+    /* An icon paints a glyph this renderer has no font for. */
+    FontIcon,
+    /* Primitive values that appear as dictionary entries or setter values. */
+    Double,
+    String,
+    Boolean,
+    Thickness,
 }
 
 impl Kind {
@@ -90,6 +102,16 @@ impl Kind {
             Self::InfoBar => "Microsoft.UI.Xaml.Controls.InfoBar",
             Self::TitleBar => "Microsoft.UI.Xaml.Controls.TitleBar",
             Self::SplitButton => "Microsoft.UI.Xaml.Controls.SplitButton",
+            Self::ContentPresenter => "Microsoft.UI.Xaml.Controls.ContentPresenter",
+            Self::PasswordBox => "Microsoft.UI.Xaml.Controls.PasswordBox",
+            Self::SymbolIcon => "Microsoft.UI.Xaml.Controls.SymbolIcon",
+            Self::MicaBackdrop => "Microsoft.UI.Xaml.Media.MicaBackdrop",
+            Self::SystemBackdropElement => "Microsoft.UI.Xaml.Media.SystemBackdropElement",
+            Self::FontIcon => "Microsoft.UI.Xaml.Controls.FontIcon",
+            Self::Double => "Double",
+            Self::String => "String",
+            Self::Boolean => "Boolean",
+            Self::Thickness => "Thickness",
         }
     }
 
@@ -140,6 +162,18 @@ impl Kind {
             "InfoBar" | "Microsoft.UI.Xaml.Controls.InfoBar" => Some(Self::InfoBar),
             "TitleBar" | "Microsoft.UI.Xaml.Controls.TitleBar" => Some(Self::TitleBar),
             "SplitButton" | "Microsoft.UI.Xaml.Controls.SplitButton" => Some(Self::SplitButton),
+            "ContentPresenter" | "Microsoft.UI.Xaml.Controls.ContentPresenter" => Some(Self::ContentPresenter),
+            "PasswordBox" | "Microsoft.UI.Xaml.Controls.PasswordBox" => Some(Self::PasswordBox),
+            "SymbolIcon" | "Microsoft.UI.Xaml.Controls.SymbolIcon" => Some(Self::SymbolIcon),
+            "MicaBackdrop" | "Microsoft.UI.Xaml.Media.MicaBackdrop" => Some(Self::MicaBackdrop),
+            "SystemBackdropElement" | "Microsoft.UI.Xaml.Media.SystemBackdropElement" => {
+                Some(Self::SystemBackdropElement)
+            }
+            "FontIcon" | "Microsoft.UI.Xaml.Controls.FontIcon" => Some(Self::FontIcon),
+            "Double" => Some(Self::Double),
+            "String" => Some(Self::String),
+            "Boolean" => Some(Self::Boolean),
+            "Thickness" => Some(Self::Thickness),
             _ => None,
         }
     }
@@ -223,6 +257,13 @@ impl Element {
                 | Kind::Paragraph
                 | Kind::Run
                 | Kind::Span
+                | Kind::MicaBackdrop
+                | Kind::SystemBackdropElement
+                | Kind::FontIcon
+                | Kind::Double
+                | Kind::String
+                | Kind::Boolean
+                | Kind::Thickness
         )
     }
 

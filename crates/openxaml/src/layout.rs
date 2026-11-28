@@ -269,7 +269,10 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::RichTextBlock
         | Kind::InfoBar
         | Kind::TitleBar
-        | Kind::SplitButton => measure_border(element, available),
+        | Kind::SplitButton
+        | Kind::ContentPresenter
+        | Kind::PasswordBox
+        | Kind::SymbolIcon => measure_border(element, available),
         // A resource dictionary and an Application are not part of the visual tree.
         Kind::ResourceDictionary
         | Kind::Application
@@ -277,7 +280,14 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::DataTemplate
         | Kind::Paragraph
         | Kind::Run
-        | Kind::Span => Ok(Size::new(0.0, 0.0)),
+        | Kind::Span
+        | Kind::MicaBackdrop
+        | Kind::SystemBackdropElement
+        | Kind::FontIcon
+        | Kind::Double
+        | Kind::String
+        | Kind::Boolean
+        | Kind::Thickness => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
     }
@@ -351,7 +361,10 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::RichTextBlock
         | Kind::InfoBar
         | Kind::TitleBar
-        | Kind::SplitButton => arrange_border(element, content),
+        | Kind::SplitButton
+        | Kind::ContentPresenter
+        | Kind::PasswordBox
+        | Kind::SymbolIcon => arrange_border(element, content),
         // Nothing below a non-visual host is arranged, so nothing of it is composed.
         Kind::ResourceDictionary
         | Kind::Application
@@ -359,7 +372,14 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::DataTemplate
         | Kind::Paragraph
         | Kind::Run
-        | Kind::Span => Ok(Vec::new()),
+        | Kind::Span
+        | Kind::MicaBackdrop
+        | Kind::SystemBackdropElement
+        | Kind::FontIcon
+        | Kind::Double
+        | Kind::String
+        | Kind::Boolean
+        | Kind::Thickness => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }

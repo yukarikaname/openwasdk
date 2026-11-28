@@ -189,6 +189,11 @@ fn load_property_with(
              * A content property holds the child that a content control shows. It is a
              * child for layout and painting, so it joins the element's children.
              */
+            /* FrameworkElement.Name is x:Name under the spelling the writer picked. */
+            if member == "Name" {
+                element.set_name(string_value(type_name, property)?);
+                return Ok(());
+            }
             if matches!(member, "Content" | "Child" | "Children") {
                 for child in property_elements(property)? {
                     element.push(load_element(&child, controls, depth)?);
@@ -210,6 +215,38 @@ fn load_property_with(
                     | "BasedOn"
                     | "Template"
                     | "SuppressHostScrolling"
+                    | "IsTabStop"
+                    | "Blocks"
+                    | "TextWrapping"
+                    | "Style"
+                    | "Header"
+                    | "ToolTip"
+                    | "VerticalContentAlignment"
+                    | "TextAlignment"
+                    | "HeadingLevel"
+                    | "HorizontalScrollBarVisibility"
+                    | "VerticalScrollBarVisibility"
+                    | "TabFocusNavigation"
+                    | "PlaceholderText"
+                    | "MergedDictionaries"
+                    | "Inlines"
+                    | "AutomationId"
+                    | "CloseButtonText"
+                    | "HorizontalScrollMode"
+                    | "VerticalScrollMode"
+                    | "FontWeight"
+                    /* Layout constraints this renderer does not apply yet: dropping them
+                     * changes nothing it draws, but the page still measures as if absent. */
+                    | "MinHeight"
+                    | "MinWidth"
+                    | "MaxWidth"
+                    | "MaxHeight"
+                    | "ZIndex"
+                    | "VisualStateGroups"
+                    | "IsHitTestVisible"
+                    | "TextTrimming"
+                    | "Symbol"
+                    | "DefaultButton"
             ) {
                 return Ok(());
             }
@@ -220,8 +257,30 @@ fn load_property_with(
             let member = match member {
                 "RowDefinitions" => "Grid.RowDefinitions",
                 "ColumnDefinitions" => "Grid.ColumnDefinitions",
+                // A child of a panel names its cell through the panel's attached property.
+                "Row" => "Grid.Row",
+                "Column" => "Grid.Column",
+                "RowSpacing" => "Grid.RowSpacing",
+                "ColumnSpacing" => "Grid.ColumnSpacing",
+                "RowSpan" => "Grid.RowSpan",
+                "ColumnSpan" => "Grid.ColumnSpan",
                 other => other,
             };
+            /*
+             * A reference -- a resource, a deferred body, a markup extension result -- is
+             * not a value this renderer can resolve: it has no resource map and runs no
+             * extension. The property stays at its default, which is what the runtime
+             * shows until something resolves it.
+             */
+            if matches!(
+                property.value,
+                xbf::model::Value::Resource { .. }
+                    | xbf::model::Value::Deferred { .. }
+                    | xbf::model::Value::Extension { .. }
+                    | xbf::model::Value::TemplateBinding { .. }
+            ) {
+                return Ok(());
+            }
             let accepted =
                 support
                     .property(member)
@@ -229,6 +288,17 @@ fn load_property_with(
                         element: type_name.to_string(),
                         name: member.to_string(),
                     })?;
+            /*
+             * A brush that is not a solid colour (gradient, acrylic, image) has no paint
+             * in this renderer; leaving the property unset draws the background as nothing.
+             */
+            if accepted.value_type == ValueType::SolidColorBrush
+                && let xbf::model::Value::Element(brush) = &property.value
+                && name_suffix(&brush.type_name).ends_with("Brush")
+                && name_suffix(&brush.type_name) != "SolidColorBrush"
+            {
+                return Ok(());
+            }
             let value = convert(type_name, property, accepted.value_type)?;
             element
                 .set(accepted, value)
@@ -299,6 +369,21 @@ fn thickness(value: &xbf::model::Value) -> Option<Thickness> {
 
 /* CornerRadius shares the four-float wire shape with Thickness. */
 fn corner_radius(value: &xbf::model::Value) -> Option<CornerRadius> {
+    /*
+     * The writer may spell a struct as an object with a Value member
+     * (`<CornerRadius>8</CornerRadius>`) instead of an inline constant.
+     */
+    if let xbf::model::Value::Element(radius) = value {
+        if name_suffix(&radius.type_name) == "CornerRadius" {
+            let inner = radius
+                .properties
+                .iter()
+                .find(|property| property.name == "Value")
+                .map(|property| &property.value);
+            return inner.and_then(corner_radius);
+        }
+        return None;
+    }
     match value {
         xbf::model::Value::Thickness([top_left, top_right, bottom_right, bottom_left]) => Some(
             CornerRadius::new(*top_left, *top_right, *bottom_right, *bottom_left),
