@@ -110,6 +110,17 @@ pub(crate) fn build_stream(file: &Xbf, index: usize) -> Result<Model, XbfError> 
     Ok(Model { roots })
 }
 
+/* The property values one stream sets, in node order, when the stream has no element of
+ * its own (a style's setter values are the style's). */
+pub(crate) fn stream_values(file: &Xbf, index: usize) -> Result<Vec<Property>, XbfError> {
+    let built = builder::Builder::new_with_container(file, index).run()?;
+    Ok(built
+        .raw
+        .first()
+        .map(|raw| raw.properties.clone())
+        .unwrap_or_default())
+}
+
 /* Build the model for a parsed file.  Stream 0 is the root object. */
 pub(crate) fn build(file: &Xbf) -> Result<Model, XbfError> {
     let mut built = builder::Builder::new(file, 0).run()?;

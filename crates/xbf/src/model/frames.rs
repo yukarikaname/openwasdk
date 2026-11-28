@@ -121,7 +121,11 @@ impl Builder<'_> {
     }
 
     pub(super) fn current_element(&self) -> Option<usize> {
-        self.frames.iter().rev().find_map(|frame| frame.element)
+        self.frames
+            .iter()
+            .rev()
+            .find_map(|frame| frame.element)
+            .or(self.owner)
     }
 
     pub(super) fn set_property(

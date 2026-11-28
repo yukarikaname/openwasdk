@@ -54,6 +54,9 @@ pub(super) struct Builder<'a> {
     pub(super) values: Vec<Value>,
     /* The element the last closed scope produced; a dictionary key names it. */
     pub(super) last_closed: Option<usize>,
+    /// The element a stream's nodes attach to when the stream opens inside an object it
+    /// does not create: a style's setter values belong to the style, not to themselves.
+    pub(super) owner: Option<usize>,
 }
 
 impl<'a> Builder<'a> {
@@ -67,7 +70,29 @@ impl<'a> Builder<'a> {
             base_namespaces: Vec::new(),
             values: Vec::new(),
             last_closed: None,
+            owner: None,
         }
+    }
+
+    /// Build a stream whose nodes have no element of their own: one is created and every
+    /// property the stream sets lands on it, in node order.
+    pub(super) fn new_with_container(file: &'a Xbf, stream: usize) -> Self {
+        let mut builder = Self::new(file, stream);
+        builder.raw.push(RawElement {
+            type_name: "Microsoft.UI.Xaml.Controls.Container".to_string(),
+            namespace: String::new(),
+            properties: Vec::new(),
+            children: Vec::new(),
+            custom: None,
+            custom_substream: None,
+            explicit_keys: Vec::new(),
+            implicit_keys: Vec::new(),
+            setters: Vec::new(),
+            explicit_key: None,
+            source_offset: 0,
+        });
+        builder.owner = Some(0);
+        builder
     }
 
     pub(super) fn run(mut self) -> Result<Built, XbfError> {

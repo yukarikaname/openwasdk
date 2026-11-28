@@ -88,25 +88,23 @@ fn visit(file: &Xbf, element: &Element, wanted: &str) {
                 setter.flags, setter.name, setter.value
             );
         }
-        let stream = element
-            .custom_substream
-            .map(|s| s as usize)
-            .or_else(|| deferred_stream(element));
-        if let Some(stream) = stream {
-            match file.substream(stream) {
-                Ok(setters) => {
-                    println!(
-                        "  setters substream {stream}: {} roots",
-                        setters.roots.len()
-                    );
-                    for setter in &setters.roots {
-                        println!(
-                            "    setter type={} value={:?}",
-                            setter.type_name, setter.properties
-                        );
+        let template = element.setters.iter().any(|setter| {
+            setter
+                .name
+                .as_deref()
+                .is_some_and(|name| name.ends_with("Template"))
+        });
+        if template && let Some(stream) = element.custom_substream {
+            match file.stream_values(stream as usize) {
+                Ok(values) => {
+                    println!("  setter values: {}", values.len());
+                    for value in &values {
+                        if let Value::Element(one) = &value.value {
+                            println!("    {} -> {}", value.name, one.type_name);
+                        }
                     }
                 }
-                Err(error) => println!("  substream {stream} failed: {error:?}"),
+                Err(error) => println!("  setter values failed: {error:?}"),
             }
         }
     }

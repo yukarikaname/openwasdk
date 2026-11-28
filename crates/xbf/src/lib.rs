@@ -95,6 +95,12 @@ impl Xbf {
         }
     }
 
+    /// The values one stream sets, in node order, for a stream that opens inside an object
+    /// it does not create: a style's setter values are the style's.
+    pub fn stream_values(&self, index: usize) -> Result<Vec<Property>, XbfError> {
+        model::stream_values(self, index)
+    }
+
     /// One substream as its own model. A style's setters and a template's body live in a
     /// referenced stream; asking for it by index is how a consumer reads them.
     pub fn substream(&self, index: usize) -> Result<Model, XbfError> {
