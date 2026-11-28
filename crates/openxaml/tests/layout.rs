@@ -6,7 +6,7 @@
 //! one of those -- a vertical `StackPanel` with `Spacing = 4` and three 10 px children --
 //! is 38, which is also what this file asserts.
 
-use openxaml::{Element, GridTrack, LayoutError, Orientation, Rect, Size, Thickness, Visibility};
+use openxaml::{Element, GridTrack, Orientation, Rect, Size, Thickness, Visibility};
 
 /// `Element` has `set_width` but no builder for it, so the tests use one.
 trait TapWidth {

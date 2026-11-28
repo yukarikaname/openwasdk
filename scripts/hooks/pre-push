@@ -1,0 +1,4 @@
+#!/bin/sh
+# Push-time checks are the full set: the Windows-target pass is the only one that
+# compiles opencomp, dcompi and openudk, and it is slower than a commit should be.
+exec "$(git rev-parse --show-toplevel)/scripts/precommit.sh" --full

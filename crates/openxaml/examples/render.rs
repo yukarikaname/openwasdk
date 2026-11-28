@@ -50,6 +50,35 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Some(mut renderer) = Renderer::headless((width, height), background) else {
         return Err("no GPU adapter available".into());
     };
+    /*
+     * A window that declares a Mica backdrop gets one: the recipe runs over a simulated
+     * desktop, because a page render has no wallpaper to sample. The material code is the
+     * same `blur_and_tint` the Skia path exposes.
+     */
+    let mut tree = tree;
+    if contains_kind(&root, openxaml::Kind::MicaBackdrop)
+        && let Some(desktop) = wallpaper(width, height)
+    {
+        let tint = openxaml::theme::palette::color("SolidBackgroundFillColorBase")
+            .unwrap_or([0.95, 0.95, 0.95, 1.0]);
+        let material = opencomp_core::material::Material {
+            tint: [tint[0], tint[1], tint[2], 0.55],
+            luminosity: [0.95, 0.95, 0.95],
+            blur: 64.0,
+            noise: 0.0,
+        };
+        if let Some(panel) =
+            opencomp_core::material::blur_and_tint(&desktop, width, height, width, height, material)
+        {
+            renderer.upload_rgba(1, width, height, &panel);
+            let mut base =
+                opencomp_core::Visual::rect(width as f32, height as f32, [1.0, 1.0, 1.0, 1.0]);
+            base.image = Some(1);
+            base.uv = [0.0, 0.0, 1.0, 1.0];
+            base.push(tree);
+            tree = base;
+        }
+    }
     renderer.set_root(tree);
     let pixels = renderer.render_to_pixels();
     if pixels.is_empty() {
@@ -202,4 +231,32 @@ fn dump_layout(element: &openxaml::Element, layout: &openxaml::Layout, depth: us
     for (child, child_layout) in element.children().iter().zip(&layout.children) {
         dump_layout(child, child_layout, depth + 1);
     }
+}
+
+/// A page that asks for a window backdrop: the material is declared on the window, not drawn.
+fn contains_kind(element: &openxaml::Element, kind: openxaml::Kind) -> bool {
+    element.kind() == kind
+        || element
+            .children()
+            .iter()
+            .any(|child| contains_kind(child, kind))
+}
+
+/// A stand-in desktop: a vertical gradient, so a blur has something to soften.
+fn wallpaper(width: u32, height: u32) -> Option<Vec<u8>> {
+    let mut pixels = vec![0u8; (width * height * 4) as usize];
+    for y in 0..height {
+        let t = y as f32 / height as f32;
+        let pixel = [
+            (90.0 + 60.0 * t) as u8,
+            (120.0 + 40.0 * t) as u8,
+            (160.0 - 30.0 * t) as u8,
+            255,
+        ];
+        for x in 0..width {
+            let at = ((y * width + x) * 4) as usize;
+            pixels[at..at + 4].copy_from_slice(&pixel);
+        }
+    }
+    Some(pixels)
 }
