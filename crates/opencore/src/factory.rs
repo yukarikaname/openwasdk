@@ -88,6 +88,9 @@ unsafe extern "system" fn query_interface(
         return E_POINTER;
     }
     let iid = unsafe { *iid };
+    if traced() {
+        eprintln!("opencore: factory asked for {iid:?}");
+    }
     if iid == IID_IUNKNOWN || iid == IID_IINSPECTABLE || iid == IID_IACTIVATION_FACTORY {
         unsafe { add_ref(this) };
         unsafe { *out = this };
@@ -99,7 +102,11 @@ unsafe extern "system" fn query_interface(
     }
     let wine = wine_factory();
     if !wine.is_null() {
-        return unsafe { qer(wine)(wine, &iid, out) };
+        let hr = unsafe { qer(wine)(wine, &iid, out) };
+        if traced() {
+            eprintln!("opencore: wine factory answered hr={hr:#x}");
+        }
+        return hr;
     }
     unsafe { *out = ptr::null_mut() };
     if traced() {
@@ -195,7 +202,12 @@ fn wine_factory() -> *mut c_void {
 #[cfg(windows)]
 fn load_wine_factory() -> *mut c_void {
     let mut factory: *mut c_void = ptr::null_mut();
-    let Some(get) = wine_entry(b"twinapi.appcore.dll\0", b"DllGetActivationFactory\0") else {
+    // Installed *as* twinapi.appcore.dll, forwarding to that name would recurse, so a copy
+    // of Wine's own file beside the application is preferred; the system name is the
+    // fallback for the ordinary installation.
+    let Some(get) = wine_entry(b"twinapi.builtin.dll\0", b"DllGetActivationFactory\0")
+        .or_else(|| wine_entry(b"twinapi.appcore.dll\0", b"DllGetActivationFactory\0"))
+    else {
         return ptr::null_mut();
     };
     type GetFactory = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
