@@ -82,8 +82,8 @@ pub(crate) fn install() {
         if frames == 0 || words == 0 || (word_size != 4 && word_size != 8) {
             return;
         }
-        for index in 0..words.min(32) {
-            let slot = frames + index as usize * word_size as usize;
+        for index in 0..words.min(32) as usize {
+            let slot = frames + index * word_size as usize;
             let pc = match word_size {
                 8 => unsafe { std::ptr::read_unaligned(slot as *const usize) },
                 _ => (unsafe { std::ptr::read_unaligned(slot as *const u32) }) as usize,
@@ -106,11 +106,11 @@ pub(crate) fn install() {
         let mut name = [0u16; 260];
         let len = unsafe { GetModuleFileNameW(base, name.as_mut_ptr(), name.len() as u32) };
         if len == 0 {
-            return format!("+{:#x}", pc as usize - base as usize);
+            return format!("+{:#x}", pc - base as usize);
         }
         let name = String::from_utf16_lossy(&name[..len as usize]);
         let short = name.rsplit('\\').next().unwrap_or(&name);
-        format!("{short}+{:#x}", pc as usize - base as usize)
+        format!("{short}+{:#x}", pc - base as usize)
     }
 
     unsafe {

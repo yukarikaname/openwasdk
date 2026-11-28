@@ -324,12 +324,30 @@ impl<'a> Builder<'a> {
                 let Some(owner) = self.current_element() else {
                     return Err(self.error(index, kind, "custom data has no current element"));
                 };
+                /*
+                 * A style's setters name their property as a metadata reference; resolve it
+                 * here, where the file and the default namespace are in reach, so a consumer
+                 * can ask for "Template" by name.
+                 */
+                let default = self.default_namespace();
+                let setters: Vec<crate::node::StyleSetter> = data
+                    .setters
+                    .iter()
+                    .map(|setter| {
+                        let mut resolved = setter.clone();
+                        if let Some(property) = setter.property {
+                            let (name, _) = self.resolve_property(property, &default);
+                            resolved.name = Some(name);
+                        }
+                        resolved
+                    })
+                    .collect();
                 let raw = &mut self.raw[owner];
                 raw.custom = Some(data.kind_name.to_string());
                 raw.custom_substream = Some(*substream);
                 raw.explicit_keys = data.explicit_keys.clone();
                 raw.implicit_keys = data.implicit_keys.clone();
-                raw.setters = data.setters.clone();
+                raw.setters = setters;
             }
             NodeKind::EndOfStream => {}
 
