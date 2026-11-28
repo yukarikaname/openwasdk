@@ -35,4 +35,6 @@ def run(command, port="2222", user="dev", password="dev", timeout=120):
     return out.decode(errors="replace")
 
 if __name__ == "__main__":
-    sys.stdout.write(run(" ".join(sys.argv[1:])))
+    # Long builds outlive the default; the caller says how long it is willing to wait.
+    budget = int(os.environ.get("SSH_TIMEOUT", "120"))
+    sys.stdout.write(run(" ".join(sys.argv[1:]), timeout=budget))

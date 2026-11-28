@@ -58,3 +58,9 @@ semicolons. A session that stops on the fatal exception only, and then shows the
 
 `0xc0000008` and `0x80000003` are first-chance noise on this image; leaving them armed
 stops the debugger long before the interesting event.
+
+`pull.py <remote> <directory>` is the same transport in reverse: a one-shot server on the
+host accepts a PUT and the guest uploads with `curl -T`. For a directory, zip it first:
+
+    ssh.py 'cd /d c:\work & powershell -NoProfile -Command "Compress-Archive -Force -Path out\* -DestinationPath out.zip"'
+    pull.py 'c:\work\out.zip' ./out

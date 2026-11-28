@@ -12,3 +12,11 @@ probe-*.log
 
 # QEMU screendumps from the baseline VM
 *.ppm
+
+# Python bytecode from the VM scripts
+__pycache__/
+*.pyc
+
+# .NET build output (the Gate C project is published in the VM)
+[Oo]bj/
+[Bb]in/
