@@ -25,6 +25,8 @@ pub(crate) const E_POINTER: i32 = 0x8000_4003u32 as i32;
 
 /// The layer `Microsoft.ui.xaml.dll` reaches its input core through.
 const UDK: &str = "Microsoft.Internal.FrameworkUdk.dll";
+/// The App SDK runtime wrapper, which activates one class of its own.
+const RUNTIME: &str = "Microsoft.WindowsAppRuntime.dll";
 /// The messaging DLL the input core is created from: the App SDK's own.
 const MESSAGING: &str = "CoreMessagingXP.dll";
 /// Our stand-in, used only when `OPENCOMP_COREUI=own` asks for it.
@@ -403,9 +405,11 @@ pub(crate) fn run(module: HMODULE) -> i32 {
             eprintln!("xaml-probe: CoreUICreate from {OWN_MESSAGING}");
         }
     }
-    if let Some(udk) = crate::windows::load(std::path::Path::new(UDK)) {
-        for (library, name) in crate::shim::install(udk) {
-            eprintln!("xaml-probe: answered {name} for {library} (udk)");
+    for (label, module) in [(UDK, UDK), ("runtime", RUNTIME)] {
+        if let Some(handle) = crate::windows::load(std::path::Path::new(module)) {
+            for (library, name) in crate::shim::install(handle) {
+                eprintln!("xaml-probe: answered {name} for {library} ({label})");
+            }
         }
     }
     if let Some(hr) = create_dispatcher() {

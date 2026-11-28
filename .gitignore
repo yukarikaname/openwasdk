@@ -9,3 +9,6 @@
 
 # gate-b run output
 probe-*.log
+
+# QEMU screendumps from the baseline VM
+*.ppm

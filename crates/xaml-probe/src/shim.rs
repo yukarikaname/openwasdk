@@ -53,6 +53,8 @@ enum Replacement {
     WindowingModel,
     /// `RoGetActivationFactory`: traced, then answered by `combase`.
     ActivationFactory,
+    /// `RoActivateInstance`: traced, then answered by `combase`.
+    ActivateInstance,
     /// `GetProcAddress`: one delay-loaded name is answered here instead.
     GetProcAddress,
     /// `NtCreateWaitCompletionPacket`: the App SDK's messaging DLL calls it at session
@@ -74,6 +76,10 @@ impl Entry {
             Replacement::ActivationFactory => {
                 activation_factory
                     as unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32
+                    as *mut c_void
+            }
+            Replacement::ActivateInstance => {
+                activate_instance as unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32
                     as *mut c_void
             }
             Replacement::GetProcAddress => {
@@ -138,6 +144,36 @@ unsafe extern "system" fn activation_factory(
 
 /// The engine's own `GetProcAddress`, taken over below.
 static REAL_GET_PROC_ADDRESS: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// The engine's own `RoActivateInstance`, taken over below.
+static RO_ACTIVATE_INSTANCE: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
+
+/// Report the class the engine instantiates, then let `combase` answer.
+unsafe extern "system" fn activate_instance(class: *mut c_void, out: *mut *mut c_void) -> i32 {
+    type Original = unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32;
+    let original: Original =
+        unsafe { std::mem::transmute(RO_ACTIVATE_INSTANCE.load(Ordering::Relaxed)) };
+    let result = unsafe { original(class, out) };
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!(
+            "xaml-probe: RoActivateInstance({}) hr=0x{:08x}",
+            class_name(class),
+            result as u32
+        );
+    }
+    result
+}
+
+/// The text of an `HSTRING`, for a trace line.
+fn class_name(class: *mut c_void) -> String {
+    if class.is_null() {
+        return "<null>".to_string();
+    }
+    let handle = std::mem::ManuallyDrop::new(unsafe {
+        std::mem::transmute_copy::<*mut c_void, windows_core::HSTRING>(&class)
+    });
+    handle.to_string_lossy()
+}
 
 /// `CoreMsgCreateSession(0, &session)` from the App SDK's own messaging DLL.
 static CORE_MSG_CREATE_SESSION: AtomicPtr<c_void> = AtomicPtr::new(ptr::null_mut());
@@ -332,6 +368,12 @@ const ENTRIES: &[Entry] = &[
         name: "RoGetActivationFactory",
         replacement: Replacement::ActivationFactory,
         original: Some(&RO_GET_ACTIVATION_FACTORY),
+    },
+    Entry {
+        library: "api-ms-win-core-winrt-l1-1-0.dll",
+        name: "RoActivateInstance",
+        replacement: Replacement::ActivateInstance,
+        original: Some(&RO_ACTIVATE_INSTANCE),
     },
     Entry {
         library: "KERNEL32.dll",
