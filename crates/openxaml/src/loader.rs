@@ -340,7 +340,28 @@ fn build_with(
                 Ok(mut template) => {
                     // The body's {TemplateBinding X} markers name the control's properties.
                     template.bind_from(&element);
-                    place_content(&mut template, content);
+                    /*
+                     * A template that cannot host what the control holds is worse than no
+                     * template: a selector bar's items are repeated by an item host, and a
+                     * template without one lays them all in the same cell. Several children
+                     * with no host keep the control's own stacking and lose the chrome.
+                     */
+                    let mut content = content;
+                    let count = content.len();
+                    let hosted = place_content(&mut template, &mut content);
+                    if count > 1 && !hosted {
+                        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                            eprintln!(
+                                "openxaml: template for {} cannot host {count} children",
+                                source.type_name
+                            );
+                        }
+                        element.set_children(content);
+                        return Ok(element);
+                    }
+                    if !hosted {
+                        template.push_all(content);
+                    }
                     if std::env::var_os("OPENCOMP_TRACE").is_some() {
                         eprintln!("openxaml: template for {} instantiated", source.type_name);
                     }
@@ -407,32 +428,27 @@ fn apply_setters(
 }
 
 /// Put a control's content where its template asks for it: the `ContentPresenter`.
-fn place_content(template: &mut Element, content: Vec<Element>) {
-    let mut content = Some(content);
-    match content.as_ref() {
-        Some(held) if !held.is_empty() => {}
-        _ => return,
+fn place_content(template: &mut Element, content: &mut Vec<Element>) -> bool {
+    if content.is_empty() {
+        return true;
     }
     /*
      * Where a template puts what the control holds: the content presenter for a content
      * control, the item host for a control whose children are items (a selector bar's
-     * template repeats them), and the template root only when it names neither -- appending
-     * to a grid root would lay the items over the template's own children.
+     * template repeats them). `false` means the template names neither.
      */
-    let hosts: [Kind; 3] = if content.as_ref().is_some_and(|held| held.len() > 1) {
-        // Several children of one control are its items, and a template repeats items in an
-        // item host -- a lone content presenter arranges one child and the rest pile up.
+    let hosts: [Kind; 3] = if content.len() > 1 {
         [Kind::ItemsView, Kind::ItemsRepeater, Kind::ContentPresenter]
     } else {
         [Kind::ContentPresenter, Kind::ItemsView, Kind::ItemsRepeater]
     };
     for kind in hosts {
         if let Some(host) = find_kind(template, kind) {
-            host.push_all(content.take().expect("content"));
-            return;
+            host.push_all(std::mem::take(content));
+            return true;
         }
     }
-    template.push_all(content.take().expect("content"));
+    false
 }
 
 fn find_kind(element: &mut Element, kind: Kind) -> Option<&mut Element> {
