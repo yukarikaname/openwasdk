@@ -1,8 +1,7 @@
 //! Loader tests: both real theme fixtures, a hand-built tree and the errors.
 //!
 //! The fixtures are the same XBF 2.1 images the XBF crate tests use. They are
-//! resource dictionaries, so the honest result is an unsupported root type; the
-//! errors are the point of the table.
+//! resource dictionaries: a non-visual root that loads and lays out to nothing.
 
 use openxaml::property;
 use openxaml::{GridLength, Kind, LoadError, Orientation, Thickness, Value};
@@ -41,17 +40,17 @@ fn source(type_name: &str, properties: Vec<Property>, children: Vec<Source>) -> 
 }
 
 #[test]
-fn both_theme_fixtures_stop_at_the_resource_dictionary_root() {
+fn both_theme_fixtures_load_as_a_non_visual_root() {
     for fixture in [THEME, THEME_SMALL] {
         let file = xbf::parse(fixture).expect("fixture should parse");
         let model = file.model().expect("fixture should produce a model");
-        let error = openxaml::load(&model).expect_err("ResourceDictionary has no constructor");
-        assert_eq!(
-            error,
-            LoadError::UnsupportedType {
-                name: "ResourceDictionary".to_string()
-            }
-        );
+        let roots = openxaml::load(&model).expect("a dictionary is not visual");
+        assert_eq!(roots.len(), 1, "one root per fixture");
+        assert_eq!(roots[0].kind(), Kind::ResourceDictionary);
+        let measured = roots[0]
+            .measure(openxaml::Size::new(800.0, 600.0))
+            .expect("a dictionary measures");
+        assert_eq!((measured.width, measured.height), (0.0, 0.0));
     }
 }
 
