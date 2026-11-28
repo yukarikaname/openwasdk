@@ -292,7 +292,28 @@ pub static CANVAS_LEFT: Property =
 pub static CANVAS_TOP: Property =
     Property::new("Canvas.Top", ValueType::Double, &Value::Number(0.0), false);
 
+/// A transform's offset, in the coordinates of the element it applies to.
+pub static TRANSLATE_X: Property =
+    Property::new("X", ValueType::Double, &Value::Number(0.0), false);
+pub static TRANSLATE_Y: Property =
+    Property::new("Y", ValueType::Double, &Value::Number(0.0), false);
+/// A scale transform's factors and the point it scales about.
+pub static SCALE_X: Property =
+    Property::new("ScaleX", ValueType::Double, &Value::Number(1.0), false);
+pub static SCALE_Y: Property =
+    Property::new("ScaleY", ValueType::Double, &Value::Number(1.0), false);
+pub static CENTER_X: Property =
+    Property::new("CenterX", ValueType::Double, &Value::Number(0.0), false);
+pub static CENTER_Y: Property =
+    Property::new("CenterY", ValueType::Double, &Value::Number(0.0), false);
+
 pub static PROPERTIES: &[&Property] = &[
+    &TRANSLATE_X,
+    &TRANSLATE_Y,
+    &SCALE_X,
+    &SCALE_Y,
+    &CENTER_X,
+    &CENTER_Y,
     &SOURCE,
     &CANVAS_LEFT,
     &CANVAS_TOP,

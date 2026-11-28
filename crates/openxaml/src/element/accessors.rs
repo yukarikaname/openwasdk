@@ -93,6 +93,35 @@ impl Element {
         self.store(&property::SPACING, Value::Number(spacing.max(0.0)));
     }
 
+    /// A transform's offset or factors; the kind decides which of them matter.
+    pub fn translate(&self) -> (f32, f32) {
+        (
+            self.number(&property::TRANSLATE_X),
+            self.number(&property::TRANSLATE_Y),
+        )
+    }
+
+    pub fn scale(&self) -> (f32, f32) {
+        (
+            self.number(&property::SCALE_X),
+            self.number(&property::SCALE_Y),
+        )
+    }
+
+    pub fn center(&self) -> (f32, f32) {
+        (
+            self.number(&property::CENTER_X),
+            self.number(&property::CENTER_Y),
+        )
+    }
+
+    fn number(&self, property: &'static crate::property::Property) -> f32 {
+        match self.get(property) {
+            Value::Number(value) => *value,
+            _ => 0.0,
+        }
+    }
+
     /// The picture an `Image` names.
     pub fn image_source(&self) -> &str {
         match self.get(&property::SOURCE) {

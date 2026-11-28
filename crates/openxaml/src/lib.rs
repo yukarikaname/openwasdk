@@ -17,6 +17,7 @@
 //! Layout rules and the upstream file each came from are documented in
 //! [`layout`]. Text measurement is a placeholder, not shaping.
 
+pub mod animation;
 mod compose;
 mod element;
 mod layout;

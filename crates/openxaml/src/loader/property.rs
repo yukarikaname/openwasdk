@@ -50,6 +50,17 @@ pub(super) fn load_property_with(
             }
             let member = name.rsplit_once(['_', '.']).map_or(name, |(_, tail)| tail);
             /*
+             * A shape names its paint the way a brush does: Fill is the background, Stroke
+             * the border. Storing them under the layout names is what composes them, and it
+             * saves every shape from a second property table.
+             */
+            let member = match member {
+                "Fill" => "Background",
+                "Stroke" => "BorderBrush",
+                "StrokeThickness" => "BorderThickness",
+                other => other,
+            };
+            /*
              * A content property holds the child that a content control shows. It is a
              * child for layout and painting, so it joins the element's children.
              */
@@ -77,7 +88,7 @@ pub(super) fn load_property_with(
              * content presenter does with it. Editable controls are not in this list: their
              * Text is what the user typed, not something to draw.
              */
-            if member == "Text"
+            if matches!(member, "Text" | "Label")
                 && !matches!(
                     element.kind(),
                     Kind::TextBlock | Kind::TextBox | Kind::PasswordBox | Kind::RichEditBox
@@ -121,6 +132,11 @@ pub(super) fn load_property_with(
             let elements = property_elements(property)?;
             let content_style = matches!(member, "Child" | "Children" | "Items")
                 || member.ends_with("Content")
+                /*
+                 * A render transform is an object the element carries, not a value it
+                 * stores: the composition step reads it from the child list.
+                 */
+                || member.ends_with("RenderTransform")
                 || (member.ends_with("Items") && !elements.is_empty());
             if content_style {
                 for child in elements {
@@ -143,169 +159,7 @@ pub(super) fn load_property_with(
              * title, a style's target. Accepting them keeps the page loadable and drops
              * nothing that would have been drawn.
              */
-            if matches!(
-                member,
-                "Resources"
-                    | "ThemeDictionaries"
-                    | "SystemBackdrop"
-                    | "Title"
-                    | "TargetType"
-                    | "BasedOn"
-                    | "Template"
-                    | "SuppressHostScrolling"
-                    | "IsTabStop"
-                    | "Blocks"
-                    | "TextWrapping"
-                    | "Style"
-                    | "Header"
-                    | "ToolTip"
-                    | "VerticalContentAlignment"
-                    | "TextAlignment"
-                    | "HeadingLevel"
-                    | "HorizontalScrollBarVisibility"
-                    | "VerticalScrollBarVisibility"
-                    | "TabFocusNavigation"
-                    | "PlaceholderText"
-                    | "MergedDictionaries"
-                    | "Inlines"
-                    | "AutomationId"
-                    | "CloseButtonText"
-                    | "HorizontalScrollMode"
-                    | "VerticalScrollMode"
-                    | "FontWeight"
-                    /* Layout constraints this renderer does not apply yet: dropping them
-                     * changes nothing it draws, but the page still measures as if absent. */
-                    | "MinHeight"
-                    | "MinWidth"
-                    | "MaxWidth"
-                    | "MaxHeight"
-                    | "ZIndex"
-                    | "VisualStateGroups"
-                    | "IsHitTestVisible"
-                    | "TextTrimming"
-                    | "Symbol"
-                    | "DefaultButton"
-                    /* FontSize is in the text element's list, so it is stored, not dropped. */
-                    | "FontFamily"
-                    | "FontStyle"
-                    | "Foreground"
-                    | "Stretch"
-                    | "Value"
-                    | "Glyph"
-                    | "AcceptsReturn"
-                    | "AccessibilityView"
-                    | "HorizontalContentAlignment"
-                    | "IsItemClickEnabled"
-                    | "PrimaryButtonText"
-                    | "SecondaryButtonText"
-                    | "IsTextSelectionEnabled"
-                    | "SelectionMode"
-                    | "ItemContainerStyle"
-                    | "ItemTemplate"
-                    | "Flyout"
-                    | "IsPaneOpen"
-                    | "IsSettingsVisible"
-                    | "SelectsOnInvoked"
-                    | "ContentMargin"
-                    | "FocusVisualSecondaryThickness"
-                    | "FocusVisualSecondaryBrush"
-                    | "FocusVisualPrimaryThickness"
-                    | "FocusVisualPrimaryBrush"
-                    | "BackgroundSizing"
-                    | "RadiusY"
-                    | "RadiusX"
-                    | "IsTemplateKeyTipTarget"
-                    | "IsTemplateFocusTarget"
-                    | "ZoomMode"
-                    | "IsOpen"
-                    | "IsClosable"
-                    | "IsCopyButtonVisible"
-                    | "CanTearOutTabs"
-                    | "IsEnabled"
-                    | "Message"
-                    | "Severity"
-                    | "ElementName"
-                    | "SampleType"
-                    | "IsPaneToggleButtonVisible"
-                    | "Path"
-                    | "Subtitle"
-                    | "IconSource"
-                    | "TabStripHeader"
-                    | "XYFocusKeyboardNavigation"
-                    | "IsIconVisible"
-                    | "MaxLines"
-                    | "ChildrenTransitions"
-                    | "SmallChange"
-                    | "StepFrequency"
-                    | "Initials"
-                    | "IsHexInputVisible"
-                    | "ColorSpectrumShape"
-                    | "IsReadOnly"
-                    | "SnapsTo"
-                    | "ItemSpacing"
-                    | "MinItemHeight"
-                    | "MinItemWidth"
-                    | "Tag"
-                    | "Placement"
-                    | "RightHeader"
-                    | "TabStripFooter"
-                    | "Layout"
-                    | "QueryIcon"
-                    | "KeyboardAcceleratorPlacementMode"
-                    | "AcceptsExpression"
-                    | "AlignVerticalCenterWith"
-                    | "AutomationControlType"
-                    | "CharacterSpacing"
-                    | "ContentOrientation"
-                    | "DayFormat"
-                    | "DefaultLabelPosition"
-                    | "Description"
-                    | "ExpandDirection"
-                    | "GroupName"
-                    | "HelpText"
-                    | "Icon"
-                    | "ImageSource"
-                    | "IsBackButtonVisible"
-                    | "IsChecked"
-                    | "IsDirectionReversed"
-                    | "IsFocusEngagementEnabled"
-                    | "IsIndeterminate"
-                    | "IsMoreButtonVisible"
-                    | "IsOn"
-                    | "IsSelected"
-                    | "IsSwipeEnabled"
-                    | "IsThreeState"
-                    | "IsVerticalScrollChainingEnabled"
-                    | "ItemsPanel"
-                    | "KeyboardAccelerators"
-                    | "LargeChange"
-                    | "LiveSetting"
-                    | "MaxColumns"
-                    | "Maximum"
-                    | "MinColumnSpacing"
-                    | "Minimum"
-                    | "Mode"
-                    | "NavigateUri"
-                    | "OffContent"
-                    | "PaneDisplayMode"
-                    | "PasswordChar"
-                    | "PrimaryCommands"
-                    | "RenderTransform"
-                    | "RightOf"
-                    | "SelectedIndex"
-                    | "SelectedValue"
-                    | "SelectionHighlightColor"
-                    | "Shadow"
-                    | "SpinButtonPlacementMode"
-                    | "Stroke"
-                    | "TabIndex"
-                    | "VerticalOffset"
-                    // Everything above is control state, text or a drawing effect this
-                    // preview does not apply: it changes nothing it paints, and the page
-                    // still measures as the same box.
-                    | "IsSpellCheckEnabled"
-                    | "Fill"
-            ) {
+            if super::ignored::ignored(member) {
                 return Ok(());
             }
             /*

@@ -61,7 +61,30 @@ pub fn compose_with(
         visual.color = [1.0, 1.0, 1.0, 1.0];
     }
 
+    /*
+     * A render transform is a child object, not a visual: it moves the element it belongs
+     * to. Translate offsets the node, scale changes its factors about the centre the
+     * transform names.
+     */
+    for child in element.children() {
+        match child.kind() {
+            crate::element::Kind::TranslateTransform => {
+                let (x, y) = child.translate();
+                visual.offset[0] += x;
+                visual.offset[1] += y;
+            }
+            crate::element::Kind::ScaleTransform => {
+                visual.scale = child.scale().into();
+                visual.center = child.center().into();
+            }
+            _ => {}
+        }
+    }
+
     for (child, child_layout) in element.children().iter().zip(&layout.children) {
+        if crate::animation::is_transform(child.kind()) {
+            continue;
+        }
         visual.push(compose_with(child, child_layout, images));
     }
     visual

@@ -25,12 +25,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("usage: render <page.xbf> <out.ppm> [w h]")?;
     let width: u32 = args.next().map_or(Ok(800), |v| v.parse())?;
     let height: u32 = args.next().map_or(Ok(600), |v| v.parse())?;
-    // A material blurs what is behind the window; a headless render has no desktop, so one
-    // can be supplied as a PPM.
-    let backdrop = match args.next().as_deref() {
-        Some("--backdrop") => args.next(),
-        _ => None,
-    };
+    // Everything after the size: a desktop for a material to blur, and a storyboard frame.
+    let mut backdrop = None;
+    let mut state = None;
+    let mut storyboard = None;
+    let mut at = 0.0;
+    while let Some(flag) = args.next() {
+        match flag.as_str() {
+            "--backdrop" => backdrop = args.next(),
+            "--state" => state = args.next(),
+            "--storyboard" => storyboard = args.next(),
+            "--at" => {
+                at = args
+                    .next()
+                    .and_then(|value| value.parse().ok())
+                    .unwrap_or(0.0)
+            }
+            _ => {}
+        }
+    }
 
     let path = Path::new(&source);
     let xbf = xbf::parse_file(path)?;
@@ -40,6 +53,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let Some(mut root) = roots.into_iter().next() else {
         return Err("the page has no root element".into());
     };
+
+    /*
+     * A storyboard frame: the page's own animation data, sampled at a time and written onto
+     * the elements its targets name. Nothing is invented; a page whose storyboard targets
+     * parts of a control built in code simply has nothing to move.
+     */
+    if let Some(tracks) = storyboard_tracks(&xbf, storyboard.as_deref(), state.as_deref()) {
+        eprintln!("storyboard: {} tracks at {at}s", tracks.len());
+        openxaml::animation::apply(&mut root, &tracks, at);
+    }
 
     let measured = root.measure(Size::new(width as f32, height as f32))?;
     eprintln!("measured {measured:?}");
@@ -349,4 +372,83 @@ fn picture_path(source: &str) -> Option<&str> {
         .or_else(|| source.strip_prefix('/'))
         .unwrap_or(source);
     (!rest.is_empty()).then_some(rest)
+}
+
+/// The storyboard the page carries, as tracks. A storyboard is named directly, or reached
+/// through the visual state that owns it; both are deferred streams of the same file.
+fn storyboard_tracks(
+    file: &xbf::Xbf,
+    storyboard: Option<&str>,
+    state: Option<&str>,
+) -> Option<Vec<openxaml::animation::Track>> {
+    if storyboard.is_none() && state.is_none() {
+        return None;
+    }
+    for index in 0..file.streams.len() {
+        let Ok(model) = file.substream(index) else {
+            continue;
+        };
+        for root in &model.roots {
+            if let Some(found) = find_storyboard(root, storyboard, state) {
+                let tracks = openxaml::animation::tracks(found);
+                if !tracks.is_empty() {
+                    return Some(tracks);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn find_storyboard<'a>(
+    element: &'a xbf::Element,
+    storyboard: Option<&str>,
+    state: Option<&str>,
+) -> Option<&'a xbf::Element> {
+    let short = element.type_name.rsplit('.').next().unwrap_or("");
+    let name = element.properties.iter().find_map(|property| {
+        if property.name == "x:Name" {
+            match &property.value {
+                xbf::model::Value::String(text) => Some(text.as_str()),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    });
+    if let Some(state) = state
+        && short == "VisualState"
+        && name == Some(state)
+        && let Some(found) = find_storyboard(element, Some(""), None)
+    {
+        return Some(found);
+    }
+    if let Some(storyboard) = storyboard
+        && short == "Storyboard"
+        && (name == Some(storyboard) || storyboard.is_empty())
+    {
+        return Some(element);
+    }
+    for child in &element.children {
+        if let Some(found) = find_storyboard(child, storyboard, state) {
+            return Some(found);
+        }
+    }
+    /*
+     * A visual state hangs off a property (\`VisualStateGroups\`, \`States\`, \`Storyboard\`), and
+     * an inline object in a property is not in the child list.
+     */
+    for property in &element.properties {
+        let nested: &[xbf::Element] = match &property.value {
+            xbf::model::Value::Element(one) => std::slice::from_ref(one.as_ref()),
+            xbf::model::Value::Elements(many) => many,
+            _ => &[],
+        };
+        for child in nested {
+            if let Some(found) = find_storyboard(child, storyboard, state) {
+                return Some(found);
+            }
+        }
+    }
+    None
 }

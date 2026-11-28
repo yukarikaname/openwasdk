@@ -19,6 +19,27 @@ macro_rules! type_support {
 
 pub(super) static TABLE: &[TypeSupport] = &[
     type_support!(
+        Kind::BitmapIcon,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::VISIBILITY,
+    ),
+    type_support!(
+        Kind::TranslateTransform,
+        &property::TRANSLATE_X,
+        &property::TRANSLATE_Y,
+    ),
+    type_support!(
+        Kind::ScaleTransform,
+        &property::SCALE_X,
+        &property::SCALE_Y,
+        &property::CENTER_X,
+        &property::CENTER_Y,
+    ),
+    type_support!(
         Kind::PathIcon,
         &property::WIDTH,
         &property::HEIGHT,
@@ -493,6 +514,21 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::CORNER_RADIUS,
     ),
     type_support!(
+        Kind::AppBarSeparator,
+        &property::FONT_SIZE,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
         Kind::AppBarToggleButton,
         &property::FONT_SIZE,
         &property::WIDTH,
@@ -671,6 +707,7 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::BORDER_BRUSH,
         &property::BORDER_THICKNESS,
         &property::CORNER_RADIUS,
+        &property::ORIENTATION,
     ),
     type_support!(
         Kind::BreadcrumbBar,
@@ -923,6 +960,9 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::HORIZONTAL_ALIGNMENT,
         &property::VERTICAL_ALIGNMENT,
         &property::VISIBILITY,
+        &property::BACKGROUND,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
     ),
     type_support!(
         Kind::Rectangle,
@@ -932,6 +972,9 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::HORIZONTAL_ALIGNMENT,
         &property::VERTICAL_ALIGNMENT,
         &property::VISIBILITY,
+        &property::BACKGROUND,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
     ),
     type_support!(
         Kind::Line,
@@ -941,6 +984,9 @@ pub(super) static TABLE: &[TypeSupport] = &[
         &property::HORIZONTAL_ALIGNMENT,
         &property::VERTICAL_ALIGNMENT,
         &property::VISIBILITY,
+        &property::BACKGROUND,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
     ),
     type_support!(
         Kind::ListView,
