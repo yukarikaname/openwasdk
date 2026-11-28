@@ -181,6 +181,26 @@ Two rules keep it honest:
 - the template is Microsoft's: nothing here draws a Button by hand, it instantiates what the
   framework ships.
 
+## 4d. What a template still cannot paint
+
+Instantiation works and the geometry is Microsoft's; the colours are not. Every brush in a
+template is a `{ThemeResource ButtonBackground}`-style reference, and the dictionary those
+keys name is not in any XBF document that can be read here:
+
+- `Microsoft.UI.Xaml.Controls.pri`: seven XBF documents, 202 `ControlTemplate`s, zero
+  `Color` values and no `SolidColorBrush` entry;
+- `Microsoft.UI.pri`: no XBF documents at all;
+- the SDK's own `winui-theme-resources.xbf` fixture: zero colours as well.
+
+So a template currently contributes structure and padding and paints nothing. Making chrome
+visible needs the palette from somewhere that exists: a documented Fluent token table checked
+in as data, or the framework's default-theme resources if they can be extracted. Either way it
+is a data problem, not a renderer one, and it is recorded here so the next attempt does not
+start from "read it out of the PRI".
+
+Also measured while instantiating: 18 templates of one page's controls instantiate and 10 are
+left empty, all ten on `DeferredElement` -- a deferred object the loader does not resolve yet.
+
 ## 5. Milestones
 
 | # | step | exit criterion |

@@ -225,8 +225,21 @@ fn build(
          * page keeps its empty box: one control without chrome is a worse picture, a page
          * that fails to load is no picture.
          */
-        if let Ok(template) = load_element(body, controls, depth + 1) {
-            element.set_children(vec![template]);
+        match load_element(body, controls, depth + 1) {
+            Ok(template) => {
+                if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                    eprintln!("openxaml: template for {} instantiated", source.type_name);
+                }
+                element.set_children(vec![template]);
+            }
+            Err(error) => {
+                if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                    eprintln!(
+                        "openxaml: template for {} left empty: {error}",
+                        source.type_name
+                    );
+                }
+            }
         }
     }
     Ok(element)
