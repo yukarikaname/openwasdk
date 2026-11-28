@@ -78,11 +78,29 @@ unsafe extern "system" fn on_exception(info: *mut ExceptionPointers) -> i32 {
         let context = unsafe { (*info).context as *const u8 };
         if !context.is_null() {
             let register = |offset: usize| unsafe { *(context.add(offset) as *const u64) };
+            let details = unsafe { (*record).details };
+            eprintln!(
+                "opencore:   access {} at {:x}",
+                if details[0] == 0 { "read" } else { "write" },
+                details[1]
+            );
+            let rbx = register(0xa0);
             eprintln!(
                 "opencore:   rax {:x} rcx {:x} rdx {:x} rbx {:x} rsi {:x} rdi {:x}",
-                register(0x88), register(0x90), register(0x98), register(0xa0),
+                register(0x88), register(0x90), register(0x98), rbx,
                 register(0xb8), register(0xc0)
             );
+            // The object the faulting instruction was reading: eight words say whether it
+            // is a vtable, zeros, or a stack frame.
+            if rbx > 0x10000 {
+                let words = rbx as *const u64;
+                let mut line = String::new();
+                for index in 0..12 {
+                    let word = unsafe { *words.add(index) };
+                    line.push_str(&format!("{word:016x} "));
+                }
+                eprintln!("opencore:   [rbx] {line}");
+            }
         }
     }
     let mut frames = [ptr::null_mut(); 24];
