@@ -95,7 +95,10 @@ pub fn cubic_bezier(
     control_point2: Vector2,
 ) -> Result<CubicBezierEasingFunction> {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
-        eprintln!("opencomp: easing created cubic-bezier ({}, {})", control_point1.x, control_point2.x);
+        eprintln!(
+            "opencomp: easing created cubic-bezier ({}, {})",
+            control_point1.x, control_point2.x
+        );
     }
     let easing: ICubicBezierEasingFunction = CubicBezierObject {
         node: node_of(&clock),
@@ -125,9 +128,7 @@ impl ICompositionEasingFunctionStatics_Impl for EasingStatics_Impl {
     ) -> Result<CubicBezierEasingFunction> {
         // The object belongs to the caller's compositor: `Compositor()` has to answer
         // with the clock the caller handed to the static, not the process-wide one.
-        let clock = owner
-            .as_ref()
-            .and_then(crate::compositor::clock_of);
+        let clock = owner.as_ref().and_then(crate::compositor::clock_of);
         if std::env::var_os("OPENCOMP_TRACE").is_some() {
             eprintln!(
                 "opencomp: statics CreateCubicBezier owner={} clock={}",
@@ -135,7 +136,11 @@ impl ICompositionEasingFunctionStatics_Impl for EasingStatics_Impl {
                 clock.is_some()
             );
         }
-        cubic_bezier(clock.unwrap_or_else(Clock::new), *control_point1, *control_point2)
+        cubic_bezier(
+            clock.unwrap_or_else(Clock::new),
+            *control_point1,
+            *control_point2,
+        )
     }
 
     fn CreateLinearEasingFunction(&self, owner: Ref<Compositor>) -> Result<LinearEasingFunction> {

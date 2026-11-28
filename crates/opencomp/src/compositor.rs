@@ -107,6 +107,9 @@ pub fn for_clock(clock: &Arc<Clock>) -> Result<ICompositor> {
             }
         }
     }
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: for_clock found no live compositor; creating one");
+    }
     create(clock.clone())
 }
 

@@ -74,11 +74,22 @@ the exception this time:
     Fault Module      StackHash12_ce1
     Last Result       -1073741189  (0xC000027B, stowed)
 
-A QueryInterface on the easing object the engine received found nothing it needs. The
-class stays with the engine, and the next measurement is to name that IID: the object's
-QI answers `E_NOINTERFACE` for everything outside the interfaces listed in its
-`#[implement(…)]`, so a logged QI (or a `comptrace iids` sweep over the modules that touch
-an easing function) turns this into a work item instead of a guess.
+A QI watcher over the object (`crates/opencomp/src/qi_trace.rs`, `OPENCOMP_QI_TRACE=1`)
+now names what is asked:
+
+    opencomp: easing created linear
+    opencomp: object QI 8E1ECD0D-57D8-5BC9-9BCD-E43D0DD733C4
+
+`8E1ECD0D` is `ICompositionEasingFunction`, which the object implements: that QI is
+answered, and the crash comes after it with no further call into our object (the
+`for_clock` trace, which runs when `Compositor()` needs to create one, never prints). So
+the engine rejects the object's *identity* rather than missing an interface on it, and
+the class stays with the engine.
+
+Next measurement, in order of cost: watch the QIs on every object we hand out (the
+watcher is one call per object), then read the stowed exception's HRESULT with the
+engine's own easing object as the baseline, and only then decide whether the identity
+can be provided at all from our side.
 
 ## The rule this gives
 

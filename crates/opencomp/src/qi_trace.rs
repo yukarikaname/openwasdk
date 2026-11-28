@@ -16,12 +16,15 @@ type QueryInterface = unsafe extern "system" fn(*mut c_void, *const GUID, *mut *
 /// One vtable per implemented type, so the first original seen is the one to forward to.
 static ORIGINAL: AtomicUsize = AtomicUsize::new(0);
 
-unsafe extern "system" fn logged(this: *mut c_void, iid: *const GUID, out: *mut *mut c_void) -> i32 {
+unsafe extern "system" fn logged(
+    this: *mut c_void,
+    iid: *const GUID,
+    out: *mut *mut c_void,
+) -> i32 {
     if let Some(iid) = unsafe { iid.as_ref() } {
         eprintln!("opencomp: object QI {iid:?}");
     }
-    let original: QueryInterface =
-        unsafe { std::mem::transmute(ORIGINAL.load(Ordering::Relaxed)) };
+    let original: QueryInterface = unsafe { std::mem::transmute(ORIGINAL.load(Ordering::Relaxed)) };
     unsafe { original(this, iid, out) }
 }
 
