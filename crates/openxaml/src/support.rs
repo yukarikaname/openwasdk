@@ -811,16 +811,16 @@ mod tests {
 
     #[test]
     fn a_type_outside_the_table_is_rejected() {
-        /* ListView is on the Gallery's pages and still outside the table. */
-        let error =
-            load_root(&source("ListView", Vec::new())).expect_err("ListView is not in the table");
+        /* NavigationView is on the Gallery's pages and still outside the table. */
+        let error = load_root(&source("NavigationView", Vec::new()))
+            .expect_err("NavigationView is not in the table");
         assert_eq!(
             error,
             LoadError::UnsupportedType {
-                name: "ListView".to_string()
+                name: "NavigationView".to_string()
             }
         );
-        assert!(!supports("ListView"));
-        assert!(properties("ListView").is_empty());
+        assert!(!supports("NavigationView"));
+        assert!(properties("NavigationView").is_empty());
     }
 }

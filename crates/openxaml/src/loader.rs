@@ -247,7 +247,7 @@ fn load_property_with(
                     | "TextTrimming"
                     | "Symbol"
                     | "DefaultButton"
-                    | "FontSize"
+                    /* FontSize is in the text element's list, so it is stored, not dropped. */
                     | "FontFamily"
                     | "FontStyle"
                     | "Foreground"
