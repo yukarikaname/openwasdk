@@ -138,19 +138,73 @@ unsafe extern "system" fn method<const SLOT: usize>(
     }
     // `DCompTreeHost::EnsureDCompDevice` asks the helper for a main device and then asks
     // that device for `ICompositor`, `ICompositor2`, `ICompositor5`, `ICompositor6` and
-    // `ICompositorInterop`. This is where that device comes from, so hand over the real
-    // compositor rather than a stand-in that answers nothing.
-    match crate::compositor::instance() {
-        Ok(compositor) => {
-            let raw = windows_core::Interface::into_raw(compositor);
+    // `ICompositorInterop`, so what belongs here is a DComp device or a compositor.
+    //
+    // Which one was measured, and the answer was neither: handing back an
+    // `IDCompositionDevice2`, an `IDCompositionDevice3` or our own compositor all crash in
+    // the same place. The caller does not use this value on the path that reaches the fault
+    // -- it faults in `CompositionHelper` because the lifted DWM core never initialised.
+    // `OPENCOMP_STATICS` keeps the choice available for the next attempt.
+    let want = std::env::var("OPENCOMP_STATICS").unwrap_or_else(|_| "device2".to_string());
+    if want == "compositor" {
+        return match crate::compositor::instance() {
+            Ok(compositor) => {
+                let raw = windows_core::Interface::into_raw(compositor);
+                if !second.is_null() {
+                    unsafe { *(second as *mut *mut c_void) = raw };
+                }
+                S_OK
+            }
+            Err(_) => E_FAIL,
+        };
+    }
+    let iid = match want.as_str() {
+        "device3" => GUID::from_u128(0x0987cb06_f916_48bf_8d35_ce7641781bd9),
+        _ => GUID::from_u128(0x75f6_468d_1b8e_447c_9bc6_75fea80b5b25),
+    };
+    match dcomp_device(&iid) {
+        Some(device) => {
             if !second.is_null() {
-                unsafe { *(second as *mut *mut c_void) = raw };
+                unsafe { *(second as *mut *mut c_void) = device };
             }
             S_OK
         }
-        Err(_) => E_FAIL,
+        None => E_FAIL,
     }
 }
+
+/// `DCompositionCreateDevice3(NULL, iid, &device)`, in the Wine that is running us.
+fn dcomp_device(iid: &GUID) -> Option<*mut c_void> {
+    #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn LoadLibraryA(name: *const u8) -> *mut c_void;
+        fn GetProcAddress(module: *mut c_void, name: *const u8) -> *mut c_void;
+    }
+    let module = unsafe { LoadLibraryA(c"dcomp.dll".as_ptr().cast()) };
+    if module.is_null() {
+        return None;
+    }
+    let entry = unsafe { GetProcAddress(module, c"DCompositionCreateDevice3".as_ptr().cast()) };
+    if entry.is_null() {
+        return None;
+    }
+    type Create = unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32;
+    let create: Create = unsafe { std::mem::transmute(entry) };
+    let mut device: *mut c_void = std::ptr::null_mut();
+    let hr = unsafe { create(std::ptr::null_mut(), iid, &mut device) };
+    if hr >= 0 && !device.is_null() {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: private statics handed back a dcomp device {device:?} hr={hr:#x}");
+        }
+        Some(device)
+    } else {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: DCompositionCreateDevice3 refused iid {iid:?} hr={hr:#x}");
+        }
+        None
+    }
+}
+
 
 unsafe extern "system" fn query_interface(
     this: *mut c_void,
