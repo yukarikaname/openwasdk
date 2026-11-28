@@ -412,9 +412,17 @@ its BOOL as the HSTRING out pointer -- the write at `0xdaff841d9008e701` that us
 inside combase's `WindowsCreateString`. Probes now answer only `IUnknown` and treat slot 3
 and up as private methods, which turned that access violation into the named fail fast above.
 
-The current stop is in the same helper: it queries the compositor for
-`{bbcb00be-cd17-4093-9ac0-d4b00472acea}` and then calls a slot that is not an out-pointer
-method. The padded stub writes the answer through the caller's scalar argument, and the
-fault is an access write in `ICompositionTargetBridge_Impl` called from
-`microsoft.ui.input+0x8cec9`. Read that call site for the argument shape before giving the
-slot a body.
+The private `{bbcb00be-cd17-4093-9ac0-d4b00472acea}` slot the helper calls takes
+`(this, u32, IUnknown**)`: the caller loads the value from its own `+0x10` and passes the
+interface it just queried as the in/out argument (`microsoft.ui.input+0x8cebc`). It is a
+setter, and a stub that treated the u32 as an address wrote at the u32 itself. The slot now
+answers `S_OK` and leaves the in/out alone.
+
+The next stop is not in the input host. XAML's target creation goes through
+`microsoft.ui.input+0x6a3f0`, which clears its out parameter, calls `+0x5f180` to build a
+0xa0-byte target object and only then stores `target+0x50` into the out. Inside `+0x5f180`
+the first thing that fails is a `QueryInterface` of that new object for the private
+`{bcb4ad45-7609-4550-934f-16002a68fded}` (`+0x5f61e`); the refusal is stowed twice and
+`E_NOINTERFACE` is returned, so the out stays null and XAML dereferences it at
+`+0x1c7ca8`. The new object is built inside the input host, so the queried interface is one
+its own code expects to answer, not one of ours.

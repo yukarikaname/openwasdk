@@ -317,3 +317,32 @@ impl comp::ICompositor7_Impl for crate::compositor::Compositor_Impl {
         rectangle_clip()
     }
 }
+
+/* A compositor is also a composition object, and the input host takes that property to find
+ * the compositor that owns a target (it queries for ICompositionObject and calls slot 6).
+ * The property answers with this same compositor, which is the object the live table holds
+ * for the clock. */
+impl comp::ICompositionObject_Impl for crate::compositor::Compositor_Impl {
+    fn Compositor(&self) -> windows_core::Result<comp::Compositor> {
+        use windows_core::Interface;
+
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: ICompositionObject::Compositor");
+        }
+        let compositor = crate::compositor::for_clock(&self.state.clock)?;
+        compositor.cast()
+    }
+    fn Properties(&self) -> windows_core::Result<comp::CompositionPropertySet> {
+        crate::propertyset::for_key(self as *const Self as usize)
+    }
+    fn StartAnimation(
+        &self,
+        _property: &windows_core::HSTRING,
+        _animation: windows_core::Ref<comp::CompositionAnimation>,
+    ) -> windows_core::Result<()> {
+        Ok(())
+    }
+    fn StopAnimation(&self, _property: &windows_core::HSTRING) -> windows_core::Result<()> {
+        Ok(())
+    }
+}

@@ -35,6 +35,7 @@ fn live() -> &'static Mutex<Vec<windows_core::Weak<ICompositor>>> {
     ICompositor5,
     ICompositor6,
     ICompositor7,
+    ICompositionObject,
     ICompositor8,
     ICompositorInterop,
     ICompositorWithProjectedShadow,

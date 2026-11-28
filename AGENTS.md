@@ -67,11 +67,12 @@ Do not:
 - Run `make install` without `scripts/wine/refresh-dxmt.sh` afterwards.
 - Set timers, schedules or automations without being asked.
 
-Next step: read the call at `microsoft.ui.input+0x8ceb3` to `+0x8cec9` to learn what the
-private slot takes (the current stub treats its second argument as an out pointer and the
-fault address is the value passed there), then give the slot a body with that shape and
-re-run. `docs/wine-alpc.md` carries the whole chain, from the probe-table slot numbering to
-the fail fast line numbers in `CompositionHelper.cpp`.
+Next step: the input host builds XAML's composition target in
+`microsoft.ui.input+0x5f180`, and that function fails on its own `QueryInterface` of the new
+object for `{bcb4ad45-7609-4550-934f-16002a68fded}` (`+0x5f61e`), after which XAML stores a
+null target and faults at `+0x1c7ca8`. Disassemble the 0xa0-byte object's construction
+(`+0x5f2d7` to `+0x5f600`) and find what that identifier is; the object is the host's, so the
+answer is in how it is built, not in our compositor.
 
 The layout question the earlier note raised is settled for our side:
 `windows-interface` generates only the three `IUnknown` methods plus the declared ones, so

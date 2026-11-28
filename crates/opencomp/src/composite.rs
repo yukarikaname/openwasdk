@@ -83,7 +83,7 @@ pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
         query_interface: unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32,
         add_ref: unsafe extern "system" fn(*mut c_void) -> u32,
         release: unsafe extern "system" fn(*mut c_void) -> u32,
-        slots: [Slot; 24],
+        slots: [Slot; 32],
     }
     const REFUSE: i32 = 0x8000_4001u32 as i32;
     unsafe extern "system" fn stub_qi(this: *mut c_void, iid: *const GUID, out: *mut *mut c_void) -> i32 {
@@ -150,6 +150,8 @@ pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
             stub_slot::<12>, stub_slot::<13>, stub_slot::<14>, stub_slot::<15>,
             stub_slot::<16>, stub_slot::<17>, stub_slot::<18>, stub_slot::<19>,
             stub_slot::<20>, stub_slot::<21>, stub_slot::<22>, stub_slot::<23>,
+            stub_slot::<24>, stub_slot::<25>, stub_slot::<26>, stub_slot::<27>,
+            stub_slot::<28>, stub_slot::<29>, stub_slot::<30>, stub_slot::<31>,
         ],
     });
     let boxed = Box::new(Stub {

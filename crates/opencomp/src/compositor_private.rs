@@ -106,25 +106,39 @@ impl ICompositionBridgePrivate_Impl for crate::compositor::Compositor_Impl {
 /// composition helper right after it took a rectangle clip, and a refusal there is the next
 /// fail fast. Nothing documents the interface, so its slots answer with the padded stub and
 /// name themselves, like the other private bridges.
+///
+/// Slot 5 is the one that helper calls, and it takes a 32-bit value, not an out pointer:
+/// `mov 0x10(%rsi),%edx` at `microsoft.ui.input+0x8cebc`. A stub that treated that value as
+/// an address wrote at the value itself. It answers `S_OK` without touching memory; the
+/// other slots keep the out-pointer shape the private interfaces above use.
 #[interface("bbcb00be-cd17-4093-9ac0-d4b00472acea")]
 pub unsafe trait ICompositionTargetBridge: IUnknown {
+    unsafe fn Slot3(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot4(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot5(&self, value: u32, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot6(&self, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot7(&self, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot8(&self, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot9(&self, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot10(&self, out: *mut *mut c_void) -> HRESULT;
-    unsafe fn Slot11(&self, out: *mut *mut c_void) -> HRESULT;
-    unsafe fn Slot12(&self, out: *mut *mut c_void) -> HRESULT;
-    unsafe fn Slot13(&self, out: *mut *mut c_void) -> HRESULT;
 }
 
 impl ICompositionTargetBridge_Impl for crate::compositor::Compositor_Impl {
+    bridge_slot!(Slot3, 3);
+    bridge_slot!(Slot4, 4);
+    unsafe fn Slot5(&self, value: u32, out: *mut *mut c_void) -> HRESULT {
+        // A setter: the helper passes the interface it just queried as the in/out argument and
+        // releases whatever comes back, so the answer has to be a value it may release. The
+        // quarantined interface itself is what it asked for, so leave it in place.
+        let _ = out;
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: composition target bridge slot 5 called with {value:#x}");
+        }
+        S_OK
+    }
     bridge_slot!(Slot6, 6);
     bridge_slot!(Slot7, 7);
     bridge_slot!(Slot8, 8);
     bridge_slot!(Slot9, 9);
     bridge_slot!(Slot10, 10);
-    bridge_slot!(Slot11, 11);
-    bridge_slot!(Slot12, 12);
-    bridge_slot!(Slot13, 13);
 }
