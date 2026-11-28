@@ -10,6 +10,7 @@
 //! page on learn.microsoft.com, so [`private`] carries what is known about its slots
 //! and says so.
 
+mod backtrace;
 mod factory;
 mod private;
 
@@ -43,6 +44,7 @@ pub unsafe extern "system" fn DllGetActivationFactory(
     if class.is_null() || factory.is_null() {
         return E_POINTER;
     }
+    backtrace::install();
     // The parameter is the HSTRING handle itself; bit-copy it and keep it from
     // dropping, because the caller owns the reference.
     let name = std::mem::ManuallyDrop::new(unsafe {
