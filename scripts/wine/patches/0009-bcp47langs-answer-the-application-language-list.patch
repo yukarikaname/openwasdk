@@ -1,11 +1,8 @@
-From a43e31b8dbbd82dac76cbdb3e5b9a8b43cd45091 Mon Sep 17 00:00:00 2001
+From 726e09605ec201af1fca45b8276a031833a38565 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:17:12 +0800
-Subject: [PATCH 9/9] bcp47langs: answer the application language list
+Date: Sat, 28 Nov 2026 19:29:30 +0800
+Subject: [PATCH 09/10] bcp47langs: answer the application language list
 
-The lifted UDK asks for the application's languages and their MUI form while it
-resolves resource languages; both were stubs and the first call aborted the
-process.
 ---
  dlls/bcp47langs/Makefile.in     |  2 ++
  dlls/bcp47langs/bcp47langs.spec |  4 ++--

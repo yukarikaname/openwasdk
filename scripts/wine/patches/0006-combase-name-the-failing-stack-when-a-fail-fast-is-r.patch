@@ -1,11 +1,9 @@
-From 03caff9093c640c63c2a42d91b139dfe994c2f91 Mon Sep 17 00:00:00 2001
+From 277459dafe1dfc6e6452ff354b36919d9dfb6b11 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:17:12 +0800
-Subject: [PATCH 6/9] combase: name the failing stack when a fail fast is
+Date: Sat, 28 Nov 2026 19:29:29 +0800
+Subject: [PATCH 06/10] combase: name the failing stack when a fail fast is
  reported
 
-OPENWASDK_FAILFAST dumps the raising thread's frames and the stowed exception
-bytes; OPENWASDK_SOFT_FAILFAST returns instead of raising.
 ---
  dlls/combase/roapi.c | 67 ++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 67 insertions(+)

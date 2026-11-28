@@ -1,20 +1,17 @@
-From c14f51b61317a0e6bde231c32219c8c4304a4db4 Mon Sep 17 00:00:00 2001
+From 6746443949a4a89359cc34ad9f66a7ad95a056c9 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:17:11 +0800
-Subject: [PATCH 2/9] dcomp: serve the composition interfaces XAML drives
+Date: Sat, 28 Nov 2026 19:29:29 +0800
+Subject: [PATCH 02/10] dcomp: serve the composition interfaces XAML drives
 
-The tree the lifted engine builds is the system API, so the device and visual
-objects have to exist even though nothing presents them. Taken from wine-uwp and
-extended where a slot a WinUI 3 tree touches would otherwise stow E_NOTIMPL.
 ---
  dlls/dcomp/Makefile.in    |     2 +
- dlls/dcomp/composition.c  | 26543 ++++++++++++++++++++++++++++++++++++
+ dlls/dcomp/composition.c  | 26591 ++++++++++++++++++++++++++++++++++++
  dlls/dcomp/dcomp.spec     |    14 +-
  dlls/dcomp/device.c       |   942 +-
  dlls/dwmapi/Makefile.in   |     2 +-
  dlls/dwmapi/dwmapi.spec   |     2 +-
  dlls/dwmapi/dwmapi_main.c |    52 +-
- 7 files changed, 27541 insertions(+), 16 deletions(-)
+ 7 files changed, 27589 insertions(+), 16 deletions(-)
  create mode 100644 dlls/dcomp/composition.c
 
 diff --git a/dlls/dcomp/Makefile.in b/dlls/dcomp/Makefile.in
@@ -32,10 +29,10 @@ index 3c14125..25e322f 100644
  	device.c
 diff --git a/dlls/dcomp/composition.c b/dlls/dcomp/composition.c
 new file mode 100644
-index 0000000..b4314e3
+index 0000000..8c0dfed
 --- /dev/null
 +++ b/dlls/dcomp/composition.c
-@@ -0,0 +1,26543 @@
+@@ -0,0 +1,26591 @@
 +/*
 + * Windows.UI.Composition
 + *
@@ -1843,6 +1840,24 @@ index 0000000..b4314e3
 +PROBE_STUB(30) PROBE_STUB(31) PROBE_STUB(32) PROBE_STUB(33) PROBE_STUB(34) PROBE_STUB(35)
 +PROBE_STUB(36) PROBE_STUB(37) PROBE_STUB(38) PROBE_STUB(39)
 +
++/* The private composition interfaces below are called like setters while a window's
++ * target is built, and the caller turns a refused slot into a stowed error and then a fail
++ * fast. Accepting them keeps the target alive; the slots are named in the log so the ones
++ * that really matter can be given a value later. */
++#define PROBE_OK(n)                                                                                \
++    static HRESULT WINAPI probe_ok_##n( void *iface )                                              \
++    {                                                                                              \
++        struct probe *probe = CONTAINING_RECORD( iface, struct probe, vtbl );                      \
++        FIXME( "compositor %s slot %u: accepted.\n", debugstr_guid(&probe->iid), (n) );            \
++        return S_OK;                                                                               \
++    }
++PROBE_OK(6)  PROBE_OK(7)  PROBE_OK(8)  PROBE_OK(9)  PROBE_OK(10) PROBE_OK(11)
++PROBE_OK(12) PROBE_OK(13) PROBE_OK(14) PROBE_OK(15) PROBE_OK(16) PROBE_OK(17)
++PROBE_OK(18) PROBE_OK(19) PROBE_OK(20) PROBE_OK(21) PROBE_OK(22) PROBE_OK(23)
++PROBE_OK(24) PROBE_OK(25) PROBE_OK(26) PROBE_OK(27) PROBE_OK(28) PROBE_OK(29)
++PROBE_OK(30) PROBE_OK(31) PROBE_OK(32) PROBE_OK(33) PROBE_OK(34) PROBE_OK(35)
++PROBE_OK(36) PROBE_OK(37) PROBE_OK(38) PROBE_OK(39)
++
 +/* IDCompositionDeviceDebug: there are no debug counters to show; both calls succeed. */
 +static HRESULT WINAPI device_debug_counters( void *iface )
 +{
@@ -1853,6 +1868,18 @@ index 0000000..b4314e3
 +{
 +    probe_QueryInterface, probe_AddRef, probe_Release,
 +    device_debug_counters /* EnableDebugCounters */, device_debug_counters /* DisableDebugCounters */,
++};
++
++static const void *probe_ok_vtbl[PROBE_SLOTS] =
++{
++    probe_QueryInterface, probe_AddRef, probe_Release,
++    probe_GetIids, probe_GetRuntimeClassName, probe_GetTrustLevel,
++    probe_ok_6,  probe_ok_7,  probe_ok_8,  probe_ok_9,  probe_ok_10, probe_ok_11,
++    probe_ok_12, probe_ok_13, probe_ok_14, probe_ok_15, probe_ok_16, probe_ok_17,
++    probe_ok_18, probe_ok_19, probe_ok_20, probe_ok_21, probe_ok_22, probe_ok_23,
++    probe_ok_24, probe_ok_25, probe_ok_26, probe_ok_27, probe_ok_28, probe_ok_29,
++    probe_ok_30, probe_ok_31, probe_ok_32, probe_ok_33, probe_ok_34, probe_ok_35,
++    probe_ok_36, probe_ok_37, probe_ok_38, probe_ok_39,
 +};
 +
 +static const void *probe_vtbl[PROBE_SLOTS] =
@@ -2075,8 +2102,22 @@ index 0000000..b4314e3
 +/* {36af3eb2-0371-49d7-9bb8-9c9414a9229c} (XAML's PointerSourceWrapper, the reveal lights' pointer tracking)
 + * is deliberately not answered: a probe there crashed XAML's light code, the refusal is only an ignored
 + * fail-fast per reveal brush. */
++/* The lifted composition helper asks the device it was handed for these three interfaces
++ * while it builds a window's target. Refusing them stows E_NOINTERFACE twice and XAML
++ * fail-fasts before the window's markup is loaded; the probe records whatever the callers
++ * do with the answer. */
++static const GUID IID_ICompositionDevicePrivateA_local =
++    { 0x5dda0f45, 0xa420, 0x4cfd, { 0x84, 0x4a, 0x2c, 0xb7, 0xac, 0x3d, 0x79, 0xc2 } };
++static const GUID IID_ICompositionDevicePrivateB_local =
++    { 0xdabd9f1a, 0x9d94, 0x4b5f, { 0x94, 0xe5, 0x34, 0xd3, 0xeb, 0xee, 0x50, 0xb8 } };
++static const GUID IID_ICompositionDevicePrivateC_local =
++    { 0xd4e43e6a, 0xd8ee, 0x4b7f, { 0xb3, 0x16, 0xb7, 0x57, 0x7d, 0xea, 0xfc, 0x38 } };
++
 +static const GUID *const compositor_required_ifaces[] =
 +{
++    &IID_ICompositionDevicePrivateA_local,
++    &IID_ICompositionDevicePrivateB_local,
++    &IID_ICompositionDevicePrivateC_local,
 +    &IID_IInteropCompositionDevice_private,
 +    &IID_IInteropCompositionDevice2_private,
 +    &IID_ICompositor2_private,
@@ -10571,7 +10612,11 @@ index 0000000..b4314e3
 +    if (!probe && probe_count < MAX_PROBES && (probe = calloc( 1, sizeof(*probe) )))
 +    {
 +        probe->vtbl = IsEqualGUID( iid, &IID_ICompositorPrivate5 ) ? dcprivate_get_vtbl()
-+                    : IsEqualGUID( iid, &IID_ICompositorDebug_private ) ? device_debug_vtbl : probe_vtbl;
++                    : IsEqualGUID( iid, &IID_ICompositorDebug_private ) ? device_debug_vtbl
++                    : IsEqualGUID( iid, &IID_ICompositionDevicePrivateA_local )
++                    || IsEqualGUID( iid, &IID_ICompositionDevicePrivateB_local )
++                    || IsEqualGUID( iid, &IID_ICompositionDevicePrivateC_local ) ? probe_ok_vtbl
++                    : probe_vtbl;
 +        probe->iid = *iid;
 +        probe->owner = owner;
 +        probes[probe_count++] = probe;

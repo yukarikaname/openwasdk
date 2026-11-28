@@ -1,11 +1,8 @@
-From 732c728d6b0920aef4449f03c62b3c0568bf065f Mon Sep 17 00:00:00 2001
+From 9db64d797dbccc917efdbeab1c37f7cd07276383 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:17:12 +0800
-Subject: [PATCH 3/9] win32u: answer the core messaging entry points
+Date: Sat, 28 Nov 2026 19:29:29 +0800
+Subject: [PATCH 03/10] win32u: answer the core messaging entry points
 
-The UDK layer and the composed window path go through user32 ordinals Wine
-carries as stubs: the thread core messaging IOCP, its completion drain, and the
-queue plumbing behind them.
 ---
  dlls/win32u/defwnd.c         |  61 +++++++++
  dlls/win32u/font.c           |  31 ++++-

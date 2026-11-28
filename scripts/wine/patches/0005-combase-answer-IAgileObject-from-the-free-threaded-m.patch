@@ -1,12 +1,9 @@
-From a0cf4f5cc7ebc65ef72093508d5242bada89d375 Mon Sep 17 00:00:00 2001
+From cabe2af0a6fb26374d93afdaa9a014bba54376d6 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:17:12 +0800
-Subject: [PATCH 5/9] combase: answer IAgileObject from the free-threaded
+Date: Sat, 28 Nov 2026 19:29:29 +0800
+Subject: [PATCH 05/10] combase: answer IAgileObject from the free-threaded
  marshaler
 
-An object wrapped with CoCreateFreeThreadedMarshaler is agile, and callers that
-ask the wrapper for the marker interface treat E_NOINTERFACE as a verdict and
-retry; the Windows implementation answers S_OK.
 ---
  dlls/combase/marshal.c | 7 +++++++
  1 file changed, 7 insertions(+)

@@ -1,10 +1,8 @@
-From 26b5535d8312e67406f1a8b8585d52d53d2051ad Mon Sep 17 00:00:00 2001
+From 6c7164f0ae57b62b67bc22a9e77b1cba58a58f78 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:17:12 +0800
-Subject: [PATCH 8/9] conhost: keep a text cell when no font is found
+Date: Sat, 28 Nov 2026 19:29:30 +0800
+Subject: [PATCH 08/10] conhost: keep a text cell when no font is found
 
-This build has no font backend, so the cell size stays zero and the drawing code
-divides by it.
 ---
  programs/conhost/window.c | 6 ++++++
  1 file changed, 6 insertions(+)
