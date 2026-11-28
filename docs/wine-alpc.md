@@ -97,3 +97,29 @@ Two things had to be fixed to get there, and neither is ALPC:
 The next wall is inside the engine rather than in front of it: the probe now answers a
 `QueryInterface` for `{9d4b87ff-6dca-5ce2-b69ce52705b0fef4}` with the probe's own `E_FAIL`
 and combase fail-fasts on it.
+
+## Where the wall is now (2026-11-28, later)
+
+With ALPC, wine-uwp's dcomp, the WinRT class registrations and a patched
+`RtlGetDeviceFamilyInfoEnum` in place, the probe reaches XAML's own composition setup.
+`dwmcorei.dll` -- the lifted DWM core -- still refuses to initialise (its `DllMain`
+returns `FALSE`, `ERROR_DLL_INIT_FAILED`, even in a bare process). Forcing its
+`DllMain` to answer `TRUE` moves the failure forward to graphics:
+
+    wined3d_select_feature_level: None of the requested D3D feature levels is supported
+    RoFailFastWithErrorContext 0x80004005
+
+The build had no Vulkan, so wined3d fell back to macOS OpenGL, which tops out below what
+XAML asks for. Getting Vulkan as far as a device took three things:
+
+- `SONAME_LIBVULKAN` in `include/config.h` came out of configure as the whole
+  `otool -L` identity line -- tab included -- so `dlopen` could never succeed;
+- `libvulkan.dylib` and `libMoltenVK.dylib` borrowed from the prebuilt Wine;
+- a MoltenVK ICD manifest in `VK_ICD_FILENAMES`; without it `vkCreateInstance` answers
+  `VK_ERROR_INCOMPATIBLE_DRIVER` (-9).
+
+After that `D3D11CreateDevice` succeeds on the Vulkan renderer, but wined3d still reports
+no usable feature level, and the MoltenVK instance is created at Vulkan **1.0.323** while
+the prebuilt Wine's own runs report **1.4.323**. That difference is the next thing to
+look at: the feature-level table wined3d builds depends on the API version the instance
+was created with.
