@@ -67,12 +67,11 @@ Do not:
 - Run `make install` without `scripts/wine/refresh-dxmt.sh` afterwards.
 - Set timers, schedules or automations without being asked.
 
-Next step: the input host builds XAML's composition target in
-`microsoft.ui.input+0x5f180`, and that function fails on its own `QueryInterface` of the new
-object for `{bcb4ad45-7609-4550-934f-16002a68fded}` (`+0x5f61e`), after which XAML stores a
-null target and faults at `+0x1c7ca8`. Disassemble the 0xa0-byte object's construction
-(`+0x5f2d7` to `+0x5f600`) and find what that identifier is; the object is the host's, so the
-answer is in how it is built, not in our compositor.
+Next step: the composition target is now built (`IDCompositionDesktopDevice` answered, the
+language list is a real HSTRING), the second fail fast is gone, and the crash has moved into
+XAML: `+0x678bd6` reads `0xa8(%rcx)` with a clear `rcx`, reached from `+0x7f4051` ->
+`+0x7bfb31` -> `+0x99b473` -> `+0x51370`. Annotate `+0x678b80`..`+0x678be0` to see which
+object the null should have been and which call fills it.
 
 The layout question the earlier note raised is settled for our side:
 `windows-interface` generates only the three `IUnknown` methods plus the declared ones, so

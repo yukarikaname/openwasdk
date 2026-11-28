@@ -418,6 +418,14 @@ interface it just queried as the in/out argument (`microsoft.ui.input+0x8cebc`).
 setter, and a stub that treated the u32 as an address wrote at the u32 itself. The slot now
 answers `S_OK` and leaves the in/out alone.
 
+That target creation then failed one step earlier than the input host: the host builds the target
+object by asking `dcomp!DCompositionCreateDevice3(NULL, IDCompositionDesktopDevice, ...)`, and
+Wine answered the public desktop identifier with `E_NOINTERFACE` because
+`compositor_QueryInterface` listed only `IDCompositionDevice`, 2 and 3. The flattened device
+table already carries `CreateTargetForHwnd` and `CreateSurfaceFromHwnd` after the device2
+methods, so the identifier is now answered with that table. The null-target crash disappeared and
+the stowed `E_NOINTERFACE` pair with it.
+
 The next stop is not in the input host. XAML's target creation goes through
 `microsoft.ui.input+0x6a3f0`, which clears its out parameter, calls `+0x5f180` to build a
 0xa0-byte target object and only then stores `target+0x50` into the out. Inside `+0x5f180`
@@ -426,3 +434,10 @@ the first thing that fails is a `QueryInterface` of that new object for the priv
 `E_NOINTERFACE` is returned, so the out stays null and XAML dereferences it at
 `+0x1c7ca8`. The new object is built inside the input host, so the queried interface is one
 its own code expects to answer, not one of ours.
+
+With the device answered, that whole path completes and the failure moves into XAML itself:
+`+0x678bd6` reads `0xa8(%rcx)` with `rcx` clear, from `+0x7f4051` -> `+0x7bfb31` ->
+`+0x99b473` -> `+0x51370`. On the way there the lifted UDK's language setup also had to be
+fixed: `bcp47langs!GetApplicationLanguages` returned `(void *)1` as an opaque list token, but
+the UDK owns that value as an HSTRING and deletes it with `WindowsDeleteString`, which read at
+address one. It returns a real string (the user's locale) now.
