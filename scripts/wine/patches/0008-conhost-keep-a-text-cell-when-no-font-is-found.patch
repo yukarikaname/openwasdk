@@ -1,0 +1,33 @@
+From 066115c36390880b819b6cfd9f82fd0d8dfb56ae Mon Sep 17 00:00:00 2001
+From: Yukari Kaname <yukari@aliciaworks.com>
+Date: Sat, 28 Nov 2026 18:50:16 +0800
+Subject: [PATCH 8/8] conhost: keep a text cell when no font is found
+
+This build has no font backend, so every look-up fails and the cell size stays zero; the
+drawing code then divides by it and the console process crashes with a division by zero
+on every thread that opens one. A default text cell keeps the arithmetic defined.
+---
+ programs/conhost/window.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/programs/conhost/window.c b/programs/conhost/window.c
+index f8fc7016a..5180d69f8 100644
+--- a/programs/conhost/window.c
++++ b/programs/conhost/window.c
+@@ -884,7 +884,13 @@ static void set_first_font( struct console *console, struct console_config *conf
+     fc.lf.lfHeight = config->cell_height;
+     fc.lf.lfWidth = config->cell_width;
+     if (!fc.weight || !set_console_font( console, &fc.lf ))
++    {
+         ERR("Unable to find a valid console font\n");
++        /* Without a font backend every look-up fails and the cell size stays zero; the
++         * drawing code divides by it. Keep a text cell so the arithmetic stays defined. */
++        if (!console->active->font.width) console->active->font.width = 8;
++        if (!console->active->font.height) console->active->font.height = 16;
++    }
+ 
+     /* Update active configuration */
+     config->cell_width  = console->active->font.width;
+-- 
+2.54.0 (Apple Git-157)
+

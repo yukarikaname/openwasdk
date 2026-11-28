@@ -1,7 +1,7 @@
 From aec644e6a01cc3229088e8365a92e996833eba96 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
 Date: Sat, 28 Nov 2026 18:40:58 +0800
-Subject: [PATCH 3/6] win32u: answer the core messaging entry points
+Subject: [PATCH 3/8] win32u: answer the core messaging entry points
 
 The UDK layer and the composed window path go through user32 ordinals Wine
 carries as stubs: the thread core messaging IOCP, its completion drain, and the
@@ -26,7 +26,7 @@ queue plumbing behind them.
  16 files changed, 597 insertions(+), 38 deletions(-)
 
 diff --git a/dlls/win32u/defwnd.c b/dlls/win32u/defwnd.c
-index a88304f..0085c1f 100644
+index a88304fa7..0085c1f3b 100644
 --- a/dlls/win32u/defwnd.c
 +++ b/dlls/win32u/defwnd.c
 @@ -2643,6 +2643,67 @@ LRESULT default_window_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
@@ -98,7 +98,7 @@ index a88304f..0085c1f 100644
          if (wparam)
          {
 diff --git a/dlls/win32u/font.c b/dlls/win32u/font.c
-index 97936e9..93cad86 100644
+index 97936e93a..93cad8613 100644
 --- a/dlls/win32u/font.c
 +++ b/dlls/win32u/font.c
 @@ -6603,11 +6603,8 @@ static void update_external_font_keys(void)
@@ -147,7 +147,7 @@ index 97936e9..93cad86 100644
      NtClose( winnt_key );
      NtClose( hkey );
 diff --git a/dlls/win32u/input.c b/dlls/win32u/input.c
-index 40f076a..f6e07a4 100644
+index 40f076a07..f6e07a4f5 100644
 --- a/dlls/win32u/input.c
 +++ b/dlls/win32u/input.c
 @@ -2209,6 +2209,10 @@ BOOL set_active_window( HWND hwnd, HWND *prev, BOOL mouse, BOOL focus, DWORD new
@@ -209,7 +209,7 @@ index 40f076a..f6e07a4 100644
 +    return STATUS_SUCCESS;
 +}
 diff --git a/dlls/win32u/main.c b/dlls/win32u/main.c
-index 22e5368..38e7b0b 100644
+index 22e5368b1..38e7b0b21 100644
 --- a/dlls/win32u/main.c
 +++ b/dlls/win32u/main.c
 @@ -2150,6 +2150,31 @@ INT SYSCALL_API NtUserScheduleDispatchNotification( HWND hwnd )
@@ -245,7 +245,7 @@ index 22e5368..38e7b0b 100644
                                   HRGN ret_update_rgn, RECT *update_rect )
  {
 diff --git a/dlls/win32u/message.c b/dlls/win32u/message.c
-index de1a484..5650d3d 100644
+index de1a48417..5650d3da4 100644
 --- a/dlls/win32u/message.c
 +++ b/dlls/win32u/message.c
 @@ -40,6 +40,7 @@
@@ -589,7 +589,7 @@ index de1a484..5650d3d 100644
 +    return ret;
 +}
 diff --git a/dlls/win32u/ntuser_private.h b/dlls/win32u/ntuser_private.h
-index 3a9dfa2..59256e4 100644
+index 3a9dfa2f3..59256e44b 100644
 --- a/dlls/win32u/ntuser_private.h
 +++ b/dlls/win32u/ntuser_private.h
 @@ -58,6 +58,7 @@ typedef struct tagWND
@@ -620,7 +620,7 @@ index 3a9dfa2..59256e4 100644
  
  extern struct user_thread_info *get_user_thread_info(void);
 diff --git a/dlls/win32u/syscall.c b/dlls/win32u/syscall.c
-index ca1be72..5ce0de5 100644
+index ca1be7227..5ce0de59e 100644
 --- a/dlls/win32u/syscall.c
 +++ b/dlls/win32u/syscall.c
 @@ -137,6 +137,9 @@ static void stub_syscall( const char *name )
@@ -634,7 +634,7 @@ index ca1be72..5ce0de5 100644
  ALL_SYSCALL_STUBS
  
 diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
-index c9cc892..cf6da6a 100644
+index c9cc892ae..cf6da6ab7 100644
 --- a/dlls/win32u/sysparams.c
 +++ b/dlls/win32u/sysparams.c
 @@ -7277,6 +7277,22 @@ int get_system_metrics( int index )
@@ -669,7 +669,7 @@ index c9cc892..cf6da6a 100644
      free( thread_info->mouse_tracking_info );
      free( thread_info );
 diff --git a/dlls/win32u/win32syscalls.h b/dlls/win32u/win32syscalls.h
-index 132ac47..b63aac0 100644
+index 132ac4783..b63aac052 100644
 --- a/dlls/win32u/win32syscalls.h
 +++ b/dlls/win32u/win32syscalls.h
 @@ -742,7 +742,7 @@
@@ -787,7 +787,7 @@ index 132ac47..b63aac0 100644
      SYSCALL_STUB( NtUserInitializeGenericHidInjection ) \
      SYSCALL_STUB( NtUserInitializeInputDeviceInjection ) \
 diff --git a/dlls/win32u/win32u.spec b/dlls/win32u/win32u.spec
-index 2c40901..4dfb31d 100644
+index 2c409010c..4dfb31d9d 100644
 --- a/dlls/win32u/win32u.spec
 +++ b/dlls/win32u/win32u.spec
 @@ -740,7 +740,7 @@
@@ -831,7 +831,7 @@ index 2c40901..4dfb31d 100644
  @ stdcall -syscall NtUserInitializeClientPfnArrays(ptr ptr ptr ptr)
  @ stub -syscall NtUserInitializeGenericHidInjection
 diff --git a/dlls/win32u/win32u_private.h b/dlls/win32u/win32u_private.h
-index 4f3eea7..79c33c5 100644
+index 4f3eea733..79c33c5d7 100644
 --- a/dlls/win32u/win32u_private.h
 +++ b/dlls/win32u/win32u_private.h
 @@ -311,6 +311,7 @@ extern HWND is_current_process_window( HWND hwnd );
@@ -843,7 +843,7 @@ index 4f3eea7..79c33c5 100644
  extern BOOL is_window_enabled( HWND hwnd );
  extern BOOL is_window_unicode( HWND hwnd );
 diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
-index 4f0610c..1160791 100644
+index 4f0610c2d..11607910f 100644
 --- a/dlls/win32u/window.c
 +++ b/dlls/win32u/window.c
 @@ -1320,6 +1320,18 @@ BOOL is_iconic( HWND hwnd )
@@ -897,7 +897,7 @@ index 4f0610c..1160791 100644
          return (ULONG_PTR)get_last_active_popup( hwnd );
  
 diff --git a/dlls/wow64/syscall.c b/dlls/wow64/syscall.c
-index d6fea09..a5f1a94 100644
+index d6fea09ce..a5f1a9493 100644
 --- a/dlls/wow64/syscall.c
 +++ b/dlls/wow64/syscall.c
 @@ -497,6 +497,24 @@ NTSTATUS WINAPI wow64_NtAlpcAcceptConnectPort( UINT *args )
@@ -926,7 +926,7 @@ index d6fea09..a5f1a94 100644
   *           wow64_NtAlpcConnectPort
   */
 diff --git a/dlls/wow64win/user.c b/dlls/wow64win/user.c
-index 0d549da..34a9eee 100644
+index 0d549da89..34a9eee57 100644
 --- a/dlls/wow64win/user.c
 +++ b/dlls/wow64win/user.c
 @@ -2917,6 +2917,16 @@ static void pointer_info_list_64to32( UINT size, UINT count, void *out, const vo
@@ -986,7 +986,7 @@ index 0d549da..34a9eee 100644
  {
      HWND hwnd = get_handle( &args );
 diff --git a/include/ntuser.h b/include/ntuser.h
-index ad0eccb..90e6634 100644
+index ad0eccb05..90e6634ab 100644
 --- a/include/ntuser.h
 +++ b/include/ntuser.h
 @@ -970,6 +970,11 @@ W32KAPI BOOL    WINAPI NtUserRemoveMenu( HMENU menu, UINT id, UINT flags );
@@ -1012,7 +1012,7 @@ index ad0eccb..90e6634 100644
  
  static inline void NtUserActivateOtherWindow( HWND hwnd )
 diff --git a/server/queue.c b/server/queue.c
-index 2449f0c..b6cc920 100644
+index 2449f0c8f..b6cc920d1 100644
 --- a/server/queue.c
 +++ b/server/queue.c
 @@ -136,6 +136,10 @@ struct msg_queue

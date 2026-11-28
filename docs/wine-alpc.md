@@ -288,6 +288,25 @@ different kind of problem:
   its own within the first minute, so text is the visible wall and window creation is
   the one behind it.
 
+Two smaller gaps sat between those walls and the window:
+
+- **`PropertyValue` answered `GetRuntimeClassName` with `E_NOTIMPL`.** A value from
+  `PropertyValue.CreateDouble` is an `IReference<Double>`, and the projection asks for
+  the class name to decide what the managed object is; without it the cast went to
+  `IInspectable`, threw `InvalidCastException` ("Unable to cast object of type
+  'WinRT.IInspectable' to type 'System.Double'") and ended the process while the theme
+  resources were still loading. Giving property values the class name of the reference
+  they implement moved the application all the way to `Microsoft.UI.Xaml.Window` for the
+  first time.
+- **conhost divided by a zero cell height.** This build has no font backend, so the font
+  look-up fails and the cell size stays zero; every thread that opened a console crashed
+  with a division by zero. A default text cell keeps the arithmetic defined.
+
+Past the window the application asks for `dcompi.dll`, which is ours and was not deployed;
+with it in the application directory the composition activation reaches `opencomp`, which
+is asked for the private compositor statics and fails fast on the slot it does not answer
+yet. That is the next piece of work, and it is ours rather than Wine's.
+
 The order matters for what to do next: the diagnostics port is a debugging feature
 whose failure only matters because of `IFCFAILFAST`, while D2D text is on the path
 every WinUI 3 application takes.
