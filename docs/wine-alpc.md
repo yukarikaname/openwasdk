@@ -123,3 +123,26 @@ no usable feature level, and the MoltenVK instance is created at Vulkan **1.0.32
 the prebuilt Wine's own runs report **1.4.323**. That difference is the next thing to
 look at: the feature-level table wined3d builds depends on the API version the instance
 was created with.
+
+
+## Metal instead of Vulkan (2026-11-28)
+
+wined3d on this machine tops out below what XAML asks for whatever the renderer: the GL
+backend cannot reach the feature levels, and the Vulkan backend needs MoltenVK wired up
+exactly right. DXMT replaces `d3d11.dll`/`dxgi.dll` with a Metal implementation and
+reports `D3D_FEATURE_LEVEL_11_1` immediately:
+
+    info:  Maximum supported feature level: D3D_FEATURE_LEVEL_11_1
+    info:  Using feature level D3D_FEATURE_LEVEL_11_1
+
+Getting there needs DXMT built against *this* Wine, not the prebuilt release: the PE
+side's unixlib has to be installed as a builtin, and a prefix keeps its own copy of
+`d3d11.dll` which wins over anything else. So the recipe is an installed Wine
+(`make install DESTDIR=...`) plus `meson install` of DXMT into that layout;
+`scripts/wine/build-dxmt.sh` is the whole of it, LLVM 15 included.
+
+With that, the probe reaches `measure window content` on Metal. The wall is now the one
+place nothing on this side can patch around: `dwmcorei.dll`'s `DllMain` returns
+`FALSE` -- relay shows it creating a D2D1 factory successfully and then unwinding -- so
+the lifted DWM core never initialises, XAML's composition helper keeps a null device, and
+the process faults on `[null + 0x360]`.
