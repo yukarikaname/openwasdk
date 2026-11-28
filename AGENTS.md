@@ -31,50 +31,52 @@ Start from those rather than re-deriving facts that cost a day each.
 - `comptrace stubs <dll>` — one export stub per name in a PE, with `--check`.
 - `xwinui activation --sdk <msix>` — the activation table, from the SDK's own manifest.
 
-## The Gallery run
+## The end-to-end case
 
-Goal: get the unmodified WinUI Gallery past `Application.LoadComponent` under Wine, or
-prove which rule is the hard stop. It now builds the composition device, hands it to
-`Microsoft.UI.Input`'s composition helper and gets through that helper's first two
-composition queries (`ICompositor7` and its `DispatcherQueue`); it dies where the helper
-calls a private slot of `{bbcb00be-cd17-4093-9ac0-d4b00472acea}` that our bridge answers
-with the wrong argument shape, an access write inside `ICompositionTargetBridge_Impl`.
+WinUI Gallery is the acceptance case, not the goal. The goal is the App SDK ABI: the same
+`Microsoft.UI.Composition`, `Microsoft.Internal.FrameworkUdk`, `CoreApplication` and XAML
+activation surface answered by our DLLs on any host. Windows is where the ABI is verified
+(the baseline VM); Wine is only a host, and `scripts/wine/patches` is frozen.
 
 Do:
 
-- Measure before claiming. Run from `target/gallery/out` with `WINEPREFIX=\
-  /Volumes/Lenovo/wine/prefix-winrt`, `WINEDLLOVERRIDES=twinapi.appcore=n`, and
-  `OPENWASDK_SOFT_FAILFAST=1 OPENCOMP_TRACE=1 OPENCOMP_STUB_OK=1`; the stack comes from
-  `OPENCOMP_BT=1` plus `OPENWASDK_FAILFAST=1`.
-- Keep `scripts/wine/patches` equal to the working tree. Verify by applying the series to a
-  clean wine-11.22 and diffing **every** source file the series should carry, added files
-  included; a file that exists only in the working tree is a hole in the series.
-- Use `scripts/xaml/annotate.py <dll> <rva>` to decode call sites: it names imports and
-  GUIDs.
-- Record negative results in `docs/` in the same session (the vtable-copying wrapper is
-  one: a copied table still passes the wrapper as `this`).
+- Check published work before writing a probe. `wine-uwp` / `wine-ultimate` describe how the
+  platform side behaves; Uno Platform and Avalonia show how a XAML-compatible engine is
+  structured; `microsoft/microsoft-ui-xaml` and the WinMD metadata are the contract.
+- Verify against Microsoft's binaries on Windows first. `scripts/vm` boots the baseline,
+  `comptrace methods|classes|interfaces` reads the metadata, `annotate.py <dll> <rva>` decodes
+  call sites.
+- Record negative results in `docs/` in the same session.
 - Commit each measured step, kernel style, no dates in docs, files under 500 lines.
-- Kill `winedbg` and leftover `wineserver` after a crashing run.
+- Keep the ten Wine patches as they are; they are measurement scaffolding.
 
 Do not:
 
-- Change Microsoft's DLLs, d3d11, d2d1 or win32k, and do not propose the Wine changes
-  upstream; the tree is a laboratory.
-- Answer a private interface with a look-alike object when the caller reads fields behind
-  the pointer. Stubs are for learning which slot is called, and a stub handed out in that
-  role carries the creating thread id at +0x50.
-- Add `\#[allow]`, or hard-code an absolute path in a script (pass it as an argument).
-- Run `make install` without `scripts/wine/refresh-dxmt.sh` afterwards.
+- Add Wine patches, or propose Wine changes upstream. A finding that needs another Wine
+  patch means the runtime is answering the wrong contract.
+- Copy or translate third-party engine code (Wine, Uno, Avalonia); read for behaviour only.
+- Add `#[allow]`, or hard-code an absolute path in a script (pass it as an argument).
 - Set timers, schedules or automations without being asked.
+## Existing work to check before implementing anything Wine-side
 
-Next step: the composition target is now built (`IDCompositionDesktopDevice` answered, the
-language list is a real HSTRING), the second fail fast is gone, and the crash has moved into
-XAML: `+0x678bd6` reads `0xa8(%rcx)` with a clear `rcx`, reached from `+0x7f4051` ->
-`+0x7bfb31` -> `+0x99b473` -> `+0x51370`. Annotate `+0x678b80`..`+0x678be0` to see which
-object the null should have been and which call fills it.
+Wine-side features implemented in this tree overlap with published forks. Check them before
+writing a probe or guessing an ABI, and record what was found.
 
-The layout question the earlier note raised is settled for our side:
-`windows-interface` generates only the three `IUnknown` methods plus the declared ones, so
-a private interface's first method sits at vtable offset 0x18 and the caller's 0x20 is its
-second. Our methods now take an out pointer and write a padded stub into it, which keeps a
-caller from reading a null even when the slot means nothing to us.
+- **ZhymabekRoman/wine-ultimate** — Wine 11.10 plus the WinUI 3 / Windows App SDK /
+  DirectComposition stack; branch `patches-archive` carries 153 patches with per-patch
+  design and measurement notes. Already answers what this tree was rediscovering:
+  `dcomp.spec` names ordinal 1040 `DCompositionCreateSharedVisualHandle`; its test shows
+  that call returns a kernel handle of type "Composition" whose values step by four; the
+  shared visual comes from the server request `dcomp_create_shared_visual` and is bound
+  with `dcomp_set_shared_visual_info`; `dlls/frameworkudk.system/main.c` (223 lines)
+  replaces the UDK; XAML activation is generated from the PE creator map (650
+  `Microsoft.UI.Xaml.*` classes, 151 Controls classes).
+- **designgears/wine-uwp** — about 49k lines over 196 files: own `dlls/dcomp`,
+  composition swap chains, and `wineuwp` app-model host (package identity, activation,
+  CoreWindow). Runs Shapr3D, Solitaire, Calculator.
+- **geoffwoollams/wine-uwp** — Wine 11.22 plus UWP support, partial `Windows.UI.Xaml`
+  (Minecraft, Halo Wars 2).
+- **HITB 2023 "The Lost World of DirectComposition"** and Simon Mourier's
+  direct-composition notes: background for the private DComp interfaces.
+
+Next step: pick the runtime track first. For each App SDK component the baseline VM answers: which object, which interface, which slot, which out parameter. Start with `Microsoft.UI.Composition` core objects (Compositor, Visual, CompositionObject), write the ABI test against the official DLL on Windows, then make the Rust implementation pass the same test. In parallel, `xbf` plus `xwinui activation` should render a XAML document without the engine, so the XAML side can be checked without Wine or Windows.
