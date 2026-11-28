@@ -50,6 +50,18 @@ pub enum Kind {
     Application,
     Style,
     DataTemplate,
+    /* Text inlines: they carry a run's text, not a box to lay out. */
+    Paragraph,
+    Run,
+    Span,
+    /* Content controls the Gallery's pages put on screen. */
+    Button,
+    ScrollViewer,
+    TextBox,
+    RichTextBlock,
+    InfoBar,
+    TitleBar,
+    SplitButton,
 }
 
 impl Kind {
@@ -68,11 +80,43 @@ impl Kind {
             Self::Application => "Microsoft.UI.Xaml.Application",
             Self::Style => "Microsoft.UI.Xaml.Style",
             Self::DataTemplate => "Microsoft.UI.Xaml.DataTemplate",
+            Self::Paragraph => "Microsoft.UI.Xaml.Documents.Paragraph",
+            Self::Run => "Microsoft.UI.Xaml.Documents.Run",
+            Self::Span => "Microsoft.UI.Xaml.Documents.Span",
+            Self::Button => "Microsoft.UI.Xaml.Controls.Button",
+            Self::ScrollViewer => "Microsoft.UI.Xaml.Controls.ScrollViewer",
+            Self::TextBox => "Microsoft.UI.Xaml.Controls.TextBox",
+            Self::RichTextBlock => "Microsoft.UI.Xaml.Controls.RichTextBlock",
+            Self::InfoBar => "Microsoft.UI.Xaml.Controls.InfoBar",
+            Self::TitleBar => "Microsoft.UI.Xaml.Controls.TitleBar",
+            Self::SplitButton => "Microsoft.UI.Xaml.Controls.SplitButton",
         }
     }
 
     /// Accepts the full name or the short XAML name.
     pub fn from_type_name(name: &str) -> Option<Self> {
+        if let Some(known) = Self::from_exact_name(name) {
+            return Some(known);
+        }
+        /*
+         * XBF writes the type under the namespace it was declared in, and the
+         * presentation namespace is spelled as a URI in application files. Strip only
+         * the WinUI namespaces: a type from the application's own namespace is not a
+         * standard control and must not be guessed to be one.
+         */
+        let prefixes = [
+            "Microsoft.UI.Xaml.Controls.",
+            "Microsoft.UI.Xaml.Documents.",
+            "Microsoft.UI.Xaml.",
+            "http://schemas.microsoft.com/client/2007.",
+        ];
+        prefixes
+            .iter()
+            .find_map(|prefix| name.strip_prefix(prefix))
+            .and_then(Self::from_exact_name)
+    }
+
+    fn from_exact_name(name: &str) -> Option<Self> {
         match name {
             "StackPanel" | "Microsoft.UI.Xaml.Controls.StackPanel" => Some(Self::StackPanel),
             "Border" | "Microsoft.UI.Xaml.Controls.Border" => Some(Self::Border),
@@ -81,15 +125,21 @@ impl Kind {
             "Page" | "Microsoft.UI.Xaml.Controls.Page" => Some(Self::Page),
             "UserControl" | "Microsoft.UI.Xaml.Controls.UserControl" => Some(Self::UserControl),
             "Window" | "Microsoft.UI.Xaml.Window" => Some(Self::Window),
-            "ContentDialog" | "Microsoft.UI.Xaml.Controls.ContentDialog" => {
-                Some(Self::ContentDialog)
-            }
-            "ResourceDictionary" | "Microsoft.UI.Xaml.ResourceDictionary" => {
-                Some(Self::ResourceDictionary)
-            }
+            "ContentDialog" | "Microsoft.UI.Xaml.Controls.ContentDialog" => Some(Self::ContentDialog),
+            "ResourceDictionary" | "Microsoft.UI.Xaml.ResourceDictionary" => Some(Self::ResourceDictionary),
             "Application" | "Microsoft.UI.Xaml.Application" => Some(Self::Application),
             "Style" | "Microsoft.UI.Xaml.Style" => Some(Self::Style),
             "DataTemplate" | "Microsoft.UI.Xaml.DataTemplate" => Some(Self::DataTemplate),
+            "Paragraph" | "Microsoft.UI.Xaml.Documents.Paragraph" => Some(Self::Paragraph),
+            "Run" | "Microsoft.UI.Xaml.Documents.Run" => Some(Self::Run),
+            "Span" | "Microsoft.UI.Xaml.Documents.Span" => Some(Self::Span),
+            "Button" | "Microsoft.UI.Xaml.Controls.Button" => Some(Self::Button),
+            "ScrollViewer" | "Microsoft.UI.Xaml.Controls.ScrollViewer" => Some(Self::ScrollViewer),
+            "TextBox" | "Microsoft.UI.Xaml.Controls.TextBox" => Some(Self::TextBox),
+            "RichTextBlock" | "Microsoft.UI.Xaml.Controls.RichTextBlock" => Some(Self::RichTextBlock),
+            "InfoBar" | "Microsoft.UI.Xaml.Controls.InfoBar" => Some(Self::InfoBar),
+            "TitleBar" | "Microsoft.UI.Xaml.Controls.TitleBar" => Some(Self::TitleBar),
+            "SplitButton" | "Microsoft.UI.Xaml.Controls.SplitButton" => Some(Self::SplitButton),
             _ => None,
         }
     }
@@ -160,6 +210,20 @@ impl Element {
         let mut element = Self::new(Kind::TextBlock);
         element.set_text(text);
         element
+    }
+
+    /// Hosts that hold resources, styles or template bodies: nothing below them is
+    /// arranged, painted or composed, so the loader does not build their children.
+    pub const fn is_non_visual(kind: Kind) -> bool {
+        matches!(
+            kind,
+            Kind::ResourceDictionary
+                | Kind::Style
+                | Kind::DataTemplate
+                | Kind::Paragraph
+                | Kind::Run
+                | Kind::Span
+        )
     }
 
     pub const fn kind(&self) -> Kind {

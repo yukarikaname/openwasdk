@@ -31,7 +31,7 @@ pub use element::{
     Thickness, Value, VerticalAlignment, Visibility,
 };
 pub use layout::{Layout, LayoutError, Size, arrange, measure};
-pub use loader::{LoadError, load, load_root};
+pub use loader::{Controls, LoadError, load, load_root, load_with};
 pub use opencomp_core::Rect;
 pub use property::{Property, PropertyError, PropertyId, ValueType};
 pub use support::{properties, supports};

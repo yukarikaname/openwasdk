@@ -4,10 +4,16 @@
 //! Microsoft DLL. The same three steps a host takes -- load, arrange, compose -- then
 //! the renderer from `opencomp-core` writes a PPM.
 //!
+//! Every other `.xbf` beside the page is loaded as the body of the control whose name it
+//! carries, which is how a page's `<controls:ControlExample>` gets a tree at all.
+//!
 //! `cargo run -p openxaml --example render -- MainWindow.xbf page.ppm [width height]`
 
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+
 use opencomp_core::{Renderer, srgb};
-use openxaml::{Rect, Size};
+use openxaml::{Controls, Rect, Size};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
@@ -16,15 +22,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let width: u32 = args.next().map_or(Ok(800), |v| v.parse())?;
     let height: u32 = args.next().map_or(Ok(600), |v| v.parse())?;
 
-    let xbf = xbf::parse_file(std::path::Path::new(&source))?;
+    let path = Path::new(&source);
+    let xbf = xbf::parse_file(path)?;
     let model = xbf.model()?;
-    let roots = openxaml::load(&model)?;
+    let controls = bodies(&app_root(path));
+    let roots = openxaml::load_with(&model, &controls)?;
     let Some(mut root) = roots.into_iter().next() else {
         return Err("the page has no root element".into());
     };
 
-    let size = Size::new(width as f32, height as f32);
-    let measured = root.measure(size)?;
+    let measured = root.measure(Size::new(width as f32, height as f32))?;
     eprintln!("measured {measured:?}");
     let layout = root.arrange(Rect::new(0.0, 0.0, width as f32, height as f32))?;
     let tree = root.compose(&layout);
@@ -47,4 +54,58 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     eprintln!("wrote {out}");
     Ok(())
+}
+
+/// The directory the application was published to: the one that holds `App.xbf`.
+///
+/// A page lives in a subdirectory of it, so the walk goes up from the page.
+fn app_root(page: &Path) -> PathBuf {
+    let mut dir = page.parent().unwrap_or(Path::new(".")).to_path_buf();
+    for _ in 0..8 {
+        if dir.join("App.xbf").is_file() {
+            return dir;
+        }
+        match dir.parent() {
+            Some(parent) => dir = parent.to_path_buf(),
+            None => break,
+        }
+    }
+    page.parent().unwrap_or(Path::new(".")).to_path_buf()
+}
+
+/// Every control body under `root`, keyed by the file name without its extension.
+///
+/// A control body is the `.xbf` of the class the page names, and the class's simple
+/// name is what the file is called; a body that does not parse is skipped, because a
+/// page must not fail on a control it never uses.
+fn bodies(root: &Path) -> Controls {
+    let mut files: HashMap<String, PathBuf> = HashMap::new();
+    collect(root, &mut files);
+    let mut controls = Controls::default();
+    for (name, path) in files {
+        let Ok(file) = xbf::parse_file(&path) else {
+            continue;
+        };
+        let Ok(model) = file.model() else {
+            continue;
+        };
+        controls.insert(&name, model);
+    }
+    controls
+}
+
+fn collect(dir: &Path, out: &mut HashMap<String, PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            collect(&path, out);
+        } else if path.extension().is_some_and(|kind| kind == "xbf") {
+            if let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) {
+                out.entry(stem.to_string()).or_insert(path);
+            }
+        }
+    }
 }

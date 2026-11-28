@@ -2,7 +2,7 @@
 //!
 //! The numbers are hand-computed from the engine algorithms named in `src/layout.rs`; a
 //! passing test says this layer implements the rule, not that WinUI produces the same
-//! number. That comparison needs the numbers `scripts/gate-b.sh` collects, and the first
+//! number. That comparison needs the numbers the Windows baseline records, and the first
 //! one of those -- a vertical `StackPanel` with `Spacing = 4` and three 10 px children --
 //! is 38, which is also what this file asserts.
 

@@ -94,7 +94,7 @@
 //!   cannot produce them, so this layer does not pretend it can.
 //!
 //! The numbers are this port's; conformance to the engine needs the measurements
-//! `scripts/gate-b.sh` collects.
+//! `docs/composition-baseline.md` records.
 
 use std::fmt;
 
@@ -258,13 +258,26 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         Kind::TextBlock => Ok(measure_text(element)),
         // A content host (Page, UserControl, Window) carries the same chrome: border
         // thickness and padding deflate the one child, and nothing else is laid out.
-        Kind::Border | Kind::Page | Kind::UserControl | Kind::Window | Kind::ContentDialog => {
-            measure_border(element, available)
-        }
+        Kind::Border
+        | Kind::Page
+        | Kind::UserControl
+        | Kind::Window
+        | Kind::ContentDialog
+        | Kind::Button
+        | Kind::ScrollViewer
+        | Kind::TextBox
+        | Kind::RichTextBlock
+        | Kind::InfoBar
+        | Kind::TitleBar
+        | Kind::SplitButton => measure_border(element, available),
         // A resource dictionary and an Application are not part of the visual tree.
-        Kind::ResourceDictionary | Kind::Application | Kind::Style | Kind::DataTemplate => {
-            Ok(Size::new(0.0, 0.0))
-        }
+        Kind::ResourceDictionary
+        | Kind::Application
+        | Kind::Style
+        | Kind::DataTemplate
+        | Kind::Paragraph
+        | Kind::Run
+        | Kind::Span => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
     }
@@ -327,11 +340,26 @@ pub(super) fn arrange_with_desired(
 fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, LayoutError> {
     match element.kind() {
         Kind::TextBlock => Ok(Vec::new()),
-        Kind::Border | Kind::Page | Kind::UserControl | Kind::Window | Kind::ContentDialog => {
-            arrange_border(element, content)
-        }
+        Kind::Border
+        | Kind::Page
+        | Kind::UserControl
+        | Kind::Window
+        | Kind::ContentDialog
+        | Kind::Button
+        | Kind::ScrollViewer
+        | Kind::TextBox
+        | Kind::RichTextBlock
+        | Kind::InfoBar
+        | Kind::TitleBar
+        | Kind::SplitButton => arrange_border(element, content),
         // Nothing below a non-visual host is arranged, so nothing of it is composed.
-        Kind::ResourceDictionary | Kind::Application | Kind::Style | Kind::DataTemplate => Ok(Vec::new()),
+        Kind::ResourceDictionary
+        | Kind::Application
+        | Kind::Style
+        | Kind::DataTemplate
+        | Kind::Paragraph
+        | Kind::Run
+        | Kind::Span => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }

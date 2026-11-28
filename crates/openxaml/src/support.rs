@@ -40,6 +40,104 @@ macro_rules! type_support {
 
 static TABLE: &[TypeSupport] = &[
     type_support!(
+        Kind::Button,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::ScrollViewer,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::TextBox,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::RichTextBlock,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::InfoBar,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::TitleBar,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::SplitButton,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
         Kind::Style,
         &property::WIDTH,
         &property::HEIGHT,
@@ -321,16 +419,16 @@ mod tests {
 
     #[test]
     fn a_type_outside_the_table_is_rejected() {
-        /* Button is the Gallery's most used control and still outside the table. */
+        /* ListView is on the Gallery's pages and still outside the table. */
         let error =
-            load_root(&source("Button", Vec::new())).expect_err("Button is not in the table");
+            load_root(&source("ListView", Vec::new())).expect_err("ListView is not in the table");
         assert_eq!(
             error,
             LoadError::UnsupportedType {
-                name: "Button".to_string()
+                name: "ListView".to_string()
             }
         );
-        assert!(!supports("Button"));
-        assert!(properties("Button").is_empty());
+        assert!(!supports("ListView"));
+        assert!(properties("ListView").is_empty());
     }
 }

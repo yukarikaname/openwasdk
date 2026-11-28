@@ -280,55 +280,28 @@ private interface is counted.
 
 ## The run loop
 
-Everything Windows-shaped is verified on GitHub's runners, because this machine has
-no Windows and no Wine:
+Everything Windows-shaped is verified on GitHub's runners or on the baseline VM:
 
 | step | what it proves |
 | --- | --- |
 | `cargo test --workspace` on `windows-latest` | the ABI objects and the presenter work on a real Windows |
-| the same binary under Wine on `ubuntu-24.04` (Xvfb, software rendering) | they work on the runtime a Linux user has |
-| `tests/gate_a.rs` in both | a window, an island, a bridge, and at least one presented frame |
-| `opencomp-client` under Wine | the same path as a program rather than a test |
+| `tests/gate_a.rs` there | a window, an island, a bridge, and at least one presented frame |
+| the Gallery on the baseline VM | the engine runs on our `dcompi` shim and draws (`composition-baseline.md`) |
 | mingw link + `objdump -p` | the PE has the three exports it must |
 
-Two rules keep the loop honest. Anything that can hang is wrapped in `timeout`, so
-a wedged graphics call is a red step with a log rather than a dead runner; and
-`RUST_BACKTRACE=1` is set for the Wine run, because a panic without symbols there
-is a dead end.
+Anything that can hang is wrapped in `timeout`, so a wedged graphics call is a red
+step with a log rather than a dead runner.
 
 `OPENCOMP_TRACE=1` makes the presenter name each graphics stage before it runs, so a
 stage that never returns prints its own name and nothing after it. The first frame
 costs a device, a swapchain and a D2D target before anything is drawn, which is
-16 ms on the Windows runner and 2.8 s under Wine's software rasterizer -- a wait for
-the first frame has to be seconds, not frames.
+16 ms on the Windows runner, so a wait for the first frame has to be seconds, not
+frames.
 
 The client links the compositor as a library *and* loads it as a DLL through combase,
 which is two copies of the same statics. Anything a host wants to read back (the
 frame counter, for one) has to come from the copy that did the work, which is why
 `opencomp_frames_presented` is exported.
-
-### Running Gate B locally
-
-`scripts/gate-b.sh` is the whole procedure -- fetch the App SDK, build the probe, run
-it under Wine -- and the CI job only calls it. The same script runs in an x86-64 Linux
-container, which is the same userland as the runner:
-
-```sh
-container system start
-container run -d --name wasdk --arch amd64 --rosetta \
-    -v "$PWD:/src" -w /src ubuntu:24.04 sleep infinity
-container exec wasdk bash -lc 'apt-get update && apt-get install -y wine64 xvfb \
-    gcc-mingw-w64-x86-64 curl unzip ca-certificates'
-container exec wasdk bash -lc 'cd /src && bash scripts/gate-b.sh target/appsdk'
-```
-
-`NUGET_BASE` points the fetch at another flat-container host when nuget.org is not the
-closest source; the path below it is the same. The base image carries no CA store, so
-`apt` needs `ca-certificates` before an `https` source works.
-
-The first probe run reports `LoadLibraryW` failing with `ERROR_MOD_NOT_FOUND`; the
-script sets `WINEDEBUG=err+loaddll` so the module that is missing is printed. That name
-is the next thing to add or stub.
 
 ## Milestones
 
@@ -348,7 +321,7 @@ cross the boundary.
 
 Not a milestone: an unmodified WinUI Gallery -- a Windows PE and a .NET application --
 running natively on macOS. It needs the engine, D3D and the lifted DWM; Wine was measured
-not to supply them (`gate-b.md`), so that target is a Windows VM, not this project. What
+not to supply them, so that target is a Windows VM, not this project. What
 runs off Windows is the track above: our own `.xbf` reader, layout, compositor and
 renderer. A source-level C# facade can also run managed WinUI code on macOS, and one
 exists (`refs/winui3-mac-test-runtime`); it needs the application rebuilt against its

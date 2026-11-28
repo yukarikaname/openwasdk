@@ -1385,23 +1385,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "opencore"
-version = "0.1.0"
-dependencies = [
- "windows-core 0.100.0",
-]
-
-[[package]]
-name = "opendispatch"
-version = "0.1.0"
-dependencies = [
- "windows",
- "windows-core 0.100.0",
- "windows-future 0.100.0",
- "windows-time",
-]
-
-[[package]]
 name = "openudk"
 version = "0.1.0"
 
@@ -3006,15 +2989,6 @@ name = "x11rb-protocol"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea6fc2961e4ef194dcbfe56bb845534d0dc8098940c7e5c012a258bfec6701bd"
-
-[[package]]
-name = "xaml-probe"
-version = "0.1.0"
-dependencies = [
- "windows-collections 0.100.0",
- "windows-core 0.100.0",
- "windows-sys 0.61.2",
-]
 
 [[package]]
 name = "xbf"

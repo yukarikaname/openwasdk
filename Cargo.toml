@@ -3,14 +3,11 @@ resolver = "3"
 members = [
     "crates/comptrace",
     "crates/dcompi",
-    "crates/opencore",
     "crates/opencomp",
-    "crates/opendispatch",
     "crates/opencomp-client",
     "crates/opencomp-core",
     "crates/openudk",
     "crates/openxaml",
-    "crates/xaml-probe",
     "crates/xbf",
     "crates/xwinui",
 ]

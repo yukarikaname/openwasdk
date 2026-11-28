@@ -44,9 +44,10 @@ macOS, or any other host.
 There are two paths to running WinUI 3 here, and a number without its path is a
 misleading number:
 
-- **Gates B-D**: Microsoft's own `Microsoft.ui.xaml.dll` runs on top of our layers
-  (`opencomp`, `opendispatch`, `openudk`). Every XAML runtime class is Microsoft's code;
-  our obligation is the ABI underneath it.
+- **The engine, hosted**: Microsoft's own `Microsoft.ui.xaml.dll` runs on top of our
+  layers (`dcompi`, `opencomp`, `openudk`). Every XAML runtime class is Microsoft's code;
+  our obligation is the ABI underneath it, and `dcompi` asks the engine's own shim first
+  (`docs/composition-baseline.md`).
 - **Milestone 6**: `openxaml` replaces that DLL. There we implement the classes.
 
 ### The layers beneath the official engine
@@ -64,7 +65,7 @@ the ones that answer `E_NOTIMPL`; denominators from the metadata in
 | App SDK classes with an activation entry | 1033 | 1033 | **100%** (generated) |
 | XBF node kinds mapped to an element tree | 30 | 39 | **77%** |
 | XBF value kinds | 11 | 11 | **100%** |
-| Acceptance gates | A, Gallery window under our `dcompi` | A-D | **2** |
+| Acceptance | Gallery window under our `dcompi`; 10 of 195 pages render off Windows | - | - |
 | Tests | 186 | - | - |
 
 Fifty-eight composition interface types are implemented; the engine imports 73, and the

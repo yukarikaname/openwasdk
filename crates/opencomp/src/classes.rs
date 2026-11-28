@@ -3,7 +3,7 @@
 //! Wine's combase treats a manifest entry the DLL does not serve as fatal -- the process
 //! ends instead of returning a code the caller can handle -- so every name here needs a
 //! factory, even when the factory can only refuse. The list is generated from the SDK's
-//! own `AppxManifest.xml` (see `docs/gate-b.md`); keep it in step with the manifest or an
+//! own `AppxManifest.xml` (ask `xwinui activation`); keep it in step or an
 //! application dies on a class this crate has never heard of.
 
 /// Every runtime class the activation manifest points at this DLL.

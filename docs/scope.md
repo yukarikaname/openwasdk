@@ -15,9 +15,9 @@ Two tracks, and neither of them patches Wine:
 
 - **Runtime (B).** An ABI-compatible reimplementation of the App SDK's own
   components in Rust: `opencomp` (`Microsoft.UI.Composition`), `openudk`
-  (`Microsoft.Internal.FrameworkUdk`), `opencore` (`twinapi.appcore`'s
-  `CoreApplication` surface), `opendispatch`, and `openxaml`. It is verified
-  against the official binaries on Windows, not against a host's emulation.
+  (`Microsoft.Internal.FrameworkUdk`), `dcompi` (the activation shim the lifted
+  compositor ships), and `openxaml`. It is verified against the official binaries
+  on Windows, not against a host's emulation.
 - **Tools (C).** `xwinui` (cross-compile, package, deploy), `xbf` (XAML binary
   format), `comptrace` / `annotate.py` (ABI discovery), and a preview/render
   path that shows a XAML document without starting the real engine.
@@ -29,8 +29,8 @@ out of scope: it means the runtime is answering the wrong contract.
 
 ## Status of the tracks
 
-The contract layer is the main line: `opencomp`, `openudk`, `opencore`, `opendispatch`, and
-the tools (`xbf`, `xwinui`, `comptrace`, preview). It is verified against Microsoft own
+The contract layer is the main line: `opencomp`, `openudk`, `dcompi`, and the tools
+(`xbf`, `xwinui`, `comptrace`, preview). It is verified against Microsoft own
 binaries on Windows and does not require Wine.
 
 `openxaml` (a full XAML engine replacement) is an optional track, not a milestone: it
