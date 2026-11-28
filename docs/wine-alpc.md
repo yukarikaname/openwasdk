@@ -343,6 +343,23 @@ composition object the application later holds. A stub that answers a private in
 is not enough: the caller reads fields past the interface pointer, so the object has to
 be the one the application expects, not a look-alike.
 
+Two gaps behind the window are settled and one is not:
+
+- **`IUISettings6` did not exist.** Wine's own metadata carries it (four methods, two
+  notification pairs) but `dlls/windows.ui` only implemented up to `IUISettings5`. XAML
+  asks for it while it prepares a window and escalates the refusal, so the application
+  stopped before the markup was loaded. With the interface in place the call appears in the
+  log and the process goes on.
+- **The private composition identifiers `{5dda0f45-…}`, `{dabd9f1a-…}`, `{d4e43e6a-…}`**
+  are asked of the dcomp device the statics slot handed out; refusing them stowed two
+  errors and the same escalation followed. dcomp's recording probes now accept them and
+  name the slots that are called (10 and 11), which is what those objects are for.
+- **What remains** is a step further in: `LoadComponent` asks for a composition target,
+  and the helper that builds it (`+0x7ef9fc` -> `+0x51070c` -> `+0x118d50`) calls method
+  fourteen of an object whose vtable is `0x180abd2f8`; that method (`+0x12d9d0`) returns
+  `E_NOINTERFACE`, which the caller escalates. The refusal inside `+0x12d9d0` is still
+  unidentified: it does not appear in Wine's dcomp trace and none of our objects logs it.
+
 The order matters for what to do next: the diagnostics port is a debugging feature
 whose failure only matters because of `IFCFAILFAST`, while D2D text is on the path
 every WinUI 3 application takes.
