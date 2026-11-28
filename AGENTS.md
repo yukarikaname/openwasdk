@@ -119,7 +119,7 @@ into a crate; the licence rule in `docs/scope.md` applies.
 | Avalonia | `github.com/AvaloniaUI/Avalonia` | `refs/Avalonia` (sparse) | XAML parser, styling, layout |
 | Uno Platform | `github.com/unoplatform/uno` | `refs/uno` (sparse: `src/Uno.UI`) | WinUI-compatible API, dependency properties, parser |
 | microsoft-ui-xaml | `github.com/microsoft/microsoft-ui-xaml` | `../microsoft-ui-xaml` (partial: `dxaml`, `src`) and `refs/microsoft-ui-xaml` (sparse: `dxaml`, `controls`) | XAML engine (`dxaml`), XAML compiler |
-| LiberNT (ReactOS fork) | `github.com/LiberNT/LiberNT` | `refs/LiberNT` (sparse: `base/system/dwm`) | the host layer (PE loading, ntdll/win32ss) **and a working DWM**: `base/system/dwm` (`dwm.c` 5.4k lines, `gpucomp.c` 2.9k, D3D/GL backends, `NtDCompositionCreateConnection`) plus `dll/directx/wine/dcomp` for the client side; no XAML |
+| LiberNT (ReactOS fork) | `github.com/LiberNT/LiberNT` | `refs/LiberNT` (depth 1, blobless, sparse: `base/system/dwm`, `dll/directx/wine/dcomp`, `dll/win32/dwmapi`) | the host layer (PE loading, ntdll/win32ss) **and a working DWM**: `base/system/dwm/dwm.c` (5.4k lines) + `gpucomp.c` (2.9k) over D3D/GL with `NtDCompositionCreateConnection`, and `dll/directx/wine/dcomp/device.c` (2k) for the client side; no XAML |
 | ReactOS | `github.com/reactos/reactos` | not cloned | the upstream of the same host-layer material |
 | Darling | `github.com/darlinghq/darling` | not cloned | architecture analogy for a host compatibility layer, not code |
 | OpenSwiftUI | `github.com/OpenSwiftUIProject/OpenSwiftUI` | not cloned | architecture analogy for a framework reimplementation, not code |
