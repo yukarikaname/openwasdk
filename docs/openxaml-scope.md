@@ -130,6 +130,42 @@ compiles XAML to XBF at run time, which gives us a corpus to diff against
 | animations | visual states animate | scalar, vector, colour, step easing and groups reach the node; implicit animations `E_NOTIMPL` |
 | `openxaml` | only needed once we replace the DLL, not to run it | XBF → element tree with a support table that errors by name, dependency properties with inheritance and a dirty flag, measure/arrange for StackPanel, Grid, Border, TextBlock. No controls, templates or text yet |
 
+## 4b. Where a control's template actually is
+
+Measured, so the next step does not start from the wrong place.
+
+The theme dictionary inside `Microsoft.UI.Xaml.Controls.pri` is reachable (`xbf::pri`): seven
+XBF documents, one of them a `ResourceDictionary` with `Default`/`Light`/`HighContrast` keys and
+202 `ControlTemplate` elements. A page's `Button` is a `Style` there, and that Style carries
+`custom=Style_v3` plus a substream index (Button: `substream=70`).
+
+That substream is **not** the setter list. It is sixteen nodes:
+
+    PushScope
+    SetValueFromThemeResource  property=Setter_Value value="ButtonRevealBackground"
+    SetValueFromThemeResource  property=Setter_Value value="ButtonForeground"
+    ...
+
+so building it as an element stream fails at node 1 ("property has no current element") and
+giving the stream a parent would only produce nonsense: there is no Setter element to own the
+property.
+
+The setters live in the style's **custom runtime data**, and its layout is written down in the
+engine's own parser (`dxaml/xcp/components/deferral/StyleCustomRuntimeDataSerializer.cpp` and the
+C# reference in `dxaml/xcp/tools/XbfParser/WidgetSpinner/XBF/StyleCustomRuntimeData.cs`):
+
+- `Style_v3` = vector of `StyleSetterEssence` (7-bit flags, then a resolved property or a
+  name+declaring type, then a string, a constant or a stream-offset token chosen by the flags),
+  followed by a vector of conditionally-declared objects (token + predicate list).
+- The flags say which of theme-resource, static-resource, string, container, object, self-token
+  or mutable the essence is, so the *template* setter is the one whose property is
+  `ControlTemplate`/`FrameworkElement.Template` and whose value is an object token.
+
+What this means for the roadmap: reading a style needs the custom-data bytes, which the model
+currently discards (it keeps only the kind name and the substream index). Retaining them and
+parsing `Style_v3` is the prerequisite for template instantiation; `Builder::new_with_owner` is
+not.
+
 ## 5. Milestones
 
 | # | step | exit criterion |
