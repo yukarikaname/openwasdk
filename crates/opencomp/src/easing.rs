@@ -15,6 +15,8 @@ use crate::bindings::Microsoft::UI::Composition::{
     ICubicBezierEasingFunction_Impl, ILinearEasingFunction, ILinearEasingFunction_Impl,
     LinearEasingFunction, PowerEasingFunction, SineEasingFunction, StepEasingFunction,
 };
+use crate::clock::Clock;
+use crate::node::Node;
 use crate::object::composition_object;
 use windows_core::{Interface, Ref, Result};
 use windows_numerics::Vector2;
@@ -27,9 +29,11 @@ use windows_numerics::Vector2;
     ICompositionEasingFunction,
     ILinearEasingFunction
 )]
-pub struct LinearEasingObject;
+pub struct LinearEasingObject {
+    node: std::sync::Arc<Mutex<Node>>,
+}
 
-composition_object!(LinearEasingObject_Impl);
+composition_object!(LinearEasingObject_Impl, node);
 
 impl ICompositionEasingFunction_Impl for LinearEasingObject_Impl {}
 
@@ -44,10 +48,11 @@ impl ILinearEasingFunction_Impl for LinearEasingObject_Impl {}
     ICubicBezierEasingFunction
 )]
 pub struct CubicBezierObject {
+    node: std::sync::Arc<Mutex<Node>>,
     control_points: Mutex<(Vector2, Vector2)>,
 }
 
-composition_object!(CubicBezierObject_Impl);
+composition_object!(CubicBezierObject_Impl, node);
 
 impl ICompositionEasingFunction_Impl for CubicBezierObject_Impl {}
 
@@ -61,16 +66,31 @@ impl ICubicBezierEasingFunction_Impl for CubicBezierObject_Impl {
     }
 }
 
-pub fn linear() -> Result<LinearEasingFunction> {
-    let easing: ILinearEasingFunction = LinearEasingObject.into();
+/// The clock the caller's compositor runs on. An easing object belongs to the compositor
+/// that created it: answering `Compositor()` with the process-wide one makes the object a
+/// foreign body inside the caller's animation, which is a stowed exception.
+fn node_of(clock: &std::sync::Arc<Clock>) -> std::sync::Arc<Mutex<Node>> {
+    std::sync::Arc::new(Mutex::new(Node {
+        clock: clock.clone(),
+        ..Node::default()
+    }))
+}
+
+pub fn linear(clock: std::sync::Arc<Clock>) -> Result<LinearEasingFunction> {
+    let easing: ILinearEasingFunction = LinearEasingObject {
+        node: node_of(&clock),
+    }
+    .into();
     easing.cast()
 }
 
 pub fn cubic_bezier(
+    clock: std::sync::Arc<Clock>,
     control_point1: Vector2,
     control_point2: Vector2,
 ) -> Result<CubicBezierEasingFunction> {
     let easing: ICubicBezierEasingFunction = CubicBezierObject {
+        node: node_of(&clock),
         control_points: Mutex::new((control_point1, control_point2)),
     }
     .into();
@@ -89,15 +109,25 @@ pub struct EasingStatics;
 impl ICompositionEasingFunctionStatics_Impl for EasingStatics_Impl {
     fn CreateCubicBezierEasingFunction(
         &self,
-        _owner: Ref<Compositor>,
+        owner: Ref<Compositor>,
         control_point1: &Vector2,
         control_point2: &Vector2,
     ) -> Result<CubicBezierEasingFunction> {
-        cubic_bezier(*control_point1, *control_point2)
+        // The object belongs to the caller's compositor: `Compositor()` has to answer
+        // with the clock the caller handed to the static, not the process-wide one.
+        let clock = owner
+            .as_ref()
+            .and_then(crate::compositor::clock_of)
+            .unwrap_or_else(Clock::new);
+        cubic_bezier(clock, *control_point1, *control_point2)
     }
 
-    fn CreateLinearEasingFunction(&self, _owner: Ref<Compositor>) -> Result<LinearEasingFunction> {
-        linear()
+    fn CreateLinearEasingFunction(&self, owner: Ref<Compositor>) -> Result<LinearEasingFunction> {
+        let clock = owner
+            .as_ref()
+            .and_then(crate::compositor::clock_of)
+            .unwrap_or_else(Clock::new);
+        linear(clock)
     }
 
     fn CreateStepEasingFunction(&self, _owner: Ref<Compositor>) -> Result<StepEasingFunction> {

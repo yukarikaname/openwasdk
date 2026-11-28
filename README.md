@@ -1,13 +1,25 @@
 # OpenWASDK
 
-An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
-**an ABI-compatible runtime in Rust, plus the tools to build and preview them anywhere.**
+**The ABI contract layer of the Windows App SDK, in Rust.** Our DLLs stand in for the
+ones the SDK ships, so the unmodified WinUI Gallery runs on Microsoft's own engine -- and
+any component can be taken over by us one class at a time, gated by the app still
+rendering. Around it: the tools that make each claim falsifiable (`comptrace`, the symbol
+server, `.xbf` inspection).
 
-> Status: the composition surface is the part that works. `opencomp` answers 58 interface
-> types and 232 of 326 methods of `Microsoft.UI.Composition`; `xbf` parses the XBF node
-> stream; `openxaml` lays out a first element tree and matches the real engine 38 px on a
-> StackPanel. No Wine patches are part of the build: Wine was the measurement host for the
-> ABI and is no longer on the critical path.
+> Status.
+>
+> **On Windows:** `dcompi.dll` asks the engine's own shim (`dcompi-ms.dll`) for every
+> class and the window renders -- `WinUI Gallery`, screenshot in
+> [`docs/composition-baseline.md`](docs/composition-baseline.md). `OPENCOMP_MINE` moves one
+> class to our implementation; the first such measurement (`CompositionEasingFunction`)
+> and the reason it failed are recorded there, because a class that breaks the window goes
+> back to the engine.
+>
+> **Off Windows:** `xbf` plus `openxaml` are a **page tool**, not a runtime: 71 of the
+> Gallery's 195 compiled pages load, arrange and draw to a PNG, and text shapes through
+> parley. It is an inspector and a layout oracle. There is no XAML engine of ours and no
+> claim to run an application off Windows -- that engine exists (Uno, Avalonia) and needs
+> the app rebuilt, which is a different product.
 >
 > Not affiliated with Microsoft.
 
