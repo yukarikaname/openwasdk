@@ -1,6 +1,6 @@
-From 83cf75a20b299e8a33daa79da1a4b137ab1ca926 Mon Sep 17 00:00:00 2001
+From 9ca701e9dcf6aaa30755b790064e2075f6d95c98 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:35:52 +0800
+Date: Sat, 28 Nov 2026 21:01:46 +0800
 Subject: [PATCH 08/10] conhost: keep a text cell when no font is found
 
 ---

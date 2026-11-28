@@ -1,6 +1,6 @@
-From 49629efe6790f478647e210ff78e060d1d9847f6 Mon Sep 17 00:00:00 2001
+From c6ee628892096c384f757b14434af9bc58a3b961 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:35:51 +0800
+Date: Sat, 28 Nov 2026 21:01:45 +0800
 Subject: [PATCH 07/10] wintypes: give property values their runtime class name
  and IAgileObject
 

@@ -1,8 +1,11 @@
-From 0c5ce8c41426c65acd7760a1fb83158bc179971c Mon Sep 17 00:00:00 2001
+From 963a1ce4c4179155be17129d03cac1fc0d52d1f7 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:35:51 +0800
+Date: Sat, 28 Nov 2026 21:01:41 +0800
 Subject: [PATCH 01/10] server: implement ALPC ports and the ntdll client
 
+Also carries a lab switch: OPENWASDK_FIXED_BASE makes the loader try the image's own base
+first, so module addresses repeat across runs and a watchpoint on a heap object can be set
+from a breakpoint inside the same run.
 ---
  dlls/ntdll/loader.c            |  14 +
  dlls/ntdll/ntdll.spec          |   3 +
@@ -10,6 +13,7 @@ Subject: [PATCH 01/10] server: implement ALPC ports and the ntdll client
  dlls/ntdll/sync.c              | 163 +++++++++++-
  dlls/ntdll/threadpool.c        |  97 ++++++-
  dlls/ntdll/unix/alpc.c         | 396 ++++++++++++++++++++++++++--
+ dlls/ntdll/unix/virtual.c      |   4 +
  include/wine/server_protocol.h | 162 +++++++++++-
  include/winternl.h             |  10 +-
  server/alpc.c                  | 462 +++++++++++++++++++++++++++++++--
@@ -17,7 +21,7 @@ Subject: [PATCH 01/10] server: implement ALPC ports and the ntdll client
  server/request_handlers.h      |  67 +++++
  server/request_trace.h         | 123 +++++++++
  server/token.c                 |   4 +
- 13 files changed, 1572 insertions(+), 50 deletions(-)
+ 14 files changed, 1576 insertions(+), 50 deletions(-)
 
 diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
 index d0c2145..5ccd3c1 100644
@@ -889,6 +893,21 @@ index cc73ba4..09b9179 100644
 +    SERVER_END_REQ;
 +    return status;
  }
+diff --git a/dlls/ntdll/unix/virtual.c b/dlls/ntdll/unix/virtual.c
+index 84f2a39..0852c44 100644
+--- a/dlls/ntdll/unix/virtual.c
++++ b/dlls/ntdll/unix/virtual.c
+@@ -3104,6 +3104,10 @@ static NTSTATUS map_image_view( struct file_view **view_ret, struct pe_image_inf
+         if ((image_info->image_charact & IMAGE_FILE_RELOCS_STRIPPED) ||
+             !(dll_charact & IMAGE_DLLCHARACTERISTICS_DYNAMIC_BASE))
+             base = image_info->base;
++        /* A lab switch: preferring the image's own base makes module addresses repeat
++         * across runs, which is what a watchpoint on a heap object needs to be useful. */
++        if (!base && getenv( "OPENWASDK_FIXED_BASE" ))
++            base = image_info->base;
+     }
+     if (base && (ULONG_PTR)base == base)
+     {
 diff --git a/include/wine/server_protocol.h b/include/wine/server_protocol.h
 index e2d112e..09b9955 100644
 --- a/include/wine/server_protocol.h

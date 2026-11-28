@@ -1,6 +1,6 @@
-From 68a5ddda702c8d8e5d6f7b3314bac7194a4a09e2 Mon Sep 17 00:00:00 2001
+From 6a5265fff697729f0714ac728e71fb90204d2104 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:35:51 +0800
+Date: Sat, 28 Nov 2026 21:01:44 +0800
 Subject: [PATCH 05/10] combase: answer IAgileObject from the free-threaded
  marshaler
 
