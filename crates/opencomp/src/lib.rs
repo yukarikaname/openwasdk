@@ -96,6 +96,8 @@ mod visual;
 mod factory;
 #[cfg(windows)]
 mod private_statics;
+#[cfg(windows)]
+mod stowed;
 
 pub(crate) use classes::Class;
 #[cfg(windows)]
@@ -147,6 +149,8 @@ pub unsafe extern "system" fn DllGetActivationFactory(
     if class.is_null() || factory.is_null() {
         return E_POINTER;
     }
+    // A stowed exception is what a mis-served class looks like from the outside; record it.
+    crate::stowed::install();
     // The parameter is the HSTRING handle itself, which is a pointer to the string header. Bit
     // copy it into an HSTRING and keep it from dropping: the caller owns the reference.
     let name = std::mem::ManuallyDrop::new(unsafe {

@@ -13,6 +13,8 @@ mod tree;
 
 #[cfg(feature = "preview")]
 mod host;
+#[cfg(feature = "materials")]
+pub mod material;
 #[cfg(feature = "preview")]
 mod render;
 #[cfg(feature = "preview")]

@@ -11,11 +11,14 @@ rust-version.workspace = true
 # The wgpu renderer and the window host, for previews on the machine you are on.
 # The DLL does not enable it: the Windows compositor is D3D11.
 preview = ["dep:ab_glyph", "dep:bytemuck", "dep:parley", "dep:pollster", "dep:wgpu"]
+# Fluent materials: Skia renders the blur and the tint, the renderer draws the bitmap.
+materials = ["dep:skia-safe"]
 
 [dependencies]
 ab_glyph = { version = "0.2", optional = true }
 bytemuck = { version = "1", features = ["derive"], optional = true }
 parley = { version = "0.11", optional = true }
+skia-safe = { version = "0.158", optional = true }
 pollster = { version = "0.4", optional = true }
 wgpu = { version = "30", optional = true }
 
