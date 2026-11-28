@@ -626,6 +626,20 @@ impl Element {
     }
 
     /// Straight, unpremultiplied colour in linear light; `None` paints nothing.
+    pub fn canvas_left(&self) -> f32 {
+        match self.get(&property::CANVAS_LEFT) {
+            Value::Number(value) => *value,
+            _ => 0.0,
+        }
+    }
+
+    pub fn canvas_top(&self) -> f32 {
+        match self.get(&property::CANVAS_TOP) {
+            Value::Number(value) => *value,
+            _ => 0.0,
+        }
+    }
+
     /// `UIElement.Opacity`, clamped to 0..1 as the property definition requires.
     pub fn opacity(&self) -> f32 {
         match self.get(&property::OPACITY) {

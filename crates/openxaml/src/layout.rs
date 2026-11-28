@@ -107,6 +107,8 @@ mod grid;
 mod stack;
 
 use border::{arrange_border, measure_border};
+mod canvas;
+
 use stack::{arrange_stack, horizontal_box, measure_stack, vertical_box};
 
 /// Why a layout pass could not follow an engine rule.
@@ -283,7 +285,6 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::Slider
         | Kind::BreadcrumbBar
         | Kind::RelativePanel
-        | Kind::Canvas
         | Kind::SelectorBarItem
         | Kind::AutoSuggestBox
         | Kind::ListView
@@ -331,6 +332,7 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::UniformGridLayout => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
+        Kind::Canvas => canvas::measure_canvas(element, available),
     }
 }
 
@@ -416,7 +418,6 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::Slider
         | Kind::BreadcrumbBar
         | Kind::RelativePanel
-        | Kind::Canvas
         | Kind::SelectorBarItem
         | Kind::AutoSuggestBox
         | Kind::ListView
@@ -464,6 +465,7 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::UniformGridLayout => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
+        Kind::Canvas => canvas::arrange_canvas(element, content),
     }
 }
 

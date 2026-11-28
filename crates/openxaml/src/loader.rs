@@ -354,6 +354,8 @@ fn load_property_with(
                 // A child of a panel names its cell through the panel's attached property.
                 "Row" => "Grid.Row",
                 "Column" => "Grid.Column",
+                "Left" => "Canvas.Left",
+                "Top" => "Canvas.Top",
                 "RowSpacing" => "Grid.RowSpacing",
                 "ColumnSpacing" => "Grid.ColumnSpacing",
                 "RowSpan" => "Grid.RowSpan",
@@ -401,6 +403,9 @@ fn load_property_with(
                          */
                         | "Text"
                         | "FontSize"
+                        // A Canvas child names its offset through the panel's attached property.
+                        | "Canvas.Left"
+                        | "Canvas.Top"
                         // Opacity is a member of UIElement, so every element has it.
                         | "Opacity"
                 ) =>
