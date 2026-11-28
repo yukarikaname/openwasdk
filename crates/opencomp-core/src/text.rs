@@ -138,7 +138,9 @@ mod tests {
         assert!(raster.height > 10, "height {}", raster.height);
         let inked = raster
             .pixels
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .filter(|pixel| pixel[3] > 0)
             .count();
         assert!(inked > 100, "only {inked} covered pixels");
