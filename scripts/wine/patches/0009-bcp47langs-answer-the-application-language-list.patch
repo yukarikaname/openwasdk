@@ -1,13 +1,11 @@
-From 86a46ac0acb1c3ad333ff67e0dab99222fa969a9 Mon Sep 17 00:00:00 2001
+From a43e31b8dbbd82dac76cbdb3e5b9a8b43cd45091 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:54:00 +0800
+Date: Sat, 28 Nov 2026 19:17:12 +0800
 Subject: [PATCH 9/9] bcp47langs: answer the application language list
 
-The lifted UDK asks bcp47langs for the application's languages and then for their MUI
-form while it resolves resource languages. Both were stubs, and the first call aborted
-the process through the unimplemented-function path. The list is opaque to the caller --
-the value is only handed back to LanguageListAsMuiForm -- so a token and the user's
-locale are enough.
+The lifted UDK asks for the application's languages and their MUI form while it
+resolves resource languages; both were stubs and the first call aborted the
+process.
 ---
  dlls/bcp47langs/Makefile.in     |  2 ++
  dlls/bcp47langs/bcp47langs.spec |  4 ++--
@@ -15,7 +13,7 @@ locale are enough.
  3 files changed, 30 insertions(+), 2 deletions(-)
 
 diff --git a/dlls/bcp47langs/Makefile.in b/dlls/bcp47langs/Makefile.in
-index ee013421..8040b318 100644
+index ee01342..8040b31 100644
 --- a/dlls/bcp47langs/Makefile.in
 +++ b/dlls/bcp47langs/Makefile.in
 @@ -1,5 +1,7 @@
@@ -27,7 +25,7 @@ index ee013421..8040b318 100644
  SOURCES = \
  	main.c
 diff --git a/dlls/bcp47langs/bcp47langs.spec b/dlls/bcp47langs/bcp47langs.spec
-index 19040212..714f7d2b 100644
+index 1904021..714f7d2 100644
 --- a/dlls/bcp47langs/bcp47langs.spec
 +++ b/dlls/bcp47langs/bcp47langs.spec
 @@ -31,7 +31,7 @@
@@ -49,7 +47,7 @@ index 19040212..714f7d2b 100644
  @ stub RemoveInputsForAllLanguagesInternal
  @ stub RemoveUserLanguageInputMethods
 diff --git a/dlls/bcp47langs/main.c b/dlls/bcp47langs/main.c
-index ab0a0b59..02dee5b8 100644
+index ab0a0b5..02dee5b 100644
 --- a/dlls/bcp47langs/main.c
 +++ b/dlls/bcp47langs/main.c
 @@ -57,6 +57,32 @@ HRESULT WINAPI GetFontFallbackLanguageList(const WCHAR *lang, size_t buffer_leng

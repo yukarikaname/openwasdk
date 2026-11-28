@@ -1,19 +1,17 @@
-From cb306dfd036dca1a52acc7e8a03b0b8ce1da2793 Mon Sep 17 00:00:00 2001
+From 03caff9093c640c63c2a42d91b139dfe994c2f91 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:40:58 +0800
+Date: Sat, 28 Nov 2026 19:17:12 +0800
 Subject: [PATCH 6/9] combase: name the failing stack when a fail fast is
  reported
 
-RoFailFastWithErrorContextInternal2 is where WinUI 3 ends an unrecoverable path,
-and the stub printed the code alone. OPENWASDK_FAILFAST dumps the raising
-thread's frames and the stowed exception bytes; OPENWASDK_SOFT_FAILFAST returns
-instead of raising, which is how the code past such a point was measured.
+OPENWASDK_FAILFAST dumps the raising thread's frames and the stowed exception
+bytes; OPENWASDK_SOFT_FAILFAST returns instead of raising.
 ---
  dlls/combase/roapi.c | 67 ++++++++++++++++++++++++++++++++++++++++++++
  1 file changed, 67 insertions(+)
 
 diff --git a/dlls/combase/roapi.c b/dlls/combase/roapi.c
-index e5c18c00..0a81cf15 100644
+index e5c18c0..0a81cf1 100644
 --- a/dlls/combase/roapi.c
 +++ b/dlls/combase/roapi.c
 @@ -470,12 +470,79 @@ HRESULT WINAPI RoGetAgileReference(enum AgileReferenceOptions option, REFIID rii

@@ -1,20 +1,19 @@
-From 1d2ea466e07fd7893c67b25ff3a53748ed379a29 Mon Sep 17 00:00:00 2001
+From c0c25479a9bdf313a04b8a3920024d1befa41c81 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:40:58 +0800
+Date: Sat, 28 Nov 2026 19:17:12 +0800
 Subject: [PATCH 4/9] coremessaging: forward CoreUICreate to the SDK session
  creator
 
 The App SDK ships its own CoreMessaging as CoreMessagingXP.dll, where the entry
 point takes a flags word before the out pointer. The lifted layer calls the
-system CoreUICreate with the out pointer alone, so the forwarding function takes
-one argument and passes zero flags -- the same call the SDK makes itself.
+system CoreUICreate with the out pointer alone.
 ---
  dlls/coremessaging/coremessaging.spec |  2 +-
  dlls/coremessaging/main.c             | 24 ++++++++++++++++++++++++
  2 files changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/dlls/coremessaging/coremessaging.spec b/dlls/coremessaging/coremessaging.spec
-index fb98c802..3bc2c0e5 100644
+index fb98c80..3bc2c0e 100644
 --- a/dlls/coremessaging/coremessaging.spec
 +++ b/dlls/coremessaging/coremessaging.spec
 @@ -8,7 +8,7 @@
@@ -27,7 +26,7 @@ index fb98c802..3bc2c0e5 100644
  @ stub CoreUICreateEx
  @ stub CoreUIInitializeTestService
 diff --git a/dlls/coremessaging/main.c b/dlls/coremessaging/main.c
-index 6fa2e282..7ca2628e 100644
+index 6fa2e28..7ca2628 100644
 --- a/dlls/coremessaging/main.c
 +++ b/dlls/coremessaging/main.c
 @@ -285,3 +285,27 @@ HRESULT WINAPI CreateDispatcherQueueController( DispatcherQueueOptions options,

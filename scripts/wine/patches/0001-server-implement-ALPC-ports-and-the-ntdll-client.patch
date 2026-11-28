@@ -1,12 +1,11 @@
-From 97f7cda182a26d66c115f2ff2dbbf4543c7338e9 Mon Sep 17 00:00:00 2001
+From 04e3ac47f4a793023b787a01aeb56147ad90a0ce Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:40:57 +0800
+Date: Sat, 28 Nov 2026 19:17:11 +0800
 Subject: [PATCH 1/9] server: implement ALPC ports and the ntdll client
 
 The lifted DWM core talks to the CoreMessaging registrar over ALPC, and Wine's
 NtAlpcConnectPort answers STATUS_NOT_IMPLEMENTED. The server side, the request
-protocol and the ntdll client come from designgears/wine-uwp, whose validation
-probes are what the tests below the DLLs cover.
+protocol and the ntdll client come from designgears/wine-uwp.
 ---
  dlls/ntdll/loader.c            |  14 +
  dlls/ntdll/ntdll.spec          |   3 +
@@ -24,7 +23,7 @@ probes are what the tests below the DLLs cover.
  13 files changed, 1572 insertions(+), 50 deletions(-)
 
 diff --git a/dlls/ntdll/loader.c b/dlls/ntdll/loader.c
-index d0c21459..5ccd3c1e 100644
+index d0c2145..5ccd3c1 100644
 --- a/dlls/ntdll/loader.c
 +++ b/dlls/ntdll/loader.c
 @@ -4963,3 +4963,17 @@ BOOL WINAPI DllMain( HINSTANCE inst, DWORD reason, LPVOID reserved )
@@ -46,7 +45,7 @@ index d0c21459..5ccd3c1e 100644
 +    return NULL;
 +}
 diff --git a/dlls/ntdll/ntdll.spec b/dlls/ntdll/ntdll.spec
-index 14608fd3..1edf1d0d 100644
+index 14608fd..1edf1d0 100644
 --- a/dlls/ntdll/ntdll.spec
 +++ b/dlls/ntdll/ntdll.spec
 @@ -209,6 +209,9 @@
@@ -60,7 +59,7 @@ index 14608fd3..1edf1d0d 100644
  @ stdcall -syscall NtCreateTransaction(ptr long ptr ptr long long long long ptr ptr)
  @ stdcall -syscall NtCreateUserProcess(ptr ptr long long ptr ptr long long ptr ptr ptr)
 diff --git a/dlls/ntdll/rtl.c b/dlls/ntdll/rtl.c
-index 04231658..29dac7c0 100644
+index 0423165..29dac7c 100644
 --- a/dlls/ntdll/rtl.c
 +++ b/dlls/ntdll/rtl.c
 @@ -1644,9 +1644,38 @@ char WINAPI RtlQueryProcessPlaceholderCompatibilityMode(void)
@@ -105,7 +104,7 @@ index 04231658..29dac7c0 100644
      if (form) *form = DEVICEFAMILYDEVICEFORM_UNKNOWN;
  }
 diff --git a/dlls/ntdll/sync.c b/dlls/ntdll/sync.c
-index f4090d5e..d7ff3471 100644
+index f4090d5..d7ff347 100644
 --- a/dlls/ntdll/sync.c
 +++ b/dlls/ntdll/sync.c
 @@ -316,8 +316,14 @@ NTSTATUS WINAPI RtlpWaitForCriticalSection( RTL_CRITICAL_SECTION *crit )
@@ -283,7 +282,7 @@ index f4090d5e..d7ff3471 100644
 +    return STATUS_CANCELLED;
 +}
 diff --git a/dlls/ntdll/threadpool.c b/dlls/ntdll/threadpool.c
-index 796338bf..9eec6164 100644
+index 796338b..9eec616 100644
 --- a/dlls/ntdll/threadpool.c
 +++ b/dlls/ntdll/threadpool.c
 @@ -145,6 +145,7 @@ struct threadpool_object
@@ -461,7 +460,7 @@ index 796338bf..9eec6164 100644
   *           TpSimpleTryPost    (NTDLL.@)
   */
 diff --git a/dlls/ntdll/unix/alpc.c b/dlls/ntdll/unix/alpc.c
-index cc73ba48..09b9179a 100644
+index cc73ba4..09b9179 100644
 --- a/dlls/ntdll/unix/alpc.c
 +++ b/dlls/ntdll/unix/alpc.c
 @@ -29,17 +29,185 @@
@@ -894,7 +893,7 @@ index cc73ba48..09b9179a 100644
 +    return status;
  }
 diff --git a/include/wine/server_protocol.h b/include/wine/server_protocol.h
-index e2d112e9..09b9955f 100644
+index e2d112e..09b9955 100644
 --- a/include/wine/server_protocol.h
 +++ b/include/wine/server_protocol.h
 @@ -3135,6 +3135,32 @@ struct get_queue_status_reply
@@ -1117,7 +1116,7 @@ index e2d112e9..09b9955f 100644
  
  #endif /* __WINE_WINE_SERVER_PROTOCOL_H */
 diff --git a/include/winternl.h b/include/winternl.h
-index e8f25f9b..8def45f4 100644
+index e8f25f9..8def45f 100644
 --- a/include/winternl.h
 +++ b/include/winternl.h
 @@ -4581,7 +4581,9 @@ typedef struct _KCONTINUE_ARGUMENT
@@ -1152,7 +1151,7 @@ index e8f25f9b..8def45f4 100644
  NTSYSAPI void      WINAPI TpStartAsyncIoOperation(TP_IO *);
  NTSYSAPI void      WINAPI TpWaitForIoCompletion(TP_IO *,BOOL);
 diff --git a/server/alpc.c b/server/alpc.c
-index 50449e5b..33f838cd 100644
+index 50449e5..33f838c 100644
 --- a/server/alpc.c
 +++ b/server/alpc.c
 @@ -1,22 +1,17 @@
@@ -1709,7 +1708,7 @@ index 50449e5b..33f838cd 100644
 +    release_object( port );
  }
 diff --git a/server/protocol.def b/server/protocol.def
-index eca33755..014e81c4 100644
+index eca3375..014e81c 100644
 --- a/server/protocol.def
 +++ b/server/protocol.def
 @@ -2408,6 +2408,19 @@ struct process_info
@@ -1812,7 +1811,7 @@ index eca33755..014e81c4 100644
 +    client_ptr_t        context;        /* port context */
 +@END
 diff --git a/server/request_handlers.h b/server/request_handlers.h
-index 22df234b..531fbb5b 100644
+index 22df234..531fbb5 100644
 --- a/server/request_handlers.h
 +++ b/server/request_handlers.h
 @@ -127,6 +127,8 @@ DECL_HANDLER(get_msg_queue);
@@ -1922,7 +1921,7 @@ index 22df234b..531fbb5b 100644
 +C_ASSERT( offsetof(struct alpc_query_info_reply, context) == 16 );
 +C_ASSERT( sizeof(struct alpc_query_info_reply) == 24 );
 diff --git a/server/request_trace.h b/server/request_trace.h
-index fa5634c3..7a7c6388 100644
+index fa5634c..7a7c638 100644
 --- a/server/request_trace.h
 +++ b/server/request_trace.h
 @@ -1441,6 +1441,17 @@ static void dump_get_queue_status_reply( const struct get_queue_status_reply *re
@@ -2126,7 +2125,7 @@ index fa5634c3..7a7c6388 100644
      { "SEMAPHORE_LIMIT_EXCEEDED",    STATUS_SEMAPHORE_LIMIT_EXCEEDED },
      { "SHARING_VIOLATION",           STATUS_SHARING_VIOLATION },
 diff --git a/server/token.c b/server/token.c
-index fc0b7bfd..1153f067 100644
+index fc0b7bf..1153f06 100644
 --- a/server/token.c
 +++ b/server/token.c
 @@ -218,6 +218,8 @@ static int acl_is_valid( const struct acl *acl, data_size_t size )
