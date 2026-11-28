@@ -22,6 +22,7 @@ const S_OK: i32 = 0;
 const E_NOTIMPL: i32 = 0x8000_4001u32 as i32;
 const E_POINTER: i32 = 0x8000_4003u32 as i32;
 const E_NOINTERFACE: i32 = 0x8000_4002u32 as i32;
+const E_FAIL: i32 = 0x8000_4005u32 as i32;
 
 type Member = unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32;
 
@@ -135,12 +136,20 @@ unsafe extern "system" fn method<const SLOT: usize>(
     if SLOT != 0 {
         return E_NOTIMPL;
     }
-    // The caller reads `struct+0` as an object and asks it for an interface, and releases
-    // `struct+8` if it is set. One of ours at +0 makes the next question visible.
-    if !second.is_null() {
-        unsafe { *(second as *mut *mut c_void) = create() };
+    // `DCompTreeHost::EnsureDCompDevice` asks the helper for a main device and then asks
+    // that device for `ICompositor`, `ICompositor2`, `ICompositor5`, `ICompositor6` and
+    // `ICompositorInterop`. This is where that device comes from, so hand over the real
+    // compositor rather than a stand-in that answers nothing.
+    match crate::compositor::instance() {
+        Ok(compositor) => {
+            let raw = windows_core::Interface::into_raw(compositor);
+            if !second.is_null() {
+                unsafe { *(second as *mut *mut c_void) = raw };
+            }
+            S_OK
+        }
+        Err(_) => E_FAIL,
     }
-    S_OK
 }
 
 unsafe extern "system" fn query_interface(
