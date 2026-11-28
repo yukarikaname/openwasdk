@@ -60,15 +60,22 @@ pub fn create(compositor: IUnknown, device: *mut c_void) -> *mut c_void {
 }
 
 
+
 /// A refusal with a name: every slot logs which one was called and reports E_NOTIMPL.
 /// Returning this instead of E_NOINTERFACE keeps the caller alive long enough to say what
 /// it wanted, which is the only way to learn an interface nothing documents.
 fn stub(iid: GUID) -> *mut c_void {
+    /// The answer to an unknown interface. Its 0x50 field carries the creating thread id:
+    /// XAML's callers check an object's affinity by comparing GetCurrentThreadId() with the
+    /// dword at that offset, and reading it out of a smaller allocation was the fault.
     #[repr(C)]
     struct Stub {
         vtbl: *const StubVtbl,
         refs: AtomicU32,
         iid: GUID,
+        pad: [u8; 0x50 - 0x1c],
+        thread: u32,
+        tail: [u8; 0xc],
     }
     type Slot = unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32;
     #[repr(C)]
@@ -142,8 +149,20 @@ fn stub(iid: GUID) -> *mut c_void {
         vtbl,
         refs: AtomicU32::new(1),
         iid,
+        pad: [0; 0x50 - 0x1c],
+        thread: current_thread_id(),
+        tail: [0; 0xc],
     });
     Box::into_raw(boxed).cast()
+}
+
+/// The id of the thread that is building the stub, for the affinity field above.
+fn current_thread_id() -> u32 {
+    #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn GetCurrentThreadId() -> u32;
+    }
+    unsafe { GetCurrentThreadId() }
 }
 
 /// Ask one raw object for an interface, using its own vtable.
@@ -175,12 +194,15 @@ unsafe extern "system" fn query_interface(
         return S_OK;
     }
     let composite = unsafe { &*(this as *const Composite) };
-    let compositor = Interface::as_raw(&composite.compositor);
-    if let Some(hr) = unsafe { ask(compositor, &iid, out) } {
-        return hr;
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: composite asked for {iid:?}");
     }
-    if let Some(hr) = unsafe { ask(composite.device, &iid, out) } {
-        return hr;
+    let compositor = Interface::as_raw(&composite.compositor);
+    if unsafe { ask(compositor, &iid, out) }.is_some() {
+        return S_OK;
+    }
+    if unsafe { ask(composite.device, &iid, out) }.is_some() {
+        return S_OK;
     }
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!("opencomp: composite has neither the compositor nor the device for {iid:?}");
