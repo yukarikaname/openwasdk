@@ -64,7 +64,7 @@ pub fn create(compositor: IUnknown, device: *mut c_void) -> *mut c_void {
 /// A refusal with a name: every slot logs which one was called and reports E_NOTIMPL.
 /// Returning this instead of E_NOINTERFACE keeps the caller alive long enough to say what
 /// it wanted, which is the only way to learn an interface nothing documents.
-fn stub(iid: GUID) -> *mut c_void {
+pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
     /// The answer to an unknown interface. Its 0x50 field carries the creating thread id:
     /// XAML's callers check an object's affinity by comparing GetCurrentThreadId() with the
     /// dword at that offset, and reading it out of a smaller allocation was the fault.
@@ -96,8 +96,15 @@ fn stub(iid: GUID) -> *mut c_void {
             unsafe { *out = this };
             return S_OK;
         }
-        unsafe { *out = ptr::null_mut() };
-        E_NOINTERFACE
+        // The stub is what a caller may already hold from an earlier answer; refusing the
+        // next interface leaves it with a null it dereferences. Answering with ourselves
+        // keeps the object alive and records the slots that follow.
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: stub {:?} also asked for {iid:?}", unsafe { &*(this as *const Stub) }.iid);
+        }
+        unsafe { stub_add_ref(this) };
+        unsafe { *out = this };
+        S_OK
     }
     unsafe extern "system" fn stub_add_ref(this: *mut c_void) -> u32 {
         let stub = unsafe { &*(this as *const Stub) };
@@ -210,7 +217,7 @@ unsafe extern "system" fn query_interface(
     // XAML asks the object for interfaces this pair does not carry and fails fast when it
     // is refused. Answer with a stub that names the slot it calls, so the next round knows
     // what the interface has to do.
-    unsafe { *out = stub(iid) };
+    unsafe { *out = private_stub(iid) };
     S_OK
 }
 

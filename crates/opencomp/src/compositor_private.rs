@@ -1,21 +1,30 @@
 //! The private interface XAML asks the compositor for before it loads markup.
 //!
-//! The GUID appears nowhere in metadata: it is queried on the object the private statics
-//! slot handed out, and the caller checks the answer's thread affinity by reading a dword
-//! at +0x50. A refusal leaves the caller with a null and it faults on the next line, so
-//! the interface has to exist even before its methods are known. Each slot reports
-//! E_NOTIMPL and says which one was called.
+//! The GUID appears nowhere in metadata. The caller queries it, calls slot 0x20 with an
+//! out pointer, and passes the answer to a thread-affinity check that reads a dword at
+//! +0x50; a slot that returns without writing leaves the caller with a null and it faults
+//! on the next line. Every slot therefore answers with the padded stub, which carries the
+//! creating thread id at that offset and records the slot it was called at.
 
-use windows_core::{HRESULT, IUnknown, interface};
+use std::ffi::c_void;
+
+use windows_core::{GUID, HRESULT, IUnknown, interface};
 
 const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
+const E_POINTER: HRESULT = HRESULT(0x8000_4003u32 as i32);
+
+pub(crate) const IID: GUID = GUID::from_u128(0xd361_6837_3ed3_484e_ac26_cf5b_e382_541e);
 
 macro_rules! slot {
     ($name:ident, $index:expr) => {
-        unsafe fn $name(&self) -> HRESULT {
+        unsafe fn $name(&self, out: *mut *mut c_void) -> HRESULT {
             if std::env::var_os("OPENCOMP_TRACE").is_some() {
                 eprintln!("opencomp: compositor private slot {} called", $index);
             }
+            if out.is_null() {
+                return E_POINTER;
+            }
+            unsafe { *out = crate::composite::private_stub(IID) };
             E_NOTIMPL
         }
     };
@@ -23,14 +32,14 @@ macro_rules! slot {
 
 #[interface("d3616837-3ed3-484e-ac26-cf5be382541e")]
 pub unsafe trait ICompositorPrivate: IUnknown {
-    unsafe fn Slot6(&self) -> HRESULT;
-    unsafe fn Slot7(&self) -> HRESULT;
-    unsafe fn Slot8(&self) -> HRESULT;
-    unsafe fn Slot9(&self) -> HRESULT;
-    unsafe fn Slot10(&self) -> HRESULT;
-    unsafe fn Slot11(&self) -> HRESULT;
-    unsafe fn Slot12(&self) -> HRESULT;
-    unsafe fn Slot13(&self) -> HRESULT;
+    unsafe fn Slot6(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot7(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot8(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot9(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot10(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot11(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot12(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot13(&self, out: *mut *mut c_void) -> HRESULT;
 }
 
 impl ICompositorPrivate_Impl for crate::compositor::Compositor_Impl {

@@ -67,7 +67,16 @@ Do not:
 - Run `make install` without `scripts/wine/refresh-dxmt.sh` afterwards.
 - Set timers, schedules or automations without being asked.
 
-Next step: after the `{d3616837}` query the caller invokes a method through the answered
-interface at vtable offset 0x20 and passes an out pointer; a declaration that puts the
-wrong method there leaves that pointer null. Confirm which method the offset names (classic
-COM has three methods before WinRT's IInspectable ones) and give it a real answer.
+Next step: the `{d3616837}` query is not answered by any of our objects. The composite
+logs every identifier it forwards, the padded stubs log the interfaces they are asked for
+afterwards, our compositor implements the identifier, and Wine's dcomp shows no such query
+with `WINEDEBUG=+dcomp` -- yet the caller's object is still null. So the queried object is
+XAML's own, at offset 0x2c8 of the window-procedure context, and its composition member was
+never created. Find what fills that member: the call at `+0x7f1348` (`+0x7ef9fc`) runs
+before the query and its failure path fail-fasts, so it is the place to instrument.
+
+The layout question the earlier note raised is settled for our side:
+`windows-interface` generates only the three `IUnknown` methods plus the declared ones, so
+a private interface's first method sits at vtable offset 0x18 and the caller's 0x20 is its
+second. Our methods now take an out pointer and write a padded stub into it, which keeps a
+caller from reading a null even when the slot means nothing to us.
