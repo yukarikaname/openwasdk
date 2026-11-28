@@ -25,6 +25,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .ok_or("usage: render <page.xbf> <out.ppm> [w h]")?;
     let width: u32 = args.next().map_or(Ok(800), |v| v.parse())?;
     let height: u32 = args.next().map_or(Ok(600), |v| v.parse())?;
+    // A material blurs what is behind the window; a headless render has no desktop, so one
+    // can be supplied as a PPM.
+    let backdrop = match args.next().as_deref() {
+        Some("--backdrop") => args.next(),
+        _ => None,
+    };
 
     let path = Path::new(&source);
     let xbf = xbf::parse_file(path)?;
@@ -57,15 +63,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
      * same `blur_and_tint` the Skia path exposes.
      */
     let mut tree = tree;
+    let desktop: Option<Vec<u8>> = backdrop
+        .as_deref()
+        .and_then(read_ppm)
+        .or_else(|| wallpaper(width, height));
     if contains_kind(&root, openxaml::Kind::MicaBackdrop)
-        && let Some(desktop) = wallpaper(width, height)
+        && let Some(desktop) = desktop
     {
         let tint = openxaml::theme::palette::color("SolidBackgroundFillColorBase")
             .unwrap_or([0.95, 0.95, 0.95, 1.0]);
+        // WinUI's light Mica lets most of the wallpaper through: a thin tint over a
+        // half-strength luminosity layer, not a wash.
         let material = opencomp_core::material::Material {
-            tint: [tint[0], tint[1], tint[2], 0.55],
-            luminosity: [0.95, 0.95, 0.95],
-            blur: 64.0,
+            tint: [tint[0], tint[1], tint[2], 0.28],
+            luminosity: [0.55, 0.55, 0.55],
+            blur: 48.0,
             noise: 0.0,
         };
         if let Some(panel) =
@@ -258,6 +270,43 @@ fn wallpaper(width: u32, height: u32) -> Option<Vec<u8>> {
             let at = ((y * width + x) * 4) as usize;
             pixels[at..at + 4].copy_from_slice(&pixel);
         }
+    }
+    Some(pixels)
+}
+
+/// Read a binary PPM (P6), which is what an outside tool can produce from any picture.
+fn read_ppm(path: &str) -> Option<Vec<u8>> {
+    let bytes = std::fs::read(path).ok()?;
+    let mut fields = Vec::new();
+    let mut at = 0;
+    while fields.len() < 4 {
+        while at < bytes.len() && bytes[at].is_ascii_whitespace() {
+            at += 1;
+        }
+        let start = at;
+        while at < bytes.len() && !bytes[at].is_ascii_whitespace() {
+            at += 1;
+        }
+        fields.push(std::str::from_utf8(&bytes[start..at]).ok()?.to_string());
+    }
+    at += 1; // the single whitespace after the header
+    if fields[0] != "P6" {
+        return None;
+    }
+    let width: usize = fields[1].parse().ok()?;
+    let height: usize = fields[2].parse().ok()?;
+    let mut pixels = vec![0u8; width * height * 4];
+    for index in 0..width * height {
+        let source = at + index * 3;
+        if source + 3 > bytes.len() {
+            return None;
+        }
+        pixels[index * 4..index * 4 + 4].copy_from_slice(&[
+            bytes[source],
+            bytes[source + 1],
+            bytes[source + 2],
+            255,
+        ]);
     }
     Some(pixels)
 }
