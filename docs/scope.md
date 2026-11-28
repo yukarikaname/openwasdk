@@ -56,7 +56,9 @@ The first two lines are ours. The third is `Windows.UI.Composition.Desktop`, the
 system DirectComposition API that talks to DWM — Wine has to provide that, and the
 `dcomp` stub means it cannot yet. The sample is therefore not a target, and
 more importantly it shows why the *lifted* stack (`Microsoft.UI.Composition` in
-the application's own package) is the one worth replacing: it needs no DWM.
+the application's own package) is the one worth replacing: replacing it is what makes the
+draw path independent of DWM. The engine still loads the lifted compositor core beside it
+though, and that core does ask for a DWM -- the gap recorded above.
 
 ## Licensing
 
