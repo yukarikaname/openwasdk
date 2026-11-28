@@ -94,7 +94,19 @@ we answer.
 
 Measured, in order: activation reaches us, the statics build the object, exactly one QI is
 asked (`ICompositionEasingFunction`, answered), and the stowed `E_NOINTERFACE` follows with
-no further call into our code. The next instrument is a vectored exception handler inside
+no further call into our code.
+
+WinDbg on the crash dump names the caller:
+
+    EXCEPTION_CODE: (HRESULT) 0x80004002 - No such interface supported
+    SYMBOL_NAME:    Microsoft_UI_Xaml!OnFailure<4076>+3f
+    FAILURE_BUCKET: STOWED_EXCEPTION_80004002_Microsoft.UI.Xaml.dll!OnFailure_4076_
+
+so the QueryInterface that fails is XAML's own, made through `OnFailure<4076>`, not the input
+host's. What it asks for is still unnamed -- the call is inside the engine and our watcher only
+covers the objects we hand out. Next instrument: watch the statics object and the `Compositor`
+we return from `Compositor()`, which is the other object XAML can reach from an easing
+function. The next instrument is a vectored exception handler inside
 `opencomp` that logs the stack of `0xC000027B` -- the same `trace_stack` machinery the
 private statics already use -- because everything this side can see has been measured.
 

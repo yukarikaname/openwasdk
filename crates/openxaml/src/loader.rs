@@ -157,11 +157,21 @@ fn load_body(
     let unsupported = LoadError::UnsupportedType {
         name: source.type_name.clone(),
     };
+    /*
+     * An unrealized control does not recurse -- it is one empty box -- so it is answered
+     * before the depth guard, which exists to stop a control whose body contains itself.
+     */
+    /*
+     * A type from the application's own namespace that no body answers is a control whose
+     * content is built in code: an empty box is the honest picture. The registration list
+     * only sees types in the root stream, and a template body can name one that lives in a
+     * deferred stream, so the namespace itself is the test.
+     */
+    if controls.has_unrealized(&source.type_name) || source.type_name.starts_with("using:") {
+        return unrealized(source, controls, depth);
+    }
     if depth >= MAX_DEPTH {
         return Err(unsupported);
-    }
-    if controls.has_unrealized(&source.type_name) {
-        return unrealized(source, controls, depth);
     }
     let body = controls.body(&source.type_name).ok_or(unsupported)?;
     let Some(root) = body.roots.first() else {
