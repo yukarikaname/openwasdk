@@ -327,6 +327,18 @@ supply them; a second engine is a rewrite of one that already exists (Uno, Avalo
 keeps of that track is the tool: `.xbf` in, element tree out, arranged and drawn, so a
 page can be inspected and its layout compared against the engine's numbers.
 
+## Tables, not lists
+
+A control used to be written in four places: the kind enum, its WinRT name and lookup, the
+layout dispatch, and the support table. One of those was missed often enough to be a bug
+class, so the layout pass now matches a `Role` (panel, content host, text, non-visual) and the
+remaining lists are meant to be declared once and expanded.
+
+The rule: a fact that would appear twice is a table plus a macro, and a fact that already
+exists in `Microsoft.UI.winmd` is emitted by `comptrace` rather than typed. What stays
+hand-written is what encodes our own behaviour -- which panels we lay out, which properties
+the loader converts.
+
 ## Risks
 
 - **Private Composition interfaces.** The proxy finds them; their semantics need
