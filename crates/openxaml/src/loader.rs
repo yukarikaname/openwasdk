@@ -8,6 +8,7 @@
 use std::fmt;
 
 use crate::element::{
+    Kind,
     CornerRadius, Element, GridLength, GridTrack, HorizontalAlignment, Length, Orientation,
     Thickness, Value, VerticalAlignment, Visibility,
 };
@@ -55,6 +56,12 @@ impl std::error::Error for LoadError {}
 #[derive(Default)]
 pub struct Controls {
     bodies: std::collections::HashMap<String, xbf::Model>,
+    /*
+     * Application controls whose shipped XAML holds no tree: a ResourceDictionary
+     * with templates, or nothing the writer could keep. Their content is built in
+     * code, so a preview draws the box the page asked for and nothing inside it.
+     */
+    unrealized: std::collections::HashSet<String>,
 }
 
 impl Controls {
@@ -63,9 +70,19 @@ impl Controls {
         self.bodies.insert(name.to_ascii_lowercase(), body);
     }
 
+    /// Register a control that has no visual tree to load.
+    pub fn insert_unrealized(&mut self, name: &str) {
+        self.unrealized.insert(name.to_ascii_lowercase());
+    }
+
     fn body(&self, type_name: &str) -> Option<&xbf::Model> {
         let simple = type_name.rsplit('.').next().unwrap_or(type_name);
         self.bodies.get(&simple.to_ascii_lowercase())
+    }
+
+    fn has_unrealized(&self, type_name: &str) -> bool {
+        let simple = type_name.rsplit('.').next().unwrap_or(type_name);
+        self.unrealized.contains(&simple.to_ascii_lowercase())
     }
 }
 
@@ -115,6 +132,9 @@ fn load_body(
     if depth >= MAX_DEPTH {
         return Err(unsupported);
     }
+    if controls.has_unrealized(&source.type_name) {
+        return unrealized(source, controls, depth);
+    }
     let body = controls.body(&source.type_name).ok_or(unsupported)?;
     let Some(root) = body.roots.first() else {
         return Err(LoadError::UnsupportedType {
@@ -135,6 +155,20 @@ fn load_body(
         element.push(load_element(child, controls, depth + 1)?);
     }
     Ok(element)
+}
+
+/// A control the application built in code: an empty box of the size the page asked for.
+fn unrealized(
+    source: &xbf::Element,
+    controls: &Controls,
+    depth: usize,
+) -> Result<Element, LoadError> {
+    let Some(support) = support::by_kind(Element::new(Kind::Unrealized).kind()) else {
+        return Err(LoadError::UnsupportedType {
+            name: source.type_name.clone(),
+        });
+    };
+    build(source, support, controls, depth)
 }
 
 fn build(
@@ -380,6 +414,11 @@ fn load_property_with(
                             name: member.to_string(),
                         })?
                 }
+                /*
+                 * An unrealized control has whatever members its code declares; the box
+                 * draws none of them, so any name is accepted and dropped.
+                 */
+                None if support.kind == Kind::Unrealized => return Ok(()),
                 None => {
                     return Err(LoadError::UnsupportedProperty {
                         element: type_name.to_string(),

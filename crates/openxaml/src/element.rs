@@ -106,6 +106,13 @@ pub enum Kind {
     SelectorBarItem,
     AutoSuggestBox,
     Flyout,
+    /* An application control whose XAML carries no visual tree: its content is built
+     * in code, which a preview does not run. */
+    Unrealized,
+    ColorPicker,
+    ImplicitAnimationSet,
+    MenuFlyoutSeparator,
+    ImageIconSource,
 }
 
 impl Kind {
@@ -170,6 +177,11 @@ impl Kind {
             Self::Expander => "Microsoft.UI.Xaml.Controls.Expander",
             Self::ProgressRing => "Microsoft.UI.Xaml.Controls.ProgressRing",
             Self::SelectorBar => "Microsoft.UI.Xaml.Controls.SelectorBar",
+            Self::Unrealized => "Microsoft.UI.Xaml.Unrealized",
+            Self::ColorPicker => "Microsoft.UI.Xaml.Controls.ColorPicker",
+            Self::ImplicitAnimationSet => "Microsoft.UI.Xaml.Media.ImplicitAnimationSet",
+            Self::MenuFlyoutSeparator => "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator",
+            Self::ImageIconSource => "Microsoft.UI.Xaml.Media.ImageIconSource",
             Self::SelectorBarItem => "Microsoft.UI.Xaml.Controls.SelectorBarItem",
             Self::AutoSuggestBox => "Microsoft.UI.Xaml.Controls.AutoSuggestBox",
             Self::Flyout => "Microsoft.UI.Xaml.Controls.Flyout",
@@ -261,9 +273,17 @@ impl Kind {
             "Expander" | "Microsoft.UI.Xaml.Controls.Expander" => Some(Self::Expander),
 "ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
 "SelectorBar" | "Microsoft.UI.Xaml.Controls.SelectorBar" => Some(Self::SelectorBar),
-            "SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => Some(Self::SelectorBarItem),
+"SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => Some(Self::SelectorBarItem),
+            "ColorPicker" | "Microsoft.UI.Xaml.Controls.ColorPicker" => Some(Self::ColorPicker),
             "AutoSuggestBox" | "Microsoft.UI.Xaml.Controls.AutoSuggestBox" => Some(Self::AutoSuggestBox),
             "Flyout" | "Microsoft.UI.Xaml.Controls.Flyout" => Some(Self::Flyout),
+            "MenuFlyoutSeparator" | "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator" => {
+                Some(Self::MenuFlyoutSeparator)
+            }
+            "ImageIconSource" | "Microsoft.UI.Xaml.Media.ImageIconSource" => {
+                Some(Self::ImageIconSource)
+            }
+            "ImplicitAnimationSet" => Some(Self::ImplicitAnimationSet),
             _ => None,
         }
     }
@@ -359,6 +379,9 @@ impl Element {
                 | Kind::Line
                 | Kind::ToolTip
                 | Kind::Flyout
+                | Kind::ImplicitAnimationSet
+                | Kind::MenuFlyoutSeparator
+                | Kind::ImageIconSource
                 | Kind::Binding
         )
     }

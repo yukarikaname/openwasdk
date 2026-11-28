@@ -276,6 +276,8 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::Expander
         | Kind::ProgressRing
         | Kind::SelectorBar
+        | Kind::Unrealized
+        | Kind::ColorPicker
         | Kind::SelectorBarItem
         | Kind::AutoSuggestBox
         | Kind::ListView
@@ -316,7 +318,10 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::Line
         | Kind::ToolTip
         | Kind::Binding
-        | Kind::Flyout => Ok(Size::new(0.0, 0.0)),
+        | Kind::Flyout
+        | Kind::ImplicitAnimationSet
+        | Kind::MenuFlyoutSeparator
+        | Kind::ImageIconSource => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
     }
@@ -397,6 +402,8 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::Expander
         | Kind::ProgressRing
         | Kind::SelectorBar
+        | Kind::Unrealized
+        | Kind::ColorPicker
         | Kind::SelectorBarItem
         | Kind::AutoSuggestBox
         | Kind::ListView
@@ -437,7 +444,10 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::Line
         | Kind::ToolTip
         | Kind::Binding
-        | Kind::Flyout => Ok(Vec::new()),
+        | Kind::Flyout
+        | Kind::ImplicitAnimationSet
+        | Kind::MenuFlyoutSeparator
+        | Kind::ImageIconSource => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }

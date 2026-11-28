@@ -40,6 +40,81 @@ macro_rules! type_support {
 
 static TABLE: &[TypeSupport] = &[
     type_support!(
+        Kind::ColorPicker,
+        &property::FONT_SIZE,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::ImplicitAnimationSet,
+        &property::FONT_SIZE,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::MenuFlyoutSeparator,
+        &property::FONT_SIZE,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::ImageIconSource,
+        &property::FONT_SIZE,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::Unrealized,
+        &property::FONT_SIZE,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
         Kind::SelectorBarItem,
         &property::FONT_SIZE,
         &property::WIDTH,
@@ -799,6 +874,11 @@ pub(crate) fn lookup(type_name: &str) -> Option<&'static TypeSupport> {
     TABLE
         .iter()
         .find(|entry| Kind::from_type_name(type_name) == Some(entry.kind))
+}
+
+/// The entry for a kind the loader constructs itself, such as an unrealized control.
+pub fn by_kind(kind: Kind) -> Option<&'static TypeSupport> {
+    TABLE.iter().find(|entry| entry.kind == kind)
 }
 
 /// Whether the loader has a constructor for this element type.

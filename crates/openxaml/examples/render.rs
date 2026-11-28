@@ -82,6 +82,22 @@ fn bodies(root: &Path) -> Controls {
     let mut files: HashMap<String, PathBuf> = HashMap::new();
     collect(root, &mut files);
     let mut controls = Controls::default();
+
+    // A type from the application's own namespace is realized only when its XAML holds
+    // a tree. Everything else -- a template-only control, a toolkit animation set -- is
+    // drawn as the box the page asked for, because its content is built in code.
+    let mut named: Vec<String> = Vec::new();
+    for path in files.values() {
+        if let Ok(file) = xbf::parse_file(path) {
+            if let Ok(model) = file.model() {
+                application_types(&model.roots, &mut named);
+            }
+        }
+    }
+    for name in &named {
+        controls.insert_unrealized(name);
+    }
+
     for (name, path) in files {
         let Ok(file) = xbf::parse_file(&path) else {
             continue;
@@ -89,11 +105,6 @@ fn bodies(root: &Path) -> Controls {
         let Ok(model) = file.model() else {
             continue;
         };
-        /*
-         * A file next to a page is not always a control body: Styles/SelectorBar.xbf
-         * is a Style whose name is also a control's name. A body has to be a visual
-         * element to stand in for the type the page names.
-         */
         let visual = model
             .roots
             .first()
@@ -105,6 +116,17 @@ fn bodies(root: &Path) -> Controls {
         controls.insert(&name, model);
     }
     controls
+}
+
+/// Every element type the model names in the application's own namespace.
+fn application_types(elements: &[xbf::model::Element], out: &mut Vec<String>) {
+    for element in elements {
+        if element.type_name.starts_with("using:") {
+            let simple = element.type_name.rsplit('.').next().unwrap_or(&element.type_name);
+            out.push(simple.to_string());
+        }
+        application_types(&element.children, out);
+    }
 }
 
 fn collect(dir: &Path, out: &mut HashMap<String, PathBuf>) {
