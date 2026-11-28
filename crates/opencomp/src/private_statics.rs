@@ -163,7 +163,7 @@ unsafe extern "system" fn method<const SLOT: usize>(
         };
     }
     let device_iid = if iid.is_null() {
-        GUID::from_u128(0x75f6_468d_1b8e_447c_9bc6_75fea80b5b25)
+        GUID::from_u128(0x75f6_468d_1b8e_447c_9bc6_75fe_a80b_5b25)
     } else {
         unsafe { *iid }
     };
@@ -335,7 +335,9 @@ fn dcomp_device(iid: &GUID) -> Option<*mut c_void> {
         if p.is_null() {
             None
         } else {
-            Some(unsafe { std::mem::transmute(p) })
+            type GetFactory =
+                unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32;
+            Some(unsafe { std::mem::transmute::<*mut c_void, GetFactory>(p) })
         }
     }
 

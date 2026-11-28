@@ -88,18 +88,18 @@ pub unsafe extern "system" fn DllGetActivationFactory(
         return E_POINTER;
     }
     unsafe { *factory = std::ptr::null_mut() };
-    if ours_first(class) {
-        if let Some(get) = our_factory() {
-            let hr = unsafe { get(class, factory) };
-            if hr >= 0 {
-                trace(format_args!("ours: {:?}", class_name(class)));
-                return hr;
-            }
-            trace(format_args!(
-                "ours refused {:?}: {hr:#x}",
-                class_name(class)
-            ));
+    if ours_first(class)
+        && let Some(get) = our_factory()
+    {
+        let hr = unsafe { get(class, factory) };
+        if hr >= 0 {
+            trace(format_args!("ours: {:?}", class_name(class)));
+            return hr;
         }
+        trace(format_args!(
+            "ours refused {:?}: {hr:#x}",
+            class_name(class)
+        ));
     }
     if let Some(get) = engine_factory() {
         let hr = unsafe { get(class, factory) };
