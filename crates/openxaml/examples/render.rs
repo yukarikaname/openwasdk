@@ -44,7 +44,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let tree = root.compose(&layout);
 
     // The window in the page's own theme: the Gallery is a light application.
-    let background = openxaml::theme::palette::color("ApplicationPageBackgroundThemeBrush")
+    let background = openxaml::theme::palette::color("SolidBackgroundFillColorBase")
+        .or_else(|| openxaml::theme::palette::color("ApplicationPageBackgroundThemeBrush"))
         .map(|c| [c[0], c[1], c[2], 1.0])
         .unwrap_or_else(|| [srgb(0.95), srgb(0.95), srgb(0.95), 1.0]);
     let Some(mut renderer) = Renderer::headless((width, height), background) else {

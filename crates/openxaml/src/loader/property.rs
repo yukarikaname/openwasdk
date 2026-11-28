@@ -390,7 +390,7 @@ pub(super) fn load_property_with(
                     return Ok(());
                 }
                 if std::env::var_os("OPENCOMP_TRACE").is_some() {
-                    eprintln!("openxaml: theme key {key:?} on {type_name}");
+                    eprintln!("openxaml: theme key {key:?} unresolved on {type_name}");
                 }
                 return Ok(());
             }
