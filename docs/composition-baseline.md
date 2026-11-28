@@ -66,8 +66,19 @@ answers with the process-wide instance instead of the one the caller handed to t
 An easing object that claims the wrong compositor is a stowed exception waiting for the
 first animation.
 
-The class stays with the engine until the object is bound to that owner: bind the clock
-through `compositor::clock_of(&owner)`, give the object a node, and rerun this gate.
+Binding the object to its owner (a node whose clock comes from `compositor::clock_of`) is
+in `easing.rs` and the gate still fails, so the owner was not the only hole. WER names
+the exception this time:
+
+    Exception Code    80004002   (E_NOINTERFACE)
+    Fault Module      StackHash12_ce1
+    Last Result       -1073741189  (0xC000027B, stowed)
+
+A QueryInterface on the easing object the engine received found nothing it needs. The
+class stays with the engine, and the next measurement is to name that IID: the object's
+QI answers `E_NOINTERFACE` for everything outside the interfaces listed in its
+`#[implement(…)]`, so a logged QI (or a `comptrace iids` sweep over the modules that touch
+an easing function) turns this into a work item instead of a guess.
 
 ## The rule this gives
 
