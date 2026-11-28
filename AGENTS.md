@@ -12,7 +12,8 @@ becomes the whole task. Everything needed is already on disk:
 
 Do not run `xwinui layout`, `xwinui sdk`, `curl`, or a plain `cargo` command that
 would update the index. If a package really is missing, say so in the report instead
-of downloading it.
+of downloading it. The one exception is `msdl.microsoft.com`, which serves symbols and is
+fast; fetching a PDB there is expected, see below.
 
 ## Where the measurements live
 
@@ -20,8 +21,32 @@ of downloading it.
 - `docs/gate-b.md` — what the official XAML engine does under Wine, and the three
   hypotheses already ruled out (registration, our compositor, a missing import).
 - `docs/opencomp-stubs.md` — every `E_NOTIMPL` in the compositor and why.
+- `docs/composition-baseline.md` — measured: the engine's own `dcompi.dll` draws the Gallery
+  window, our recording device dies in `LocalContentOutput::Initialize`, and why `dcompi` is
+  a shim over the engine.
 
 Start from those rather than re-deriving facts that cost a day each.
+
+## Symbols before disassembly
+
+Every shipped component keeps a CodeView record, so a fault offset has a name before it
+has a guess. Do this **first**, before reading any disassembly:
+
+```sh
+python3 scripts/xaml/annotate.py <dll> --pdb        # prints the symbol-server URL
+curl -sSL -o target/symbols/<name>.pdb <that url>
+cp target/symbols/<name>.pdb "$(dirname <dll>)"     # llvm finds it by CodeView name
+/opt/homebrew/opt/llvm/bin/llvm-symbolizer --obj=<dll> 0x180091178
+```
+
+`llvm-symbolizer` wants a virtual address (image base `0x180000000`), not an RVA, and
+locates the PDB through the CodeView record, so the copy beside the DLL matters.
+`llvm-pdbutil dump -publics <pdb>` lists what the symbols cover; Microsoft publishes
+publics without line tables, so expect a function name and `??:0:0` for file and line.
+
+Measured: `Microsoft.UI.Input+0x91178` is `LocalContentOutput::Initialize(ContentIsland *)`,
+not the `CompositionHelper::...` a string search had suggested. The same route names
+`dcompi.dll`, `dwmcorei.dll` and `Microsoft.ui.xaml.dll` offsets.
 
 ## Tools that generate code
 
@@ -43,6 +68,8 @@ Do:
 - Check published work before writing a probe. `wine-uwp` / `wine-ultimate` describe how the
   platform side behaves; Uno Platform and Avalonia show how a XAML-compatible engine is
   structured; `microsoft/microsoft-ui-xaml` and the WinMD metadata are the contract.
+- Resolve an address through its PDB before disassembling, and disassemble before guessing
+  a vtable slot.
 - Verify against Microsoft's binaries on Windows first. `scripts/vm` boots the baseline,
   `comptrace methods|classes|interfaces` reads the metadata, `annotate.py <dll> <rva>` decodes
   call sites.
@@ -92,7 +119,7 @@ into a crate; the licence rule in `docs/scope.md` applies.
 | Avalonia | `github.com/AvaloniaUI/Avalonia` | `refs/Avalonia` (sparse) | XAML parser, styling, layout |
 | Uno Platform | `github.com/unoplatform/uno` | `refs/uno` (sparse: `src/Uno.UI`) | WinUI-compatible API, dependency properties, parser |
 | microsoft-ui-xaml | `github.com/microsoft/microsoft-ui-xaml` | `../microsoft-ui-xaml` (partial: `dxaml`, `src`) and `refs/microsoft-ui-xaml` (sparse: `dxaml`, `controls`) | XAML engine (`dxaml`), XAML compiler |
-| LiberNT (ReactOS fork) | `github.com/LiberNT/LiberNT` | not cloned | the host layer only: PE loading, ntdll/win32ss semantics; it has no Composition or XAML |
+| LiberNT (ReactOS fork) | `github.com/LiberNT/LiberNT` | `refs/LiberNT` (sparse: `base/system/dwm`) | the host layer (PE loading, ntdll/win32ss) **and a working DWM**: `base/system/dwm` (`dwm.c` 5.4k lines, `gpucomp.c` 2.9k, D3D/GL backends, `NtDCompositionCreateConnection`) plus `dll/directx/wine/dcomp` for the client side; no XAML |
 | ReactOS | `github.com/reactos/reactos` | not cloned | the upstream of the same host-layer material |
 | Darling | `github.com/darlinghq/darling` | not cloned | architecture analogy for a host compatibility layer, not code |
 | OpenSwiftUI | `github.com/OpenSwiftUIProject/OpenSwiftUI` | not cloned | architecture analogy for a framework reimplementation, not code |

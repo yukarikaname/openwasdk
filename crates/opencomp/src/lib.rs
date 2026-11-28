@@ -181,6 +181,13 @@ pub unsafe extern "system" fn DllGetActivationFactory(
     S_OK
 }
 
+/// The lifted compositor device entry point, forwarded by `dcompi`'s
+/// `WinUIDCompositionCreateDevice3`.
+#[unsafe(no_mangle)]
+pub extern "system" fn OpenCompRecordingDevice() -> *mut c_void {
+    crate::private_statics::recording_device()
+}
+
 /// A DLL with no global objects can always be unloaded.
 #[unsafe(no_mangle)]
 pub extern "system" fn DllCanUnloadNow() -> i32 {

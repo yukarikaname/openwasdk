@@ -78,6 +78,7 @@ macro_rules! bridge_slot {
         unsafe fn $name(&self, out: *mut *mut c_void) -> HRESULT {
             if std::env::var_os("OPENCOMP_TRACE").is_some() {
                 eprintln!("opencomp: composition bridge slot {} called", $index);
+                $crate::private_statics::trace_stack();
             }
             if out.is_null() {
                 return E_POINTER;
@@ -114,7 +115,7 @@ impl ICompositionBridgePrivate_Impl for crate::compositor::Compositor_Impl {
 #[interface("bbcb00be-cd17-4093-9ac0-d4b00472acea")]
 pub unsafe trait ICompositionTargetBridge: IUnknown {
     unsafe fn Slot3(&self, out: *mut *mut c_void) -> HRESULT;
-    unsafe fn Slot4(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot4(&self, value: *mut c_void, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot5(&self, value: u32, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot6(&self, out: *mut *mut c_void) -> HRESULT;
     unsafe fn Slot7(&self, out: *mut *mut c_void) -> HRESULT;
@@ -125,7 +126,16 @@ pub unsafe trait ICompositionTargetBridge: IUnknown {
 
 impl ICompositionTargetBridge_Impl for crate::compositor::Compositor_Impl {
     bridge_slot!(Slot3, 3);
-    bridge_slot!(Slot4, 4);
+    unsafe fn Slot4(&self, value: *mut c_void, out: *mut *mut c_void) -> HRESULT {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: composition bridge slot 4 called with {value:?}");
+        }
+        if out.is_null() {
+            return E_POINTER;
+        }
+        unsafe { *out = crate::composite::private_stub(IID) };
+        S_OK
+    }
     unsafe fn Slot5(&self, value: u32, out: *mut *mut c_void) -> HRESULT {
         // A setter: the helper passes the interface it just queried as the in/out argument and
         // releases whatever comes back, so the answer has to be a value it may release. The

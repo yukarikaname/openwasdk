@@ -138,13 +138,49 @@ pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
         }
         REFUSE
     }
+    unsafe extern "system" fn stub_iids(
+        _this: *mut c_void,
+        count: *mut c_void,
+        iids: *mut c_void,
+        _d: *mut c_void,
+    ) -> i32 {
+        if !count.is_null() {
+            unsafe { *(count as *mut u32) = 0 };
+        }
+        if !iids.is_null() {
+            unsafe { *(iids as *mut *mut GUID) = std::ptr::null_mut() };
+        }
+        0
+    }
+
+    unsafe extern "system" fn stub_class(
+        _this: *mut c_void,
+        _out: *mut c_void,
+        _b: *mut c_void,
+        _c: *mut c_void,
+    ) -> i32 {
+        REFUSE
+    }
+
+    unsafe extern "system" fn stub_trust(
+        _this: *mut c_void,
+        out: *mut c_void,
+        _b: *mut c_void,
+        _c: *mut c_void,
+    ) -> i32 {
+        if !out.is_null() {
+            unsafe { *(out as *mut u32) = 0 };
+        }
+        0
+    }
+
     static VTBLS: OnceLock<StubVtbl> = OnceLock::new();
     let vtbl = VTBLS.get_or_init(|| StubVtbl {
         query_interface: stub_qi,
         add_ref: stub_add_ref,
         release: stub_release,
         slots: [
-            stub_slot::<0>, stub_slot::<1>, stub_slot::<2>, stub_slot::<3>,
+            stub_iids, stub_class, stub_trust, stub_slot::<3>,
             stub_slot::<4>, stub_slot::<5>, stub_slot::<6>, stub_slot::<7>,
             stub_slot::<8>, stub_slot::<9>, stub_slot::<10>, stub_slot::<11>,
             stub_slot::<12>, stub_slot::<13>, stub_slot::<14>, stub_slot::<15>,
@@ -213,6 +249,16 @@ unsafe extern "system" fn query_interface(
     if unsafe { ask(composite.device, &iid, out) }.is_some() {
         return S_OK;
     }
+    // `IDCompositionDevice2`: the input host takes the object that answers this and calls
+    // device slots on it directly (CreateTargetForHwnd among them), so the generic stub is
+    // the wrong answer here.
+    const IID_IDCOMPOSITIONDEVICE2: GUID =
+        GUID::from_u128(0x75f6_468d_1b8e_447c_9bc6_75fe_a80b_5b25);
+    if iid == IID_IDCOMPOSITIONDEVICE2 {
+        unsafe { *out = crate::private_statics::recording_device() };
+        return S_OK;
+    }
+
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!("opencomp: composite has neither the compositor nor the device for {iid:?}");
     }

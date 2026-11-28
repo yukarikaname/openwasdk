@@ -186,36 +186,255 @@ unsafe extern "system" fn method<const SLOT: usize>(
     S_OK
 }
 
-/// `DCompositionCreateDevice3(NULL, iid, &device)`, in the Wine that is running us.
+/// The device XAML asks for when the host has no compositor to hand back: a recording
+/// object that accepts every device call and returns itself for every factory, so the
+/// engine can keep building its tree.
+#[repr(C)]
+struct RecordingDevice {
+    vtbl: *const *const c_void,
+    refs: AtomicU32,
+}
+
+const DEVICE_SLOTS: usize = 32;
+
+unsafe extern "system" fn dev_ok(
+    _this: *mut c_void,
+    _a: *mut c_void,
+    _b: *mut c_void,
+    _c: *mut c_void,
+    _d: *mut c_void,
+) -> i32 {
+    0
+}
+
+unsafe fn add_ref_device(this: *mut c_void) {
+    let device = unsafe { &*(this as *const RecordingDevice) };
+    device.refs.fetch_add(1, Ordering::Relaxed);
+}
+
+unsafe extern "system" fn dev_out1(
+    this: *mut c_void,
+    out: *mut *mut c_void,
+    _b: *mut c_void,
+    _c: *mut c_void,
+) -> i32 {
+    if !out.is_null() {
+        unsafe {
+            add_ref_device(this);
+            *out = this;
+        }
+    }
+    0
+}
+
+unsafe extern "system" fn dev_out2(
+    this: *mut c_void,
+    _a: *mut c_void,
+    out: *mut *mut c_void,
+    _c: *mut c_void,
+) -> i32 {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: recording device slot22 out {out:?}");
+    }
+    unsafe { dev_out1(this, out, std::ptr::null_mut(), std::ptr::null_mut()) }
+}
+
+unsafe extern "system" fn dev_qi(this: *mut c_void, iid: *const GUID, out: *mut *mut c_void) -> i32 {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() && !iid.is_null() {
+        eprintln!("opencomp: recording device asked for {:?}", unsafe { *iid });
+    }
+    if out.is_null() {
+        return E_POINTER;
+    }
+    unsafe {
+        add_ref_device(this);
+        *out = this;
+    }
+    0
+}
+
+unsafe extern "system" fn dev_addref(this: *mut c_void) -> u32 {
+    let device = unsafe { &*(this as *const RecordingDevice) };
+    device.refs.fetch_add(1, Ordering::Relaxed) + 1
+}
+
+unsafe extern "system" fn dev_release(this: *mut c_void) -> u32 {
+    let device = unsafe { &*(this as *const RecordingDevice) };
+    let refs = device.refs.fetch_sub(1, Ordering::Release) - 1;
+    if refs == 0 {
+        unsafe { drop(Box::from_raw(this as *mut RecordingDevice)) };
+    }
+    refs
+}
+
+pub(crate) fn recording_device() -> *mut c_void {
+    use std::sync::OnceLock;
+    static VTBL: OnceLock<[usize; DEVICE_SLOTS]> = OnceLock::new();
+    let vtbl = VTBL.get_or_init(|| {
+        let mut v = [dev_ok as *const c_void as usize; DEVICE_SLOTS];
+        v[0] = dev_qi as *const c_void as usize;
+        v[1] = dev_addref as *const c_void as usize;
+        v[2] = dev_release as *const c_void as usize;
+        v[5] = dev_out1 as *const c_void as usize;
+        v[6] = dev_out1 as *const c_void as usize;
+        v[7] = dev_out1 as *const c_void as usize;
+        v[22] = dev_out2 as *const c_void as usize;
+        v
+    });
+    Box::into_raw(Box::new(RecordingDevice {
+        vtbl: vtbl.as_ptr() as *const *const c_void,
+        refs: AtomicU32::new(1),
+    }))
+    .cast()
+}
+
+/// `DCompositionCreateDevice3` on the host. Windows refuses the NULL rendering device for
+/// the device2 iid, and the v1 device does not answer that iid either, so a real D3D11
+/// device is created and handed over as an IDXGIDevice, which is what the entry point wants.
 fn dcomp_device(iid: &GUID) -> Option<*mut c_void> {
+    const IID_IDCOMPOSITIONDEVICE: GUID =
+        GUID::from_u128(0xc37e_a93a_e7aa_450d_b16f_9746_cb04_07f3);
+    const IID_IDCOMPOSITIONDEVICE3: GUID =
+        GUID::from_u128(0x0987_cb06_f916_48bf_8d35_ce76_4178_1bd9);
+    const IID_IDXGIDEVICE: GUID =
+        GUID::from_u128(0x54ec_77fa_1377_44e6_8c32_88fd_5f44_c84c);
+
     #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
     unsafe extern "system" {
         fn LoadLibraryA(name: *const u8) -> *mut c_void;
         fn GetProcAddress(module: *mut c_void, name: *const u8) -> *mut c_void;
     }
+    #[link(name = "d3d11.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn D3D11CreateDevice(
+            adapter: *mut c_void,
+            driver_type: u32,
+            software: *mut c_void,
+            flags: u32,
+            levels: *const u32,
+            level_count: u32,
+            sdk: u32,
+            device: *mut *mut c_void,
+            feature_level: *mut u32,
+            context: *mut *mut c_void,
+        ) -> i32;
+    }
+    type Create = unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32;
+    type Query = unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32;
+
+    fn entry(module: *mut c_void, name: &std::ffi::CStr) -> Option<Create> {
+        #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+        unsafe extern "system" {
+            fn GetProcAddress(module: *mut c_void, name: *const u8) -> *mut c_void;
+        }
+        let p = unsafe { GetProcAddress(module, name.as_ptr().cast()) };
+        if p.is_null() {
+            None
+        } else {
+            Some(unsafe { std::mem::transmute(p) })
+        }
+    }
+
     let module = unsafe { LoadLibraryA(c"dcomp.dll".as_ptr().cast()) };
     if module.is_null() {
         return None;
     }
-    let entry = unsafe { GetProcAddress(module, c"DCompositionCreateDevice3".as_ptr().cast()) };
-    if entry.is_null() {
-        return None;
-    }
-    type Create = unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32;
-    let create: Create = unsafe { std::mem::transmute(entry) };
-    let mut device: *mut c_void = std::ptr::null_mut();
-    let hr = unsafe { create(std::ptr::null_mut(), iid, &mut device) };
-    if hr >= 0 && !device.is_null() {
-        if std::env::var_os("OPENCOMP_TRACE").is_some() {
-            eprintln!("opencomp: private statics handed back a dcomp device {device:?} hr={hr:#x}");
+    let create3 = entry(module, c"DCompositionCreateDevice3");
+
+    if let Some(create) = create3 {
+        let mut device: *mut c_void = std::ptr::null_mut();
+        let hr = unsafe { create(std::ptr::null_mut(), iid, &mut device) };
+        if hr >= 0 && !device.is_null() {
+            return Some(device);
         }
-        Some(device)
-    } else {
-        if std::env::var_os("OPENCOMP_TRACE").is_some() {
-            eprintln!("opencomp: DCompositionCreateDevice3 refused iid {iid:?} hr={hr:#x}");
-        }
-        None
     }
+
+    // The device2 entry point is the one that answers the device2 iid without a rendering
+    // device; the v3 one only accepts its own generation.
+    if let Some(create) = entry(module, c"DCompositionCreateDevice2") {
+        let mut dev: *mut c_void = std::ptr::null_mut();
+        let hr = unsafe { create(std::ptr::null_mut(), iid, &mut dev) };
+        if hr >= 0 && !dev.is_null() {
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("opencomp: DCompositionCreateDevice2 {iid:?} -> {dev:?}");
+            }
+            return Some(dev);
+        }
+    }
+
+    for driver in [1u32, 5u32] {
+        let mut d3d: *mut c_void = std::ptr::null_mut();
+        let hr = unsafe {
+            D3D11CreateDevice(
+                std::ptr::null_mut(),
+                driver,
+                std::ptr::null_mut(),
+                0,
+                std::ptr::null(),
+                0,
+                7,
+                &mut d3d,
+                std::ptr::null_mut(),
+                std::ptr::null_mut(),
+            )
+        };
+        if hr < 0 || d3d.is_null() {
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("opencomp: D3D11CreateDevice driver {driver} hr={hr:#x}");
+            }
+            continue;
+        }
+        let vt = unsafe { *(d3d as *mut *mut *mut c_void) };
+        if vt.is_null() {
+            continue;
+        }
+        let query: Query = unsafe { std::mem::transmute(*vt) };
+        let mut dxgi: *mut c_void = std::ptr::null_mut();
+        let hr = unsafe { query(d3d, &IID_IDXGIDEVICE, &mut dxgi) };
+        if hr < 0 || dxgi.is_null() {
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("opencomp: IDXGIDevice driver {driver} hr={hr:#x}");
+            }
+            continue;
+        }
+        if let Some(create) = create3 {
+            let mut dev: *mut c_void = std::ptr::null_mut();
+            let hr = unsafe { create(dxgi, iid, &mut dev) };
+            if hr < 0 && std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("opencomp: CreateDevice3(dxgi) driver {driver} hr={hr:#x}");
+            }
+            if hr >= 0 && !dev.is_null() {
+                if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                    eprintln!("opencomp: dcomp device from D3D11 driver {driver} {iid:?} -> {dev:?}");
+                }
+                return Some(dev);
+            }
+            let mut gen3: *mut c_void = std::ptr::null_mut();
+            let hr = unsafe { create(dxgi, &IID_IDCOMPOSITIONDEVICE3, &mut gen3) };
+            if hr >= 0 && !gen3.is_null() {
+                let vt = unsafe { *(gen3 as *mut *mut *mut c_void) };
+                if !vt.is_null() {
+                    let query: Query = unsafe { std::mem::transmute(*vt) };
+                    let mut out: *mut c_void = std::ptr::null_mut();
+                    let hr = unsafe { query(gen3, iid, &mut out) };
+                    if hr >= 0 && !out.is_null() {
+                        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                            eprintln!("opencomp: device3 queried for {iid:?} -> {out:?}");
+                        }
+                        return Some(out);
+                    }
+                }
+            }
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("opencomp: device3 path refused {iid:?} hr={hr:#x}");
+            }
+        }
+    }
+
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: recording device for {iid:?}");
+    }
+    Some(recording_device())
 }
 
 
