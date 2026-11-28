@@ -95,7 +95,7 @@ pub(crate) fn create() -> *mut c_void {
 /// The engine does not ask the returned value for an interface; it reads it as a layout.
 /// That layout is only visible at the call site, and the call site is only visible from
 /// here.
-fn trace_stack() {
+pub(crate) fn trace_stack() {
     #[link(name = "ntdll.dll", kind = "raw-dylib", modifiers = "+verbatim")]
     unsafe extern "system" {
         fn RtlCaptureStackBackTrace(

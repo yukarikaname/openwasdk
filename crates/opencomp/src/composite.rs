@@ -114,6 +114,13 @@ fn stub(iid: GUID) -> *mut c_void {
         let stub = unsafe { &*(this as *const Stub) };
         if std::env::var_os("OPENCOMP_TRACE").is_some() {
             eprintln!("opencomp: stub for {:?} called at slot {N}", stub.iid);
+            crate::private_statics::trace_stack();
+        }
+        // Whether these methods have to do anything is unknown; OPENCOMP_STUB_OK answers
+        // them successfully and shows how far that carries, which is cheaper than
+        // guessing at each one.
+        if std::env::var_os("OPENCOMP_STUB_OK").is_some() {
+            return S_OK;
         }
         REFUSE
     }
