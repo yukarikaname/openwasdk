@@ -22,6 +22,7 @@ use crate::bindings::Windows::Foundation::TypedEventHandler;
 use crate::event::Handler;
 use crate::platform::Platform;
 use crate::queue::{Poster, Priority, Queue};
+use crate::session::IQueueSession;
 use crate::timer;
 
 const E_INVALIDARG: HRESULT = HRESULT(0x8007_0057u32 as i32);
@@ -70,8 +71,13 @@ enum Kind {
     FrameworkCompleted,
 }
 
-#[windows_core::implement(IDispatcherQueue, IDispatcherQueue2, IDispatcherQueue3)]
-struct QueueObject {
+#[windows_core::implement(
+    IDispatcherQueue,
+    IDispatcherQueue2,
+    IDispatcherQueue3,
+    IQueueSession
+)]
+pub(crate) struct QueueObject {
     core: Arc<Queue>,
     platform: Arc<Platform>,
     events: Arc<Mutex<Events>>,

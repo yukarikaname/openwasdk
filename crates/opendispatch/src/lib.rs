@@ -36,6 +36,8 @@ mod platform;
 mod queue;
 #[cfg(windows)]
 mod queue_object;
+#[cfg(windows)]
+mod session;
 #[cfg(any(windows, test))]
 mod thread;
 #[cfg(windows)]

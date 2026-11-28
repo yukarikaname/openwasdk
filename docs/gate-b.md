@@ -378,3 +378,47 @@ that `CoreMessagingXP` implements, and that conversation is ALPC on the registra
 
 So Gate B's *measurement* is closed on both platforms, and its *window* is blocked by the
 absence of ALPC in Wine, not by anything in this repository.
+
+## The queue is not replaceable in isolation (2026-11-28)
+
+`opendispatch` now answers `{7F3C9B24-EFC1-53A2-A2A9-88280F241AC0}`. That IID is not in
+any metadata; it sits next to `IDispatcherQueue`'s own IID in the SDK's
+`CoreMessagingXP.dll`, on the queue object's `QueryInterface` list. `Microsoft.UI.Input`
+gets the thread's queue from `CoreMessagingXP!WinUIGetDispatcherQueueForCurrentThread`,
+asks it for that interface, and `__fastfail`s on `E_NOINTERFACE`
+(`WRL2ContextSession.cpp:219`, `0xc0000409`, offset `0x2c66c`).
+
+Answering the interface moves the failure twice, and both moves are informative:
+
+- With the interface refused, `Microsoft.UI.Input` dies at `0x2c66c` (line 219).
+- With it answered but slot 0 refused, it gets past the `QueryInterface` and dies at
+  `0x2c0ff` (line 46), because slot 0 returned `E_NOTIMPL`.
+- Slot 0 is `Attach(listener, *session)`: the caller builds a 0x48-byte listener object,
+  passes it in `rdx`, and takes the session back through `r8 = this+0xb0`. Returning a
+  stand-in there gets the input layer out of the way, and the process then dies on the
+  **compositor** instead.
+
+That last stack is the part that settles the question:
+
+    ntdll!KiRaiseUserExceptionDispatcher
+    dcompi!DirectComposition::StartRenderThread
+    dcompi!Microsoft::UI::Composition::CompositorCommon::RuntimeClassInitialize
+    dcompi!Microsoft::UI::Composition::CompositorFactory::CreateInteropCompositor
+    Microsoft_ui_xaml!...
+
+with `dwmcorei!LiftedCompositionEngine_Initialize` in between, i.e. the *lifted DWM core*
+bringing up its render thread. `dwmcorei.dll` imports `CoreMessagingXP.dll`, the same file
+whose dispatcher-queue controller we just replaced. Nothing in that path ever calls our
+stand-in: the DWM core does not want a session object handed to it, it wants the **core**
+that `CoreMessagingXP` creates for the process, and the only thing that creates that core
+is the dispatcher-queue controller we replaced.
+
+So the input layer's `__fastfail` is not a bug in our `QueryInterface`; it is the contract.
+A `Microsoft.UI.Dispatching` replacement is only viable together with the CoreUI core
+behind it, and that core is the part of `CoreMessagingXP` that talks ALPC. Replacing the
+dispatcher alone cannot work, on Windows or under Wine -- on Windows it fails differently
+because the runtime ships a real core and we take its creator away.
+
+The stub in `crates/opendispatch/src/session.rs` stays: it is what turned a `__fastfail`
+with no explanation into an identified interface, an identified slot and an identified
+consumer, and it is the shape a real implementation would have to fill in.
