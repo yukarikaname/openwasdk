@@ -6,14 +6,14 @@
 //! that file flattened -- `StaticResource` aliases followed -- into three columns:
 //! theme, key, #AARRGGBB. `scripts/palette.py` regenerates it.
 //!
-//! The preview draws the dark theme, because the renderer's background is dark.
+//! The preview draws the light theme, which is what the Gallery shows.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
 const SOURCE: &str = include_str!("palette.txt");
 
-/// The colour a theme key names in the dark theme, straight RGBA in 0..1.
+/// The colour a theme key names in the light theme, straight RGBA in 0..1.
 pub fn color(key: &str) -> Option<[f32; 4]> {
     static TABLE: OnceLock<HashMap<&'static str, [f32; 4]>> = OnceLock::new();
     let table = TABLE.get_or_init(|| {
@@ -25,7 +25,7 @@ pub fn color(key: &str) -> Option<[f32; 4]> {
             else {
                 continue;
             };
-            if theme != "dark" {
+            if theme != "light" {
                 continue;
             }
             if let Some(color) = parse(value) {
@@ -51,13 +51,13 @@ mod tests {
 
     /// The values are Microsoft's, so the test checks the two the templates ask for first.
     #[test]
-    fn the_dark_theme_has_the_button_colours() {
+    fn the_light_theme_has_the_button_colours() {
         let background = color("ButtonBackground").expect("ButtonBackground");
         let foreground = color("ButtonForeground").expect("ButtonForeground");
         assert!(
             background[3] > 0.0 && background[3] < 1.0,
             "semi-transparent: {background:?}"
         );
-        assert_eq!(foreground, [1.0, 1.0, 1.0, 1.0]);
+        assert_eq!(foreground, [0.0, 0.0, 0.0, 1.0]);
     }
 }

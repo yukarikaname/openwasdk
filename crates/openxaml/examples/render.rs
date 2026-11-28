@@ -43,7 +43,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree = root.compose(&layout);
 
-    let background = [srgb(0.09), srgb(0.10), srgb(0.12), 1.0];
+    // The window in the page's own theme: the Gallery is a light application.
+    let background = openxaml::theme::palette::color("ApplicationPageBackgroundThemeBrush")
+        .map(|c| [c[0], c[1], c[2], 1.0])
+        .unwrap_or_else(|| [srgb(0.95), srgb(0.95), srgb(0.95), 1.0]);
     let Some(mut renderer) = Renderer::headless((width, height), background) else {
         return Err("no GPU adapter available".into());
     };
