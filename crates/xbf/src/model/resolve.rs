@@ -190,6 +190,7 @@ pub(super) fn materialize(raw: &[RawElement], index: usize) -> Element {
             .map(|&child| materialize(raw, child))
             .collect(),
         custom: entry.custom.clone(),
+        setters: entry.setters.clone(),
         custom_substream: entry.custom_substream,
     }
 }

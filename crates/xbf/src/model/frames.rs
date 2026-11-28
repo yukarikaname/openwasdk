@@ -85,6 +85,7 @@ impl Builder<'_> {
             custom_substream: None,
             explicit_keys: Vec::new(),
             implicit_keys: Vec::new(),
+            setters: Vec::new(),
             explicit_key: None,
             source_offset: offset,
         });

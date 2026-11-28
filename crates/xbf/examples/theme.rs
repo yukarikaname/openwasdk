@@ -81,6 +81,13 @@ fn visit(file: &Xbf, element: &Element, wanted: &str) {
             "    custom: {:?} substream: {:?}",
             element.custom, element.custom_substream
         );
+        println!("    setters: {}", element.setters.len());
+        for setter in &element.setters {
+            println!(
+                "    setter flags=0x{:02X} name={:?} value={:?}",
+                setter.flags, setter.name, setter.value
+            );
+        }
         let stream = element
             .custom_substream
             .map(|s| s as usize)

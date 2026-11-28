@@ -32,6 +32,31 @@ pub struct ResourceKey {
     pub offset: u32,
 }
 
+/// One entry of a style's setter list: `StyleSetterEssence` in dxaml's serializer.
+///
+/// The flags say which value form follows; a template setter is the one whose property is
+/// `Template` and whose value is a stream token pointing at the `ControlTemplate`.
+#[derive(Clone, Debug)]
+pub struct StyleSetter {
+    pub flags: u32,
+    /// The property, when the writer resolved it to a metadata reference.
+    pub property: Option<PersistedNode>,
+    /// Otherwise the declared name and the type that declares it.
+    pub name: Option<String>,
+    pub declaring_type: Option<PersistedNode>,
+    pub value: StyleSetterValue,
+}
+
+/// The value half of a style setter, chosen by its flags.
+#[derive(Clone, Debug)]
+pub enum StyleSetterValue {
+    None,
+    String(String),
+    Constant(String),
+    /// Theme, static, object or self: a 7-bit stream offset.
+    Token(u32),
+}
+
 #[derive(Clone, Debug)]
 pub struct CustomData {
     pub kind: u32,
@@ -39,6 +64,8 @@ pub struct CustomData {
     pub names: Vec<String>,
     pub explicit_keys: Vec<ResourceKey>,
     pub implicit_keys: Vec<ResourceKey>,
+    /// A style's setters, in the order the writer emitted them.
+    pub setters: Vec<StyleSetter>,
 }
 
 #[derive(Clone, Debug)]

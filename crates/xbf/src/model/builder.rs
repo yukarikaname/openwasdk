@@ -20,6 +20,7 @@ pub(super) struct RawElement {
     pub(super) custom_substream: Option<u32>,
     pub(super) explicit_keys: Vec<ResourceKey>,
     pub(super) implicit_keys: Vec<ResourceKey>,
+    pub(super) setters: Vec<crate::node::StyleSetter>,
     pub(super) explicit_key: Option<String>,
     /* Absolute substream node offset of the creation node. */
     pub(super) source_offset: u32,
@@ -328,6 +329,7 @@ impl<'a> Builder<'a> {
                 raw.custom_substream = Some(*substream);
                 raw.explicit_keys = data.explicit_keys.clone();
                 raw.implicit_keys = data.implicit_keys.clone();
+                raw.setters = data.setters.clone();
             }
             NodeKind::EndOfStream => {}
 

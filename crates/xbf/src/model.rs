@@ -38,6 +38,8 @@ pub struct Element {
     /// The stream a style's setters (or a template's body) live in, when the writer put
     /// them out of line.
     pub custom_substream: Option<u32>,
+    /// A style's setters, when the element carries `Style_v*` custom data.
+    pub setters: Vec<crate::node::StyleSetter>,
 }
 
 #[derive(Clone, Debug)]

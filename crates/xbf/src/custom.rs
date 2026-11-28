@@ -16,7 +16,7 @@
 use crate::cursor::Cursor;
 use crate::error::XbfError;
 use crate::metadata::Metadata;
-use crate::node::{CustomData, ResourceKey};
+use crate::node::{CustomData, ResourceKey, StyleSetter, StyleSetterValue};
 use crate::node_value::{read_persisted, read_shared_string, read_value};
 
 pub(crate) fn parse(
@@ -25,6 +25,7 @@ pub(crate) fn parse(
     offset: u32,
 ) -> Result<CustomData, XbfError> {
     let kind = cursor.leb_u32()?;
+    let mut setters = Vec::new();
     let mut names = Vec::new();
     let mut explicit_keys = Vec::new();
     let mut implicit_keys = Vec::new();
@@ -58,8 +59,8 @@ pub(crate) fn parse(
             &mut explicit_keys,
             &mut implicit_keys,
         )?,
-        2 | 8 => read_style(cursor, metadata, false)?,
-        11 => read_style(cursor, metadata, true)?,
+        2 | 8 => read_style(cursor, metadata, false, &mut setters)?,
+        11 => read_style(cursor, metadata, true, &mut setters)?,
         745 => read_deferred_element(cursor, metadata, kind, &mut names)?,
         6 | 9 => read_deferred_element(cursor, metadata, kind, &mut names)?,
         420 | 1 | 3 | 4 | 5 => read_visual_state_groups(cursor, metadata, kind, &mut names)?,
@@ -67,6 +68,7 @@ pub(crate) fn parse(
     }
 
     Ok(CustomData {
+        setters,
         kind,
         kind_name: kind_name(kind),
         names,
@@ -265,10 +267,11 @@ fn read_style(
     cursor: &mut Cursor,
     metadata: &Metadata,
     has_conditionals: bool,
+    setters: &mut Vec<StyleSetter>,
 ) -> Result<(), XbfError> {
     let count = read_count(cursor, "style setter vector")?;
     for _ in 0..count {
-        read_setter(cursor, metadata)?;
+        setters.push(read_setter(cursor, metadata)?);
     }
     if has_conditionals {
         read_conditional_objects(cursor, metadata)?;
@@ -277,27 +280,38 @@ fn read_style(
 }
 
 /* StyleSetterEssence.Deserialize, StyleCustomRuntimeData.cs:68-117. */
-fn read_setter(cursor: &mut Cursor, metadata: &Metadata) -> Result<(), XbfError> {
+fn read_setter(cursor: &mut Cursor, metadata: &Metadata) -> Result<StyleSetter, XbfError> {
     let flags = cursor.leb_u32()?;
+    let mut property = None;
+    let mut name = None;
+    let mut declaring_type = None;
 
     if flags & 0x40 == 0 {
         if flags & 0x10 != 0 {
-            let _ = read_persisted(cursor)?;
+            property = Some(read_persisted(cursor)?);
         } else {
-            let _ = read_shared_string(cursor, metadata)?;
-            let _ = read_persisted(cursor)?;
+            name = Some(read_shared_string(cursor, metadata)?);
+            declaring_type = Some(read_persisted(cursor)?);
         }
     }
 
-    if flags & 0x04 != 0 {
-        let _ = read_shared_string(cursor, metadata)?;
+    let value = if flags & 0x04 != 0 {
+        StyleSetterValue::String(read_shared_string(cursor, metadata)?)
     } else if flags & 0x20 != 0 {
-        let _ = read_value(cursor, metadata, 0)?;
+        StyleSetterValue::Constant(format!("{:?}", read_value(cursor, metadata, 0)?))
     } else if flags & (0x02 | 0x01 | 0x08 | 0x40) != 0 {
         /* Static/theme/object/self tokens are all one 7-bit offset. */
-        let _ = cursor.leb_u32()?;
-    }
-    Ok(())
+        StyleSetterValue::Token(cursor.leb_u32()?)
+    } else {
+        StyleSetterValue::None
+    };
+    Ok(StyleSetter {
+        flags,
+        property,
+        name,
+        declaring_type,
+        value,
+    })
 }
 
 /* DeferredElement v1-v3: DeferredElementCustomRuntimeData.cs:25-53. */
