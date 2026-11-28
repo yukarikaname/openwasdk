@@ -59,17 +59,18 @@ pub(super) fn load_property_with(
                 return Ok(());
             }
             /*
-             * A content property holds its child, and XAML names it "...Content"
-             * (ExampleContent on the Gallery's own control). Only an element value is a
-             * child; a string such as ToggleSwitch.OnContent is state and is dropped.
+             * A content property holds its child, and XAML names it "...Content" or
+             * "...Items" (MenuItems, TabItems). Only an element value is a child; a scalar
+             * such as ToggleSwitch.OnContent is state and is dropped.
              */
-            let content_style =
-                matches!(member, "Child" | "Children" | "Items") || member.ends_with("Content");
+            let elements = property_elements(property)?;
+            let content_style = matches!(member, "Child" | "Children" | "Items")
+                || member.ends_with("Content")
+                || (member.ends_with("Items") && !elements.is_empty());
             if content_style {
-                for child in property_elements(property)? {
+                for child in elements {
                     element.push(load_element(&child, controls, depth)?);
                 }
-                // A scalar here is the control's own text or state, which a preview drops.
                 return Ok(());
             }
             /*
@@ -156,6 +157,16 @@ pub(super) fn load_property_with(
                     | "IsIconVisible"
                     | "MaxLines"
                     | "ChildrenTransitions"
+                    | "SmallChange"
+                    | "StepFrequency"
+                    | "Initials"
+                    | "IsHexInputVisible"
+                    | "ColorSpectrumShape"
+                    | "IsReadOnly"
+                    | "SnapsTo"
+                    | "ItemSpacing"
+                    | "MinItemHeight"
+                    | "MinItemWidth"
                     | "Tag"
                     | "Placement"
                     | "RightHeader"

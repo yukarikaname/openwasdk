@@ -314,7 +314,7 @@ cross the boundary.
 | 0 | `comptrace` and symbols | Interface list and fault offsets resolved from the metadata and the symbol server, never from a guessed vtable slot (done) |
 | 1 | `dcompi` shim | Our `dcompi.dll` in front of the engine and the Gallery window renders -- `WinUIDesktopWin32WindowClass`, title `WinUI Gallery` -- with no class taken over (done, 3b2e015) |
 | 2 | class takeover | Each class moved into `OPENCOMP_MINE` keeps that window; a class that breaks it goes back, it is not patched blind |
-| 3 | `xbf` as a page tool | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: 71 of the Gallery's 195 pages load, arrange and draw as PNG. That is an inspector and a layout oracle for pages -- not a claim to run an application; the rest stop on a control the element table does not carry, or on a page whose tree is built in code |
+| 3 | `xbf` as a page tool | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: 81 of the Gallery's 195 pages load, arrange and draw as PNG. That is an inspector and a layout oracle for pages -- not a claim to run an application; the rest stop on a control the element table does not carry, or on a page whose tree is built in code |
 | 4 | text in the tool | A `TextBlock` shapes through parley and rasterises, so a dumped page shows its strings |
 | 5 | (dropped) | A window and input off Windows would mean owning an engine: that is Uno's job, not this project's |
 | 6 | (dropped) | `Microsoft.ui.xaml.dll` is Microsoft's; replacing it is a rewrite of an engine that already exists. `openxaml` stays a tool |
