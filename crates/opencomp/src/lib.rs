@@ -96,6 +96,8 @@ mod visual;
 mod factory;
 #[cfg(windows)]
 mod private_statics;
+#[cfg(windows)]
+mod qi_trace;
 
 use std::ffi::c_void;
 

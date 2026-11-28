@@ -139,6 +139,18 @@ unsafe extern "system" fn query_interface(
             return result;
         }
     }
+    /*
+     * A caller that gets E_NOINTERFACE here is the caller that was asking for something we
+     * did not know to implement; naming it is what turns the next failure into a work item.
+     */
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        let factory = unsafe { &*(this as *const Factory) };
+        eprintln!(
+            "opencomp: factory QI refused {:?} on {:?}",
+            iid,
+            std::mem::discriminant(&factory.class)
+        );
+    }
     unsafe { *out = std::ptr::null_mut() };
     E_NOINTERFACE
 }

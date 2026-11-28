@@ -77,11 +77,16 @@ fn node_of(clock: &std::sync::Arc<Clock>) -> std::sync::Arc<Mutex<Node>> {
 }
 
 pub fn linear(clock: std::sync::Arc<Clock>) -> Result<LinearEasingFunction> {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: easing created linear");
+    }
     let easing: ILinearEasingFunction = LinearEasingObject {
         node: node_of(&clock),
     }
     .into();
-    easing.cast()
+    let easing: LinearEasingFunction = easing.cast()?;
+    unsafe { crate::qi_trace::watch(easing.as_raw()) };
+    Ok(easing)
 }
 
 pub fn cubic_bezier(
@@ -89,12 +94,17 @@ pub fn cubic_bezier(
     control_point1: Vector2,
     control_point2: Vector2,
 ) -> Result<CubicBezierEasingFunction> {
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        eprintln!("opencomp: easing created cubic-bezier ({}, {})", control_point1.x, control_point2.x);
+    }
     let easing: ICubicBezierEasingFunction = CubicBezierObject {
         node: node_of(&clock),
         control_points: Mutex::new((control_point1, control_point2)),
     }
     .into();
-    easing.cast()
+    let easing: CubicBezierEasingFunction = easing.cast()?;
+    unsafe { crate::qi_trace::watch(easing.as_raw()) };
+    Ok(easing)
 }
 
 /// The static entry points, reached without a compositor object in hand.
@@ -117,9 +127,15 @@ impl ICompositionEasingFunctionStatics_Impl for EasingStatics_Impl {
         // with the clock the caller handed to the static, not the process-wide one.
         let clock = owner
             .as_ref()
-            .and_then(crate::compositor::clock_of)
-            .unwrap_or_else(Clock::new);
-        cubic_bezier(clock, *control_point1, *control_point2)
+            .and_then(crate::compositor::clock_of);
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!(
+                "opencomp: statics CreateCubicBezier owner={} clock={}",
+                owner.as_ref().is_some(),
+                clock.is_some()
+            );
+        }
+        cubic_bezier(clock.unwrap_or_else(Clock::new), *control_point1, *control_point2)
     }
 
     fn CreateLinearEasingFunction(&self, owner: Ref<Compositor>) -> Result<LinearEasingFunction> {

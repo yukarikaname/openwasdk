@@ -18,6 +18,11 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # parley discovers fonts through fontconfig on Linux, and its sys crate builds
+      # against the development headers.
+      - name: Fontconfig
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libfontconfig1-dev
+
       - name: Format
         run: cargo fmt --all -- --check
 
@@ -106,6 +111,12 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ${{ matrix.os }}
+
+      # parley discovers fonts through fontconfig on Linux, and its sys crate builds
+      # against the development headers.
+      - name: Fontconfig
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libfontconfig1-dev
 
       - name: Test
         run: cargo test --workspace
