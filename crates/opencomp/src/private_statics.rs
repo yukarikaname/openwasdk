@@ -39,8 +39,13 @@ struct Vtbl {
     get_iids: unsafe extern "system" fn(*mut c_void, *mut u32, *mut *mut GUID) -> i32,
     get_runtime_class_name: unsafe extern "system" fn(*mut c_void, *mut *mut c_void) -> i32,
     get_trust_level: unsafe extern "system" fn(*mut c_void, *mut i32) -> i32,
-    method: Member,
+    methods: [Member; METHODS],
 }
+
+/// More than the interface is known to have: a call past the end of the real vtable would
+/// otherwise go to whatever follows it in `.rdata`, which is how a missing member turns
+/// into a page fault instead of a trace line.
+const METHODS: usize = 16;
 
 static VTBL: Vtbl = Vtbl {
     query_interface,
@@ -49,7 +54,24 @@ static VTBL: Vtbl = Vtbl {
     get_iids,
     get_runtime_class_name,
     get_trust_level,
-    method,
+    methods: [
+        method::<0>,
+        method::<1>,
+        method::<2>,
+        method::<3>,
+        method::<4>,
+        method::<5>,
+        method::<6>,
+        method::<7>,
+        method::<8>,
+        method::<9>,
+        method::<10>,
+        method::<11>,
+        method::<12>,
+        method::<13>,
+        method::<14>,
+        method::<15>,
+    ],
 };
 
 /// A statics object with one reference, owned by the caller.
@@ -99,20 +121,26 @@ fn trace_stack() {
     }
 }
 
-unsafe extern "system" fn method(
+unsafe extern "system" fn method<const SLOT: usize>(
     _this: *mut c_void,
     first: *mut c_void,
     second: *mut c_void,
 ) -> i32 {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
-        eprintln!("opencomp: private Compositor statics called with {first:?} {second:?}");
+        eprintln!(
+            "opencomp: private Compositor statics slot {SLOT} with {first:?} {second:?}"
+        );
         trace_stack();
     }
-    // The caller does not ask what it got back for an interface: it treats the value as a
-    // known layout and reads it, so handing it one of ours is worse than not answering at
-    // all. Refuse, and let the trace say whether the engine needed it.
-    let _ = (first, second);
-    E_NOTIMPL
+    if SLOT != 0 {
+        return E_NOTIMPL;
+    }
+    // The caller reads `struct+0` as an object and asks it for an interface, and releases
+    // `struct+8` if it is set. One of ours at +0 makes the next question visible.
+    if !second.is_null() {
+        unsafe { *(second as *mut *mut c_void) = create() };
+    }
+    S_OK
 }
 
 unsafe extern "system" fn query_interface(
