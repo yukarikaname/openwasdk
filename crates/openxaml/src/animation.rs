@@ -69,16 +69,21 @@ pub fn tracks(storyboard: &xbf::Element) -> Vec<Track> {
     tracks
 }
 
-/// Sample every track at `at` seconds and write the value onto the element it names.
-pub fn apply(tree: &mut Element, tracks: &[Track], at: f32) {
+/// Sample every track at `at` seconds and write the value onto the elements it names.
+/// Returns how many elements were written, which measures whether a storyboard has
+/// anything to move in this tree.
+pub fn apply(tree: &mut Element, tracks: &[Track], at: f32) -> usize {
+    let mut written = 0;
     for track in tracks {
         let Some(key) = sample(&track.frames, at) else {
             continue;
         };
         for element in named(tree, &track.target) {
             store(element, &track.property, key);
+            written += 1;
         }
     }
+    written
 }
 
 fn sample(frames: &[Frame], at: f32) -> Option<Key> {

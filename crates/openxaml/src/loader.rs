@@ -149,7 +149,7 @@ fn load_with_tolerance(
         return build(source, support, controls, depth);
     }
     let Some(support) = support::lookup(&source.type_name) else {
-        return load_body(source, controls, depth);
+        return load_body(source, controls, depth, tolerant);
     };
     build_with(source, support, controls, depth, tolerant)
 }
@@ -159,6 +159,7 @@ fn load_body(
     source: &xbf::Element,
     controls: &Controls,
     depth: usize,
+    tolerant: bool,
 ) -> Result<Element, LoadError> {
     let unsupported = LoadError::UnsupportedType {
         name: source.type_name.clone(),
@@ -174,7 +175,18 @@ fn load_body(
         return realize_body(body, source, controls, depth);
     }
     if controls.has_unrealized(&source.type_name) || source.type_name.starts_with("using:") {
-        return unrealized(source, controls, depth);
+        return unrealized(source, controls, depth, tolerant);
+    }
+    /*
+     * A template body is a guess at what a control is: a type this table has never met is
+     * drawn as the box the template gave it, and the rest of the template still renders.
+     * A page keeps its strictness -- there an unknown type is still an error that names it.
+     */
+    if tolerant {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("openxaml: template drops {}", source.type_name);
+        }
+        return unrealized(source, controls, depth, tolerant);
     }
     Err(unsupported)
 }
@@ -234,13 +246,14 @@ fn unrealized(
     source: &xbf::Element,
     controls: &Controls,
     depth: usize,
+    tolerant: bool,
 ) -> Result<Element, LoadError> {
     let Some(support) = support::by_kind(Element::new(Kind::Unrealized).kind()) else {
         return Err(LoadError::UnsupportedType {
             name: source.type_name.clone(),
         });
     };
-    build(source, support, controls, depth)
+    build_with(source, support, controls, depth, tolerant)
 }
 
 fn build(
@@ -276,7 +289,15 @@ fn build_with(
             depth,
         );
         if let Err(error) = result {
-            if tolerant && matches!(error, LoadError::UnsupportedProperty { .. }) {
+            /*
+             * Anything a template property cannot convert is dropped: an unknown member, an
+             * object of a type this table has never met, a transition set. The rest of the
+             * template still stands, and a page is still held to the table.
+             */
+            if tolerant {
+                if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                    eprintln!("openxaml: template drops {error:?}");
+                }
                 continue;
             }
             return Err(error);
@@ -304,7 +325,7 @@ fn build_with(
      * background, foreground and corner radius live there, not in the page's markup, and the
      * template binds to them.
      */
-    if let Some(style) = controls.theme.style_for(&source.type_name) {
+    if let Some(style) = controls.theme.resolved_style(&source.type_name) {
         apply_setters(&mut element, &style.setters, &controls.theme);
         if let Some(body) = style.body.as_ref() {
             // The control's own content belongs inside the template, not beside it.
@@ -326,6 +347,13 @@ fn build_with(
                     element.set_children(vec![template]);
                 }
                 Err(error) => {
+                    /*
+                     * The template could not be built: the control keeps the children it
+                     * had. Taking them before the attempt is what lets the template own
+                     * them; on failure they have to come back, or a control loses its
+                     * content because its chrome failed.
+                     */
+                    element.set_children(content);
                     if std::env::var_os("OPENCOMP_TRACE").is_some() {
                         eprintln!(
                             "openxaml: template for {} left empty: {error}",
@@ -380,13 +408,31 @@ fn apply_setters(
 
 /// Put a control's content where its template asks for it: the `ContentPresenter`.
 fn place_content(template: &mut Element, content: Vec<Element>) {
-    if content.is_empty() {
-        return;
+    let mut content = Some(content);
+    match content.as_ref() {
+        Some(held) if !held.is_empty() => {}
+        _ => return,
     }
-    match find_kind(template, Kind::ContentPresenter) {
-        Some(presenter) => presenter.push_all(content),
-        None => template.push_all(content),
+    /*
+     * Where a template puts what the control holds: the content presenter for a content
+     * control, the item host for a control whose children are items (a selector bar's
+     * template repeats them), and the template root only when it names neither -- appending
+     * to a grid root would lay the items over the template's own children.
+     */
+    let hosts: [Kind; 3] = if content.as_ref().is_some_and(|held| held.len() > 1) {
+        // Several children of one control are its items, and a template repeats items in an
+        // item host -- a lone content presenter arranges one child and the rest pile up.
+        [Kind::ItemsView, Kind::ItemsRepeater, Kind::ContentPresenter]
+    } else {
+        [Kind::ContentPresenter, Kind::ItemsView, Kind::ItemsRepeater]
+    };
+    for kind in hosts {
+        if let Some(host) = find_kind(template, kind) {
+            host.push_all(content.take().expect("content"));
+            return;
+        }
     }
+    template.push_all(content.take().expect("content"));
 }
 
 fn find_kind(element: &mut Element, kind: Kind) -> Option<&mut Element> {

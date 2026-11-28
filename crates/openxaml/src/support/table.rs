@@ -18,6 +18,8 @@ macro_rules! type_support {
 }
 
 pub(super) static TABLE: &[TypeSupport] = &[
+    type_support!(Kind::TemplateBinding,),
+    type_support!(Kind::BrushTransition,),
     type_support!(
         Kind::BitmapIcon,
         &property::WIDTH,
@@ -1032,6 +1034,20 @@ pub(super) static TABLE: &[TypeSupport] = &[
     ),
     type_support!(
         Kind::ItemsRepeater,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::ItemsView,
         &property::WIDTH,
         &property::HEIGHT,
         &property::MARGIN,

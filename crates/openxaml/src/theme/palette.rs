@@ -50,6 +50,8 @@ mod tests {
     use super::color;
 
     /// The values are Microsoft's, so the test checks the two the templates ask for first.
+    /// Both come from WinUI 3's own control theme files: a button's fill is white at 70%, and
+    /// its text is black at 89% rather than solid black, which is what those files say.
     #[test]
     fn the_light_theme_has_the_button_colours() {
         let background = color("ButtonBackground").expect("ButtonBackground");
@@ -58,6 +60,8 @@ mod tests {
             background[3] > 0.0 && background[3] < 1.0,
             "semi-transparent: {background:?}"
         );
-        assert_eq!(foreground, [0.0, 0.0, 0.0, 1.0]);
+        let alpha = 0xE4 as f32 / 255.0;
+        assert_eq!(foreground[0..3], [0.0, 0.0, 0.0]);
+        assert!((foreground[3] - alpha).abs() < 0.01, "{foreground:?}");
     }
 }

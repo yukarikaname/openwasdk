@@ -74,6 +74,14 @@ impl Theme {
         }
     }
 
+    /// The same, with the other dictionary winning: an application's resources are looked up
+    /// before the framework's, so a style the app ships replaces the one the framework ships.
+    pub fn merge_over(&mut self, other: Theme) {
+        self.styles.extend(other.styles);
+        self.by_key.extend(other.by_key);
+        self.resources.extend(other.resources);
+    }
+
     /// A resource the dictionary defines by value: a thickness, a length, a radius.
     pub fn resource(&self, key: &str) -> Option<&xbf::model::Value> {
         self.resources.get(key)
@@ -87,6 +95,39 @@ impl Theme {
 
     pub fn style_for(&self, type_name: &str) -> Option<&Style> {
         self.styles.get(&simple(type_name))
+    }
+
+    /// The style for a type with its `BasedOn` chain flattened: the base's setters come
+    /// first, then the derived ones, and the first body in the chain is the template. An
+    /// implicit style often holds nothing but a `BasedOn`, which is why the chain matters.
+    pub fn resolved_style(&self, type_name: &str) -> Option<Style> {
+        let mut chain = Vec::new();
+        let mut current = self.styles.get(&simple(type_name));
+        for _ in 0..8 {
+            let Some(style) = current else { break };
+            chain.push(style);
+            current = style
+                .based_on
+                .as_deref()
+                .and_then(|base| self.by_key.get(base));
+        }
+        if chain.is_empty() {
+            return None;
+        }
+        chain.reverse();
+        let mut setters = Vec::new();
+        let mut body = None;
+        for style in chain {
+            setters.extend(style.setters.iter().cloned());
+            if body.is_none() {
+                body = style.body.clone();
+            }
+        }
+        Some(Style {
+            body,
+            based_on: None,
+            setters,
+        })
     }
 
     /// The setters a style key names, following `BasedOn` so a derived style starts from its
@@ -176,6 +217,22 @@ impl Theme {
         }
         for child in &element.children {
             self.walk(file, child);
+        }
+        /*
+         * A resource dictionary can hang its entries off a property
+         * (`ThemeDictionaries`, `MergedDictionaries`) instead of the child list; both are
+         * entries of the same dictionary and both are walked.
+         */
+        for property in &element.properties {
+            match &property.value {
+                Value::Element(one) => self.walk(file, one),
+                Value::Elements(many) => {
+                    for child in many {
+                        self.walk(file, child);
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }

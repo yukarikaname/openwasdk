@@ -59,9 +59,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
      * the elements its targets name. Nothing is invented; a page whose storyboard targets
      * parts of a control built in code simply has nothing to move.
      */
-    if let Some(tracks) = storyboard_tracks(&xbf, storyboard.as_deref(), state.as_deref()) {
-        eprintln!("storyboard: {} tracks at {at}s", tracks.len());
-        openxaml::animation::apply(&mut root, &tracks, at);
+    if let Some(tracks) = storyboard_tracks(
+        &xbf,
+        &app_root(path),
+        storyboard.as_deref(),
+        state.as_deref(),
+    ) {
+        let written = openxaml::animation::apply(&mut root, &tracks, at);
+        eprintln!(
+            "storyboard: {} tracks at {at}s, {} targets",
+            tracks.len(),
+            written
+        );
     }
 
     let measured = root.measure(Size::new(width as f32, height as f32))?;
@@ -81,7 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // A page's pictures are part of its data, not our drawing: decode what it names.
     let mut images = HashMap::new();
-    upload_images(&root, app_root(path), &mut renderer, &mut images);
+    upload_images(&mut root, app_root(path), &mut renderer, &mut images);
     let tree = root.compose_with(&layout, &images);
     /*
      * A window that declares a Mica backdrop gets one: the recipe runs over a simulated
@@ -176,7 +185,7 @@ fn bodies(root: &Path) -> Controls {
         controls.insert_unrealized(name);
     }
 
-    controls.set_theme(theme(root));
+    let mut application = openxaml::theme::Theme::empty();
 
     for (name, path) in files {
         let Ok(file) = xbf::parse_file(&path) else {
@@ -185,6 +194,19 @@ fn bodies(root: &Path) -> Controls {
         let Ok(model) = file.model() else {
             continue;
         };
+        /*
+         * A file whose root is a resource dictionary holds styles and templates, not a
+         * control: its entries join the theme, and the application's styles win over the
+         * framework's, as a merged ResourceDictionary resolves them.
+         */
+        if model
+            .roots
+            .first()
+            .is_some_and(|root| root.type_name.ends_with("ResourceDictionary"))
+        {
+            application.merge_over(openxaml::theme::Theme::from_dictionary(&file));
+            continue;
+        }
         let visual = model
             .roots
             .first()
@@ -195,6 +217,10 @@ fn bodies(root: &Path) -> Controls {
         }
         controls.insert(&name, model);
     }
+
+    let mut theme = theme(root);
+    theme.merge_over(application);
+    controls.set_theme(theme);
     controls
 }
 
@@ -341,7 +367,7 @@ fn read_ppm(path: &str) -> Option<Vec<u8>> {
 
 /// Decode every picture the tree names and hand it to the renderer, so compose can paint it.
 fn upload_images(
-    element: &openxaml::Element,
+    element: &mut openxaml::Element,
     root: PathBuf,
     renderer: &mut Renderer,
     images: &mut HashMap<String, opencomp_core::TextureId>,
@@ -354,12 +380,20 @@ fn upload_images(
         if let Ok(picture) = image::open(&path) {
             let rgba = picture.to_rgba8();
             let (width, height) = (rgba.width(), rgba.height());
-            let id = 0x100 + images.len() as u32;
-            renderer.upload_rgba(id, width, height, rgba.as_raw());
-            images.insert(source, id);
+            element.set_intrinsic_size(width as f32, height as f32);
+            /*
+             * One texture per source, not per element: the same picture can appear several
+             * times in a tree, and a new id for each copy collides with the id the previous
+             * copy already took -- which is how a hero image ends up sampling an icon.
+             */
+            if !images.contains_key(&source) {
+                let id = 0x100 + images.len() as u32;
+                renderer.upload_rgba(id, width, height, rgba.as_raw());
+                images.insert(source, id);
+            }
         }
     }
-    for child in element.children() {
+    for child in element.children_mut() {
         upload_images(child, root.clone(), renderer, images);
     }
 }
@@ -378,12 +412,37 @@ fn picture_path(source: &str) -> Option<&str> {
 /// through the visual state that owns it; both are deferred streams of the same file.
 fn storyboard_tracks(
     file: &xbf::Xbf,
+    root: &Path,
     storyboard: Option<&str>,
     state: Option<&str>,
 ) -> Option<Vec<openxaml::animation::Track>> {
     if storyboard.is_none() && state.is_none() {
         return None;
     }
+    if let Some(tracks) = tracks_in(file, storyboard, state) {
+        return Some(tracks);
+    }
+    /*
+     * A control's storyboard lives in the control's own dictionary, not in the page that
+     * uses the control: CopyToClipboardSuccessAnimation is in Controls/CopyButton.xbf.
+     */
+    let mut files: HashMap<String, PathBuf> = HashMap::new();
+    collect(root, &mut files);
+    for path in files.values() {
+        if let Ok(other) = xbf::parse_file(path)
+            && let Some(tracks) = tracks_in(&other, storyboard, state)
+        {
+            return Some(tracks);
+        }
+    }
+    None
+}
+
+fn tracks_in(
+    file: &xbf::Xbf,
+    storyboard: Option<&str>,
+    state: Option<&str>,
+) -> Option<Vec<openxaml::animation::Track>> {
     for index in 0..file.streams.len() {
         let Ok(model) = file.substream(index) else {
             continue;

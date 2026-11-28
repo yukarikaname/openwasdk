@@ -56,6 +56,9 @@ pub struct Element {
     bindings: Vec<(PropertyId, String)>,
     name: Option<String>,
     key: Option<String>,
+    /// The bitmap's own size, when the element shows one: an `Image` measures and scales
+    /// against it, and the layout layer never decodes pixels to learn it.
+    intrinsic: Option<(f32, f32)>,
     /// Set by any mutation that changes measure or arrange; cleared by
     /// [`crate::layout::arrange`].
     layout_dirty: bool,
@@ -71,6 +74,7 @@ impl Element {
             bindings: Vec::new(),
             name: None,
             key: None,
+            intrinsic: None,
             layout_dirty: true,
         }
     }

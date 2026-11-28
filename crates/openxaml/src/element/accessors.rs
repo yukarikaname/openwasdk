@@ -93,6 +93,16 @@ impl Element {
         self.store(&property::SPACING, Value::Number(spacing.max(0.0)));
     }
 
+    /// The bitmap's own size, when the element shows one.
+    pub fn intrinsic_size(&self) -> Option<(f32, f32)> {
+        self.intrinsic
+    }
+
+    pub fn set_intrinsic_size(&mut self, width: f32, height: f32) {
+        self.intrinsic = Some((width, height));
+        self.layout_dirty = true;
+    }
+
     /// A transform's offset or factors; the kind decides which of them matter.
     pub fn translate(&self) -> (f32, f32) {
         (

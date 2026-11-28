@@ -59,6 +59,22 @@ pub fn compose_with(
         visual.image = Some(*texture);
         visual.uv = [0.0, 0.0, 1.0, 1.0];
         visual.color = [1.0, 1.0, 1.0, 1.0];
+        /*
+         * `Stretch="Uniform"`, the default: the picture keeps its aspect inside the slot and
+         * is centred there. A slot the bitmap fills exactly is unchanged; an icon in a large
+         * cell stays an icon.
+         */
+        if let Some((natural_width, natural_height)) = element.intrinsic_size()
+            && natural_width > 0.0
+            && natural_height > 0.0
+        {
+            let slot = [layout.rect.width, layout.rect.height];
+            let scale = (slot[0] / natural_width).min(slot[1] / natural_height);
+            let fitted = [natural_width * scale, natural_height * scale];
+            visual.size = fitted;
+            visual.offset[0] += (slot[0] - fitted[0]) * 0.5;
+            visual.offset[1] += (slot[1] - fitted[1]) * 0.5;
+        }
     }
 
     /*

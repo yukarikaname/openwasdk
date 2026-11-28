@@ -94,6 +94,13 @@ kinds! {
     (PathIcon, "PathIcon", "Microsoft.UI.Xaml.Controls.PathIcon", ContentHost),
     (BitmapIcon, "BitmapIcon", "Microsoft.UI.Xaml.Controls.BitmapIcon", ContentHost),
     (TranslateTransform, "TranslateTransform", "Microsoft.UI.Xaml.Media.TranslateTransform", NonVisual),
+    (BrushTransition, "BrushTransition", "Microsoft.UI.Xaml.BrushTransition", NonVisual),
+    /*
+     * A markup extension written as an object: a template names a member of the control it
+     * is applied to. The binding is the control's value, resolved by \`bind_from\`, so the
+     * object itself paints nothing.
+     */
+    (TemplateBinding, "TemplateBinding", "Microsoft.UI.Xaml.TemplateBinding", NonVisual),
     (ScaleTransform, "ScaleTransform", "Microsoft.UI.Xaml.Media.ScaleTransform", NonVisual),
     (Double, "Double", "Double", NonVisual),
     (String, "String", "String", NonVisual),
@@ -103,6 +110,7 @@ kinds! {
     (GridView, "GridView", "Microsoft.UI.Xaml.Controls.GridView", ContentHost),
     (TabView, "TabView", "Microsoft.UI.Xaml.Controls.TabView", ContentHost),
     (ItemsRepeater, "ItemsRepeater", "Microsoft.UI.Xaml.Controls.ItemsRepeater", ContentHost),
+    (ItemsView, "ItemsView", "Microsoft.UI.Xaml.Controls.ItemsView", Panel(Stack)),
     (ScrollView, "ScrollView", "Microsoft.UI.Xaml.Controls.ScrollView", ContentHost),
     (DatePicker, "DatePicker", "Microsoft.UI.Xaml.Controls.DatePicker", ContentHost),
     (RichEditBox, "RichEditBox", "Microsoft.UI.Xaml.Controls.RichEditBox", ContentHost),

@@ -60,6 +60,23 @@ pub fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> 
 }
 
 fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutError> {
+    /*
+     * An Image asks for its bitmap's own size, not for the room it was offered: the runtime
+     * measures a picture at its pixel dimensions and lets the slot scale it. Without this a
+     * 32-pixel icon inside a star row claims the whole row.
+     */
+    if element.kind() == crate::element::Kind::Image
+        && let Some((width, height)) = element.intrinsic_size()
+    {
+        let mut size = Size::new(width, height);
+        if available.width.is_finite() {
+            size.width = size.width.min(available.width.max(0.0));
+        }
+        if available.height.is_finite() {
+            size.height = size.height.min(available.height.max(0.0));
+        }
+        return Ok(size);
+    }
     match element.kind().role() {
         Role::Text => Ok(measure_text(element)),
         // A panel measures its children its own way.

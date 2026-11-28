@@ -15,13 +15,36 @@ theme/palette.txt as:
 
 Usage: scripts/palette.py [file ...]
 """
+import os
 import re
+import subprocess
 import sys
 
-DEFAULT_FILES = [
-    '/Volumes/Lenovo/Developer/microsoft-ui-xaml/dxaml/xcp/dxaml/themes/generic.xaml',
-    '/Volumes/Lenovo/Developer/microsoft-ui-xaml/controls/dev/CommonStyles/Common_themeresources_any.xaml',
-]
+# The reference checkout: generic.xaml holds the WinUI 2 aliases, every control's
+# *_themeresources.xaml holds the WinUI 3 tokens that control uses. Both are MIT.
+REPO = '/Volumes/Lenovo/Developer/microsoft-ui-xaml'
+BASE = 'dxaml/xcp/dxaml/themes/generic.xaml'
+
+
+def theme_files():
+    """Every theme XAML the tokens can live in, read from the repository's object store.
+
+    A sparse checkout usually holds only a few of these files; the object store has all
+    of them, and `git show` reads one without materialising the tree.
+    """
+    listing = subprocess.check_output(
+        ['git', '-C', REPO, 'ls-tree', '-r', '--name-only', 'HEAD'], text=True)
+    names = [name for name in listing.splitlines()
+             if name.endswith('.xaml') and '_themeresources' in name]
+    return [BASE] + sorted(names)
+
+
+def read(rel):
+    path = os.path.join(REPO, rel)
+    if os.path.exists(path):
+        return open(path, encoding='utf-8').read()
+    return subprocess.check_output(['git', '-C', REPO, 'show', 'HEAD:' + rel],
+                                   text=True, errors='replace')
 OUT = '/Volumes/Lenovo/Developer/openwasdk/crates/openxaml/src/theme/palette.txt'
 
 colors, brushes, aliases = {}, {}, {}
@@ -45,8 +68,7 @@ def until_close(body):
     return body
 
 
-def harvest(path):
-    text = open(path, encoding='utf-8').read()
+def harvest(text):
     for theme in ('Default', 'Light'):
         body = until_close(section(text, theme))
         for m in re.finditer(r'<Color x:Key="([^"]+)"[^>]*>\s*(#[0-9A-Fa-f]{6,8})\s*</Color>', body):
@@ -70,8 +92,12 @@ def resolve(theme, key, depth=0):
     return None
 
 
-for path in (sys.argv[1:] or DEFAULT_FILES):
-    harvest(path)
+if sys.argv[1:]:
+    for path in sys.argv[1:]:
+        harvest(open(path, encoding='utf-8').read())
+else:
+    for path in theme_files():
+        harvest(read(path))
 
 lines = ["# Theme colours from Microsoft's own theme XAML (microsoft-ui-xaml, MIT).",
          '# theme<TAB>key<TAB>#AARRGGBB. Regenerate with scripts/palette.py.']
