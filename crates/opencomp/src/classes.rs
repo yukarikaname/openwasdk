@@ -71,3 +71,30 @@ pub(crate) const MANIFEST_CLASSES: &[&str] = &[
     "Microsoft.UI.Composition.Vector3NaturalMotionAnimation",
     "Microsoft.UI.Composition.Visual",
 ];
+
+/// What the factory should create for a class name.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum Class {
+    Compositor,
+    /// `CompositionEasingFunction`: a static class, reached through its own statics.
+    EasingFunction,
+    ContentIsland,
+    DesktopChildSiteBridge,
+    /// A class this DLL answers for but does not implement: it refuses activation with
+    /// `E_NOTIMPL` instead of leaving combase to fail the whole process.
+    Unmodelled,
+}
+
+impl Class {
+    /// The name combase, a manifest or a host uses for this class.
+    pub(crate) fn name(self) -> &'static str {
+        match self {
+            Class::Compositor => "Microsoft.UI.Composition.Compositor",
+            Class::EasingFunction => "Microsoft.UI.Composition.CompositionEasingFunction",
+            Class::ContentIsland => "Microsoft.UI.Content.ContentIsland",
+            Class::DesktopChildSiteBridge => "Microsoft.UI.Content.DesktopChildSiteBridge",
+            // A stub factory reports no runtime class name; it makes nothing.
+            Class::Unmodelled => "",
+        }
+    }
+}

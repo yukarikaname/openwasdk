@@ -113,7 +113,7 @@ fn bodies(root: &Path) -> Controls {
             .roots
             .first()
             .and_then(|root| openxaml::Kind::from_type_name(&root.type_name))
-            .is_some_and(|kind| !openxaml::Element::is_non_visual(kind));
+            .is_some_and(|kind| !kind.is_non_visual());
         if !visual {
             continue;
         }

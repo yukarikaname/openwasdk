@@ -44,6 +44,9 @@ jobs:
             case "$file" in
               # Generated from metadata; its length is not hand-written.
               */bindings.rs|*_bindings.rs) continue ;;
+              # A data table: one entry per element kind, one line per property. Its
+              # length is the surface it lists, not a function that grew.
+              */support/table.rs) continue ;;
             esac
             lines=$(wc -l < "$file")
             if [ "$lines" -gt 500 ]; then

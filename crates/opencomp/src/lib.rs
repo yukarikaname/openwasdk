@@ -96,6 +96,8 @@ mod visual;
 mod factory;
 #[cfg(windows)]
 mod private_statics;
+
+pub(crate) use classes::Class;
 #[cfg(windows)]
 mod qi_trace;
 
@@ -132,33 +134,6 @@ const CLASSES: &[&str] = &[
     "Microsoft.UI.Content.ContentIsland",
     "Microsoft.UI.Content.DesktopChildSiteBridge",
 ];
-
-/// What the factory should create for a class name.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub(crate) enum Class {
-    Compositor,
-    /// `CompositionEasingFunction`: a static class, reached through its own statics.
-    EasingFunction,
-    ContentIsland,
-    DesktopChildSiteBridge,
-    /// A class this DLL answers for but does not implement: it refuses activation with
-    /// `E_NOTIMPL` instead of leaving combase to fail the whole process.
-    Unmodelled,
-}
-
-impl Class {
-    /// The name combase, a manifest or a host uses for this class.
-    pub(crate) fn name(self) -> &'static str {
-        match self {
-            Class::Compositor => "Microsoft.UI.Composition.Compositor",
-            Class::EasingFunction => "Microsoft.UI.Composition.CompositionEasingFunction",
-            Class::ContentIsland => "Microsoft.UI.Content.ContentIsland",
-            Class::DesktopChildSiteBridge => "Microsoft.UI.Content.DesktopChildSiteBridge",
-            // A stub factory reports no runtime class name; it makes nothing.
-            Class::Unmodelled => "",
-        }
-    }
-}
 
 /// WinRT entry point: return the activation factory for `class`.
 ///

@@ -197,7 +197,7 @@ fn build(
     }
     // A dictionary's entries are resources (Double, String, brushes); nothing in this
     // renderer resolves them, so they are not built as elements.
-    if Element::is_non_visual(support.kind) {
+    if support.kind.is_non_visual() {
         return Ok(element);
     }
     for child in &source.children {
