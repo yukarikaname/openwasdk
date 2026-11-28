@@ -10,6 +10,7 @@
 //! failing.
 
 use crate::bindings::Microsoft::UI::Composition as comp;
+use crate::bindings::Microsoft::UI::Dispatching as disp;
 use crate::object::not_implemented;
 use windows_core::HSTRING;
 
@@ -248,5 +249,71 @@ impl comp::ICompositorWithRadialGradient_Impl for crate::compositor::Compositor_
 impl comp::ICompositorWithVisualSurface_Impl for crate::compositor::Compositor_Impl {
     fn CreateVisualSurface(&self) -> windows_core::Result<comp::CompositionVisualSurface> {
         not_implemented()
+    }
+}
+
+/* The input host asks for a clip and turns a refused factory into a stowed error and a fail
+ * fast, so the clip exists as an answered interface first; what it has to draw can come from
+ * the visual it clips once the host gets past this point. */
+const IID_IRECTANGLE_CLIP: windows_core::GUID =
+    windows_core::GUID::from_u128(0xbc26_1502_2259_5c01_8616_5561_10a0_9657);
+
+fn rectangle_clip() -> windows_core::Result<comp::RectangleClip> {
+    use windows_core::Interface;
+
+    let raw = crate::composite::private_stub(IID_IRECTANGLE_CLIP);
+    let stub = unsafe { windows_core::IUnknown::from_raw(raw) };
+    stub.cast()
+}
+
+/* ICompositor7 is what the input host's composition helper asks for before it builds a
+ * window's target; refusing it is the E_NOINTERFACE fail fast in CompositionHelper.cpp.
+ * The interface has to exist for the query to succeed, and the three factories keep the
+ * not-implemented answer so the host falls back instead of faulting. */
+impl comp::ICompositor7_Impl for crate::compositor::Compositor_Impl {
+    fn DispatcherQueue(&self) -> windows_core::Result<disp::DispatcherQueue> {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: ICompositor7::DispatcherQueue");
+        }
+        // The compositor belongs to the thread that made it, and XAML makes it on the thread
+        // whose queue it wants back.
+        disp::DispatcherQueue::GetForCurrentThread()
+    }
+    fn CreateAnimationPropertyInfo(&self) -> windows_core::Result<comp::AnimationPropertyInfo> {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: ICompositor7::CreateAnimationPropertyInfo");
+        }
+        not_implemented()
+    }
+    fn CreateRectangleClip(&self) -> windows_core::Result<comp::RectangleClip> {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: ICompositor7::CreateRectangleClip");
+        }
+        rectangle_clip()
+    }
+    fn CreateRectangleClipWithSides(
+        &self,
+        _left: f32,
+        _top: f32,
+        _right: f32,
+        _bottom: f32,
+    ) -> windows_core::Result<comp::RectangleClip> {
+        if std::env::var_os("OPENCOMP_TRACE").is_some() {
+            eprintln!("opencomp: ICompositor7::CreateRectangleClipWithSides");
+        }
+        rectangle_clip()
+    }
+    fn CreateRectangleClipWithSidesAndRadius(
+        &self,
+        _left: f32,
+        _top: f32,
+        _right: f32,
+        _bottom: f32,
+        _top_left: &windows_numerics::Vector2,
+        _top_right: &windows_numerics::Vector2,
+        _bottom_right: &windows_numerics::Vector2,
+        _bottom_left: &windows_numerics::Vector2,
+    ) -> windows_core::Result<comp::RectangleClip> {
+        rectangle_clip()
     }
 }

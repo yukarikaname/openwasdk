@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 
 use crate::bindings::Microsoft::UI::Composition::*;
 use crate::clock::Clock;
-use crate::compositor_private::{ICompositorPrivate, ICompositionBridgePrivate};
+use crate::compositor_private::{ICompositorPrivate, ICompositionBridgePrivate, ICompositionTargetBridge};
 use crate::interop::ICompositorInterop;
 use windows_core::{Error, HRESULT, Interface, Result};
 
@@ -34,13 +34,15 @@ fn live() -> &'static Mutex<Vec<windows_core::Weak<ICompositor>>> {
     ICompositor4,
     ICompositor5,
     ICompositor6,
+    ICompositor7,
     ICompositor8,
     ICompositorInterop,
     ICompositorWithProjectedShadow,
     ICompositorWithRadialGradient,
     ICompositorWithVisualSurface,
     ICompositorPrivate,
-    ICompositionBridgePrivate
+    ICompositionBridgePrivate,
+    ICompositionTargetBridge
 )]
 pub struct Compositor {
     pub(crate) state: Arc<State>,

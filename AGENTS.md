@@ -34,11 +34,11 @@ Start from those rather than re-deriving facts that cost a day each.
 ## The Gallery run
 
 Goal: get the unmodified WinUI Gallery past `Application.LoadComponent` under Wine, or
-prove which rule is the hard stop. It currently reaches `MainWindow..ctor` and
-`InitializeComponent`, and faults in `Microsoft.ui.xaml+0x866a6`, a helper that compares
-`GetCurrentThreadId()` with the dword at +0x50 of an object it was handed; the object is
-null, because a `QueryInterface` for `{d3616837-3ed3-484e-ac26-cf5be382541e}` at
-`+0x28b188` produced nothing.
+prove which rule is the hard stop. It now builds the composition device, hands it to
+`Microsoft.UI.Input`'s composition helper and gets through that helper's first two
+composition queries (`ICompositor7` and its `DispatcherQueue`); it dies where the helper
+calls a private slot of `{bbcb00be-cd17-4093-9ac0-d4b00472acea}` that our bridge answers
+with the wrong argument shape, an access write inside `ICompositionTargetBridge_Impl`.
 
 Do:
 
@@ -67,13 +67,11 @@ Do not:
 - Run `make install` without `scripts/wine/refresh-dxmt.sh` afterwards.
 - Set timers, schedules or automations without being asked.
 
-Next step: the `{d3616837}` query is not answered by any of our objects. The composite
-logs every identifier it forwards, the padded stubs log the interfaces they are asked for
-afterwards, our compositor implements the identifier, and Wine's dcomp shows no such query
-with `WINEDEBUG=+dcomp` -- yet the caller's object is still null. So the queried object is
-XAML's own, at offset 0x2c8 of the window-procedure context, and its composition member was
-never created. Find what fills that member: the call at `+0x7f1348` (`+0x7ef9fc`) runs
-before the query and its failure path fail-fasts, so it is the place to instrument.
+Next step: read the call at `microsoft.ui.input+0x8ceb3` to `+0x8cec9` to learn what the
+private slot takes (the current stub treats its second argument as an out pointer and the
+fault address is the value passed there), then give the slot a body with that shape and
+re-run. `docs/wine-alpc.md` carries the whole chain, from the probe-table slot numbering to
+the fail fast line numbers in `CompositionHelper.cpp`.
 
 The layout question the earlier note raised is settled for our side:
 `windows-interface` generates only the three `IUnknown` methods plus the declared ones, so

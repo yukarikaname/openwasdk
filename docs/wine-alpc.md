@@ -384,3 +384,37 @@ core that WinUI 3 requires.
 
 That is the boundary: the remaining Wine work is a tree adoption, not a patch, and even a
 complete adoption does not address `dwmcorei`.
+
+## The input host and the lifted compositor
+
+With the composition device in place, XAML hands it to `Microsoft.UI.Input`'s composition
+helper, which asks it for composition interfaces in turn. Each refusal becomes a fail fast
+inside the helper and its message names the line, so the chain reads directly:
+
+- `ICompositor7` (`{5358b81b-4799-5e7c-906c-e3df3b2e95eb}`) on the compositor, at
+  `CompositionHelper.cpp(26)`: our `Compositor` implemented `ICompositor` through
+  `ICompositor6` and `ICompositor8` but not 7, so the query was refused.
+- `ICompositor7::DispatcherQueue` at `CompositionHelper.cpp(29)`, refused while that
+  method still answered `E_NOTIMPL`; the compositor belongs to the thread that made it, so
+  the current thread's queue is the answer.
+- `ICompositor7::CreateRectangleClipWithSides`, whose `E_NOTIMPL` is stored as a stowed
+  error and fail-fasted later in the same helper.
+
+The queried object is our own `Compositor_Impl`: at the query in
+`microsoft.ui.input+0x8ce1d` its vtable is `opencomp+0x18f0d0` (`.rdata`, first entry
+`opencomp+0x33810`), which the loader can report without a debugger by listing the module
+range it maps.
+
+One class of bug sat under this: a private interface numbers its own methods from slot 3, so
+a probe that maps slots 3 to 5 onto `GetIids`, `GetRuntimeClassName` and
+`GetTrustLevel` makes the caller's first private method run `GetRuntimeClassName` with
+its BOOL as the HSTRING out pointer -- the write at `0xdaff841d9008e701` that used to fault
+inside combase's `WindowsCreateString`. Probes now answer only `IUnknown` and treat slot 3
+and up as private methods, which turned that access violation into the named fail fast above.
+
+The current stop is in the same helper: it queries the compositor for
+`{bbcb00be-cd17-4093-9ac0-d4b00472acea}` and then calls a slot that is not an out-pointer
+method. The padded stub writes the answer through the caller's scalar argument, and the
+fault is an access write in `ICompositionTargetBridge_Impl` called from
+`microsoft.ui.input+0x8cec9`. Read that call site for the argument shape before giving the
+slot a body.

@@ -101,3 +101,30 @@ impl ICompositionBridgePrivate_Impl for crate::compositor::Compositor_Impl {
     bridge_slot!(Slot12, 12);
     bridge_slot!(Slot13, 13);
 }
+
+/// `{bbcb00be-cd17-4093-9ac0-d4b00472acea}`: asked on the compositor by the input host's
+/// composition helper right after it took a rectangle clip, and a refusal there is the next
+/// fail fast. Nothing documents the interface, so its slots answer with the padded stub and
+/// name themselves, like the other private bridges.
+#[interface("bbcb00be-cd17-4093-9ac0-d4b00472acea")]
+pub unsafe trait ICompositionTargetBridge: IUnknown {
+    unsafe fn Slot6(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot7(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot8(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot9(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot10(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot11(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot12(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot13(&self, out: *mut *mut c_void) -> HRESULT;
+}
+
+impl ICompositionTargetBridge_Impl for crate::compositor::Compositor_Impl {
+    bridge_slot!(Slot6, 6);
+    bridge_slot!(Slot7, 7);
+    bridge_slot!(Slot8, 8);
+    bridge_slot!(Slot9, 9);
+    bridge_slot!(Slot10, 10);
+    bridge_slot!(Slot11, 11);
+    bridge_slot!(Slot12, 12);
+    bridge_slot!(Slot13, 13);
+}
