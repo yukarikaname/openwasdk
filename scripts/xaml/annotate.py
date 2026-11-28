@@ -92,7 +92,7 @@ def annotate(path, rva, count):
                 elif target:
                     offset = locate(table, target - base)
                     section = next((name for name, start, size, raw, raw_size in table
-                                    if start <= target - base < start + max(size, raw_size)), '')
+                                    if start <= target < start + max(size, raw_size)), '')
                     if section == '.rdata' and offset is not None and offset + 16 <= len(data):
                         raw = data[offset:offset + 16]
                         if raw[8:10] != b'\0\0' and raw[0:2] not in (b'\0\0', b'MM'):
