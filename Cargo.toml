@@ -1,9 +1,7 @@
 [workspace]
 resolver = "3"
 members = [
-    "crates/bcp47",
     "crates/comptrace",
-    "crates/coremessaging",
     "crates/dcompi",
     "crates/opencore",
     "crates/opencomp",

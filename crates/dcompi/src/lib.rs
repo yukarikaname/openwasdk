@@ -52,9 +52,28 @@ pub unsafe extern "system" fn DllGetActivationFactory(
         }
     }
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
-        eprintln!("dcompi: no factory for the class asked for");
+        eprintln!("dcompi: no factory for {:?}", class_name(class));
     }
     CLASS_E_CLASSNOTAVAILABLE
+}
+
+/// The class name behind the caller's HSTRING, for the trace only.
+fn class_name(class: *mut c_void) -> String {
+    #[link(name = "combase.dll", kind = "raw-dylib", modifiers = "+verbatim")]
+    unsafe extern "system" {
+        fn WindowsGetStringRawBuffer(s: *mut c_void, len: *mut u32) -> *const u16;
+    }
+    unsafe {
+        let p = WindowsGetStringRawBuffer(class, std::ptr::null_mut());
+        if p.is_null() {
+            return String::new();
+        }
+        let mut n = 0usize;
+        while *p.add(n) != 0 {
+            n += 1;
+        }
+        String::from_utf16_lossy(std::slice::from_raw_parts(p, n))
+    }
 }
 
 /// `opencomp.dll`'s own entry point, or nothing when it is not beside us.
