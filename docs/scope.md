@@ -22,9 +22,9 @@ Two tracks, and neither of them patches Wine:
   format), `comptrace` / `annotate.py` (ABI discovery), and a preview/render
   path that shows a XAML document without starting the real engine.
 
-Wine is a **host**, not a target. `scripts/wine/patches` is frozen at the ten
-patches that exist; it is measurement scaffolding for the Windows side, not a
-place where features are added. Any finding that would need another Wine patch is
+Wine is a **host**, not a target. The Wine patch series and its scripts have been
+removed: they were measurement scaffolding for the Windows side, not a place where
+features are added. Any finding that would need another Wine patch is
 out of scope: it means the runtime is answering the wrong contract.
 
 ## The split

@@ -1,14 +1,13 @@
 # OpenWASDK
 
 An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
-**build them anywhere, and run existing binaries on Linux under Wine**.
+**an ABI-compatible runtime in Rust, plus the tools to build and preview them anywhere.**
 
-> Status: Gate A is done. Gate B's measurement is done on both platforms: a composition-only
-> client presents frames on Windows and under Wine, and Microsoft's `Microsoft.ui.xaml.dll`
-> runs on our layers far enough to reach `Application.Start` and measure a `StackPanel` at
-> 38 px. The window is blocked by one thing, and it is not our layer: WinUI 3's lifted
-> compositor core (`dwmcorei.dll`) needs a DWM to connect to, and Wine has none. The
-> evidence is in `docs/gate-b.md` and `docs/wine-alpc.md`.
+> Status: the composition surface is the part that works. `opencomp` answers 58 interface
+> types and 232 of 326 methods of `Microsoft.UI.Composition`; `xbf` parses the XBF node
+> stream; `openxaml` lays out a first element tree and matches the real engine 38 px on a
+> StackPanel. No Wine patches are part of the build: Wine was the measurement host for the
+> ABI and is no longer on the critical path.
 >
 > Not affiliated with Microsoft.
 
@@ -24,11 +23,10 @@ app.exe + resources.pri + *.xbf
 └── Windows: DirectComposition, DWM, CoreMessaging, app model, DWriteCore
 ```
 
-Wine replaces the bottom row and runs the closed DLLs unmodified. OpenWASDK
-replaces the two closed DLLs in the middle instead, so the compositor and the
-XAML engine stop depending on DirectComposition. The lifted compositor core is
-the exception: it asks for a DWM that Wine does not have, which is what Gate B's
-window is waiting on.
+A Windows host replaces the bottom row and runs the closed DLLs unmodified. OpenWASDK
+replaces the two closed DLLs in the middle instead, so the compositor and the XAML engine
+stop depending on DirectComposition or DWM, and the runtime is the same DLLs on Windows,
+macOS, or any other host.
 
 | Component | Role | State |
 | --- | --- | --- |
@@ -39,7 +37,7 @@ window is waiting on.
 | `openxaml` | `Microsoft.ui.xaml.dll` replacement: XBF loader, property system, layout, controls | element model, layout and a composition tree; no controls yet |
 | `openudk` | `Microsoft.Internal.FrameworkUdk.dll` stand-in: the flat C layer XAML imports | 22 of 149 exports implemented, the rest stubs with a stated reason |
 | `openhost` | App model, `Microsoft.UI.Windowing` hosting, PE host glue | Content hosting and activation live in `opencomp`; the app model is planned |
-| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, a 1033-class activation manifest generated from the SDK's own MSIX, `dotnet` build through Wine's XAML compiler; not yet exercised end to end |
+| `xwinui` | Cross-compile, package and deploy WinUI 3 applications | SDK layout, a 1033-class activation manifest generated from the SDK's own MSIX, `dotnet` build through the SDK's XAML compiler on Windows; not yet exercised end to end |
 
 ## How much of it is implemented
 
@@ -90,8 +88,7 @@ application, and they do not need to be until milestone 5. Until then the 900 cl
 come from Microsoft's DLL, which is what the row above means by "hosted": the engine is
 theirs and the layers beneath it are ours.
 
-The 186 tests run on three hosts: Windows, macOS, and Wine (where the Windows-shaped
-code gets a second runtime).
+The 186 tests run on Windows and macOS.
 
 The design and the measured scale are in [`docs/architecture.md`](docs/architecture.md).
 What this project does **not** do — the boundary against Wine, DXVK and
@@ -215,23 +212,6 @@ activatable classes, and activation fails with `REGDB_E_CLASSNOTAVAILABLE`. With
 `DllGetActivationFactory` yourself and `QueryInterface` for
 `IActivationFactory`; `crates/opencomp/src/factory.rs` is the same code from the
 other side.
-
-## Running under Wine
-
-`scripts/wine/install-prefix.sh <wine-install> <prefix> [payload]` puts the user-mode half
-in place: `opencore` as `twinapi.appcore.dll`, Wine's own file beside it as
-`twinapi.builtin.dll` so the replacement can forward to it, the WinRT class
-registrations, and the overrides. It is the shape of `setup_dxvk.sh`, with one difference
-it states instead of hiding: the files only run on a Wine that already carries the ALPC,
-dcomp and `CoreUICreate` changes, so the install tree it is pointed at has to be one
-built from this repository's patches (`scripts/wine/build-macos.sh`,
-`scripts/wine/build-dxmt.sh`).
-
-An application then starts with the override in its environment:
-
-```sh
-WINEPREFIX=<prefix> WINEDLLOVERRIDES=twinapi.appcore=n <wine-install>/bin/wine app.exe
-```
 
 ## Building
 

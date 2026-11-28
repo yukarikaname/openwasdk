@@ -36,7 +36,7 @@ Start from those rather than re-deriving facts that cost a day each.
 WinUI Gallery is the acceptance case, not the goal. The goal is the App SDK ABI: the same
 `Microsoft.UI.Composition`, `Microsoft.Internal.FrameworkUdk`, `CoreApplication` and XAML
 activation surface answered by our DLLs on any host. Windows is where the ABI is verified
-(the baseline VM); Wine is only a host, and `scripts/wine/patches` is frozen.
+(the baseline VM); Wine is only a measurement host; its patch series and scripts have been removed.
 
 Do:
 
@@ -48,7 +48,6 @@ Do:
   call sites.
 - Record negative results in `docs/` in the same session.
 - Commit each measured step, kernel style, no dates in docs, files under 500 lines.
-- Keep the ten Wine patches as they are; they are measurement scaffolding.
 
 Do not:
 
