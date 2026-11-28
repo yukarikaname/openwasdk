@@ -100,6 +100,8 @@ pub enum Kind {
     ToolTip,
     /* A markup extension instance, not a box. */
     Binding,
+    Expander,
+    ProgressRing,
 }
 
 impl Kind {
@@ -161,6 +163,8 @@ impl Kind {
             Self::Line => "Microsoft.UI.Xaml.Shapes.Line",
             Self::ToolTip => "Microsoft.UI.Xaml.Controls.ToolTip",
             Self::Binding => "Microsoft.UI.Xaml.Data.Binding",
+            Self::Expander => "Microsoft.UI.Xaml.Controls.Expander",
+            Self::ProgressRing => "Microsoft.UI.Xaml.Controls.ProgressRing",
         }
     }
 
@@ -245,7 +249,9 @@ impl Kind {
             "Rectangle" | "Microsoft.UI.Xaml.Shapes.Rectangle" => Some(Self::Rectangle),
 "Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
             "ToolTip" | "Microsoft.UI.Xaml.Controls.ToolTip" => Some(Self::ToolTip),
-            "Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
+"Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
+            "Expander" | "Microsoft.UI.Xaml.Controls.Expander" => Some(Self::Expander),
+            "ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
             _ => None,
         }
     }

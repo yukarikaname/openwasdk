@@ -273,6 +273,8 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::ContentPresenter
         | Kind::PasswordBox
         | Kind::SymbolIcon
+        | Kind::Expander
+        | Kind::ProgressRing
         | Kind::ListView
         | Kind::GridView
         | Kind::TabView
@@ -388,6 +390,8 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::ContentPresenter
         | Kind::PasswordBox
         | Kind::SymbolIcon
+        | Kind::Expander
+        | Kind::ProgressRing
         | Kind::ListView
         | Kind::GridView
         | Kind::TabView
