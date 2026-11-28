@@ -47,7 +47,7 @@ misleading number:
 - **Gates B-D**: Microsoft's own `Microsoft.ui.xaml.dll` runs on top of our layers
   (`opencomp`, `opendispatch`, `openudk`). Every XAML runtime class is Microsoft's code;
   our obligation is the ABI underneath it.
-- **Milestone 5**: `openxaml` replaces that DLL. There we implement the classes.
+- **Milestone 6**: `openxaml` replaces that DLL. There we implement the classes.
 
 ### The layers beneath the official engine
 
@@ -64,7 +64,7 @@ the ones that answer `E_NOTIMPL`; denominators from the metadata in
 | App SDK classes with an activation entry | 1033 | 1033 | **100%** (generated) |
 | XBF node kinds mapped to an element tree | 30 | 39 | **77%** |
 | XBF value kinds | 11 | 11 | **100%** |
-| Acceptance gates | A | A-D | **25%** |
+| Acceptance gates | A, Gallery window under our `dcompi` | A-D | **2** |
 | Tests | 186 | - | - |
 
 Fifty-eight composition interface types are implemented; the engine imports 73, and the
@@ -84,7 +84,7 @@ added), z-order belongs to the host window manager.
 
 Those four are enough to check our layout rules against the real engine's numbers --
 the first such check says 38 px on both sides -- but they are not enough to run an
-application, and they do not need to be until milestone 5. Until then the 900 classes
+application, and they do not need to be until milestone 6. Until then the 900 classes
 come from Microsoft's DLL, which is what the row above means by "hosted": the engine is
 theirs and the layers beneath it are ours.
 

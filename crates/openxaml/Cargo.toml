@@ -10,3 +10,7 @@ rust-version.workspace = true
 [dependencies]
 opencomp-core = { path = "../opencomp-core" }
 xbf = { path = "../xbf" }
+
+# The example draws, so it needs the renderer; the crate itself does not.
+[dev-dependencies]
+opencomp-core = { path = "../opencomp-core", features = ["preview"] }

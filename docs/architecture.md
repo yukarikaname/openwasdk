@@ -247,9 +247,10 @@ bisecting: symbols, logging, and the freedom to remove pages.
 application is a Windows PE that calls `user32`, `d3d11`, `d2d1`, `dwrite` and
 `combase`, so "running" it always means Wine (or Windows), whatever we replace.
 
-The first milestone is to build a plain WinUI 3 app on Linux and run it under
-Wine with the official runtime. That validates the toolchain before any
-runtime code exists, and it produces the test binaries `comptrace` needs.
+The toolchain is validated where the runtime is: `xwinui` builds a WinUI 3 app, and the
+baseline VM runs it against the official runtime. Wine is no longer a target -- it is
+frozen as a measurement host, so a build step that only Wine can run is a gap in
+`xwinui`, not a reason to patch Wine.
 
 ## Measured scale
 
@@ -337,12 +338,21 @@ cross the boundary.
 
 | # | Milestone | Exit criterion |
 | --- | --- | --- |
-| 0 | `comptrace` | The interface list is measured from the shipped binaries: 73 Composition interfaces, 14 private IIDs (done) |
-| 1 | `xwinui` | An unmodified WinUI 3 sample builds on Linux and runs under Wine with the official runtime |
-| 2 | `opencomp` | A Composition-only program creates a visual tree on our DLL and draws it |
-| 3 | composition-only host | The same program hosts its tree in an HWND through `Microsoft.UI.Content`/`Windowing`, with no XAML loaded |
-| 4 | `openxaml` | A WinUI 3 sample runs on our `Microsoft.ui.xaml.dll` |
-| 5 | `openhost` | No Microsoft runtime DLL remains; only Wine's platform layer |
+| 0 | `comptrace` and symbols | Interface list and fault offsets resolved from the metadata and the symbol server, never from a guessed vtable slot (done) |
+| 1 | `dcompi` shim | Our `dcompi.dll` in front of the engine and the Gallery window renders -- `WinUIDesktopWin32WindowClass`, title `WinUI Gallery` -- with no class taken over (done, 3b2e015) |
+| 2 | class takeover | Each class moved into `OPENCOMP_MINE` keeps that window; a class that breaks it goes back, it is not patched blind |
+| 3 | XBF to pixels off Windows | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: the Gallery's `MainWindow.xbf` (449 nodes) parses structurally, but `model()` answers `SetValue has no pushed operand` on it, and 0 of the Gallery's 195 `.xbf` files materialise -- `SetValue` after `EndInitPopScope` and the `ResourceDictionary` type are the two gates |
+| 4 | text and images in the preview | A `TextBlock`/`Image` page shows glyphs and bitmaps, compared against a screenshot of the same page on Windows |
+| 5 | window and input off Windows | The same tree in a winit window, with hit-testing and scrolling |
+| 6 | `openxaml` | A WinUI 3 application runs on our `Microsoft.ui.xaml.dll`, with no Microsoft XAML loaded |
+
+Not a milestone: an unmodified WinUI Gallery -- a Windows PE and a .NET application --
+running natively on macOS. It needs the engine, D3D and the lifted DWM; Wine was measured
+not to supply them (`gate-b.md`), so that target is a Windows VM, not this project. What
+runs off Windows is the track above: our own `.xbf` reader, layout, compositor and
+renderer. A source-level C# facade can also run managed WinUI code on macOS, and one
+exists (`refs/winui3-mac-test-runtime`); it needs the application rebuilt against its
+types, which is a different answer to a different question.
 
 ## Risks
 
