@@ -1,12 +1,11 @@
-From fc91b95ee91150aa51c96ab0a92cf707db45a581 Mon Sep 17 00:00:00 2001
+From aec644e6a01cc3229088e8365a92e996833eba96 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:12:09 +0800
-Subject: [PATCH 3/5] win32u: answer the core messaging entry points
+Date: Sat, 28 Nov 2026 18:40:58 +0800
+Subject: [PATCH 3/6] win32u: answer the core messaging entry points
 
-The UDK layer and the composed window path go through user32 ordinals that Wine
+The UDK layer and the composed window path go through user32 ordinals Wine
 carries as stubs: the thread core messaging IOCP, its completion drain, and the
-input queue plumbing behind them. Wine's win32u syscall table has to learn the
-same numbers, which is why the wow64 side moves with it.
+queue plumbing behind them.
 ---
  dlls/win32u/defwnd.c         |  61 +++++++++
  dlls/win32u/font.c           |  31 ++++-

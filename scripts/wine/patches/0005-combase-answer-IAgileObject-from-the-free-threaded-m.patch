@@ -1,0 +1,35 @@
+From 4efb6268c6d810b6dec56223a625b9bc3554a29c Mon Sep 17 00:00:00 2001
+From: Yukari Kaname <yukari@aliciaworks.com>
+Date: Sat, 28 Nov 2026 18:40:58 +0800
+Subject: [PATCH 5/6] combase: answer IAgileObject from the free-threaded
+ marshaler
+
+An object wrapped with CoCreateFreeThreadedMarshaler is agile, and callers that
+ask the wrapper for the marker interface treat E_NOINTERFACE as a verdict and
+retry; the Windows implementation answers S_OK. Without it the Gallery spins in
+QueryInterface until a thread's stack runs out.
+---
+ dlls/combase/marshal.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/dlls/combase/marshal.c b/dlls/combase/marshal.c
+index 6e3d35c..44ffea1 100644
+--- a/dlls/combase/marshal.c
++++ b/dlls/combase/marshal.c
+@@ -179,6 +179,13 @@ static HRESULT WINAPI ftmarshaler_inner_QueryInterface(IUnknown *iface, REFIID r
+ 
+     if (IsEqualIID(&IID_IUnknown, riid))
+         *obj = &marshaler->IUnknown_inner;
++    else if (IsEqualIID(&IID_IAgileObject, riid))
++    {
++        /* The free-threaded marshaler is agile by definition, and a caller that asks for
++         * the marker interface is asking whether it may use the object from any
++         * apartment. Answering no sends some of them into a retry loop. */
++        *obj = &marshaler->IUnknown_inner;
++    }
+     else if (IsEqualIID(&IID_IMarshal, riid))
+         *obj = &marshaler->IMarshal_iface;
+     else
+-- 
+2.54.0 (Apple Git-157)
+

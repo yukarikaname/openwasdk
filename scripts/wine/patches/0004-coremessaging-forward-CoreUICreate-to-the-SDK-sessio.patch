@@ -1,14 +1,13 @@
-From 66840139c94b28bbab4b5f16580d89285d436a31 Mon Sep 17 00:00:00 2001
+From 1d2ea466e07fd7893c67b25ff3a53748ed379a29 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:12:09 +0800
-Subject: [PATCH 4/5] coremessaging: forward CoreUICreate to the SDK session
+Date: Sat, 28 Nov 2026 18:40:58 +0800
+Subject: [PATCH 4/6] coremessaging: forward CoreUICreate to the SDK session
  creator
 
 The App SDK ships its own CoreMessaging as CoreMessagingXP.dll, where the entry
-point is called CoreMsgCreateSession and takes a flags word before the out
-pointer. The lifted layer calls the system CoreUICreate with the out pointer
-alone, so the forwarding function takes one argument and passes zero flags --
-the same call the SDK makes from Microsoft.UI.Input.
+point takes a flags word before the out pointer. The lifted layer calls the
+system CoreUICreate with the out pointer alone, so the forwarding function takes
+one argument and passes zero flags -- the same call the SDK makes itself.
 ---
  dlls/coremessaging/coremessaging.spec |  2 +-
  dlls/coremessaging/main.c             | 24 ++++++++++++++++++++++++

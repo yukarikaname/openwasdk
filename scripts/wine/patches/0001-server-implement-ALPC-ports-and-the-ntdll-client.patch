@@ -1,13 +1,12 @@
-From d9eaf0efb3f6e163c5ceba23bd9c0024c55efa72 Mon Sep 17 00:00:00 2001
+From 97f7cda182a26d66c115f2ff2dbbf4543c7338e9 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:12:09 +0800
-Subject: [PATCH 1/5] server: implement ALPC ports and the ntdll client
+Date: Sat, 28 Nov 2026 18:40:57 +0800
+Subject: [PATCH 1/6] server: implement ALPC ports and the ntdll client
 
 The lifted DWM core talks to the CoreMessaging registrar over ALPC, and Wine's
 NtAlpcConnectPort answers STATUS_NOT_IMPLEMENTED. The server side, the request
 protocol and the ntdll client come from designgears/wine-uwp, whose validation
-probes (connect, accept, sync request/reply, datagram with a transferred handle,
-disconnect) are what the tests below the DLLs cover.
+probes are what the tests below the DLLs cover.
 ---
  dlls/ntdll/loader.c            |  14 +
  dlls/ntdll/ntdll.spec          |   3 +

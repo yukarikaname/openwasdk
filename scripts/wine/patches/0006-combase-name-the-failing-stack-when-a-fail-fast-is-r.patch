@@ -1,22 +1,22 @@
-From 4fad51dd65177fc1dd686f62bf890bec641c53ee Mon Sep 17 00:00:00 2001
+From cb306dfd036dca1a52acc7e8a03b0b8ce1da2793 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:12:09 +0800
-Subject: [PATCH 5/5] combase: name the failing stack when a fail fast is
+Date: Sat, 28 Nov 2026 18:40:58 +0800
+Subject: [PATCH 6/6] combase: name the failing stack when a fail fast is
  reported
 
 RoFailFastWithErrorContextInternal2 is where WinUI 3 ends an unrecoverable path,
-and the stub printed the code alone, which made every failure look like whatever
-logged last. OPENWASDK_FAILFAST turns on a dump of the raising thread's frames as
-module+offset plus the stowed exception bytes.
+and the stub printed the code alone. OPENWASDK_FAILFAST dumps the raising
+thread's frames and the stowed exception bytes; OPENWASDK_SOFT_FAILFAST returns
+instead of raising, which is how the code past such a point was measured.
 ---
- dlls/combase/roapi.c | 49 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
+ dlls/combase/roapi.c | 67 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 67 insertions(+)
 
 diff --git a/dlls/combase/roapi.c b/dlls/combase/roapi.c
-index e5c18c0..8e92214 100644
+index e5c18c0..0a81cf1 100644
 --- a/dlls/combase/roapi.c
 +++ b/dlls/combase/roapi.c
-@@ -470,12 +470,61 @@ HRESULT WINAPI RoGetAgileReference(enum AgileReferenceOptions option, REFIID rii
+@@ -470,12 +470,79 @@ HRESULT WINAPI RoGetAgileReference(enum AgileReferenceOptions option, REFIID rii
      return S_OK;
  }
  
@@ -37,6 +37,20 @@ index e5c18c0..8e92214 100644
 +        line[3 * 16] = 0;
 +        FIXME("ctx %03x: %s\n", i, line);
 +    }
++}
++
++static void dump_udk_state(void)
++{
++    HMODULE udk = GetModuleHandleW( L"Microsoft.Internal.FrameworkUdk.dll" );
++
++    if (!udk)
++    {
++        FIXME( "no udk module\n" );
++        return;
++    }
++    FIXME( "udk %p cached %#x guard %#x system %p host %p\n", udk,
++           *(DWORD *)((char *)udk + 0x67b20), *(DWORD *)((char *)udk + 0x67b24),
++           *(HMODULE *)((char *)udk + 0x67050), *(void **)((char *)udk + 0x67070) );
 +}
 +
 +static void dump_fail_fast_stack(void)
@@ -68,6 +82,7 @@ index e5c18c0..8e92214 100644
  void WINAPI RoFailFastWithErrorContextInternal2(HRESULT error, ULONG exception_count, /* PSTOWED_EXCEPTION_INFORMATION_V2 */void *information)
  {
      FIXME("%#lx, %lu, %p stub.\n", error, exception_count, information);
++    dump_udk_state();
 +    /* Off by default: the dump is worth having when the caller is unknown, and noise
 +     * otherwise. */
 +    if (getenv( "OPENWASDK_FAILFAST" ))
@@ -75,6 +90,9 @@ index e5c18c0..8e92214 100644
 +        dump_fail_fast_stack();
 +        dump_error_context( information );
 +    }
++    /* Returning instead of raising shows what the caller would have done next; the
++     * process state after a fail fast is not meant to be recoverable. */
++    if (getenv( "OPENWASDK_SOFT_FAILFAST" )) return;
      RaiseFailFastException(NULL, NULL, 0);
  }
  

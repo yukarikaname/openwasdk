@@ -1,12 +1,11 @@
-From 44055e4f4391fa8c294493fdc9824c23dfb681f6 Mon Sep 17 00:00:00 2001
+From 25603d396ada1ea94e7d4a2296ff5342df057cf4 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 18:12:09 +0800
-Subject: [PATCH 2/5] dcomp: serve the composition interfaces XAML drives
+Date: Sat, 28 Nov 2026 18:40:57 +0800
+Subject: [PATCH 2/6] dcomp: serve the composition interfaces XAML drives
 
-The composition tree the lifted engine builds is the system API, so the device
-and visual objects have to exist even though nothing presents them. Taken from
-wine-uwp and extended where a slot a WinUI 3 tree touches would otherwise stow
-E_NOTIMPL; the notes in composition.c name the callers that hit each one.
+The tree the lifted engine builds is the system API, so the device and visual
+objects have to exist even though nothing presents them. Taken from wine-uwp and
+extended where a slot a WinUI 3 tree touches would otherwise stow E_NOTIMPL.
 ---
  dlls/dcomp/Makefile.in    |   2 +
  dlls/dcomp/dcomp.spec     |  14 +-

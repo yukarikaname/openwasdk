@@ -257,6 +257,41 @@ Writing a table with the diagnostics entry is the next piece of work. Until then
 raising, which is enough to see what lies past the point -- the application then reaches
 D2D text rendering, further than the fail fast ever allowed.
 
+## What the Gallery needs past the session
+
+With a session in hand the application moved through three more walls, each one a
+different kind of problem:
+
+- **The free-threaded marshaler refused `IAgileObject`.** `Microsoft.WinRT.Runtime`
+  asks a wrapped object for the marker interface, and Wine's
+  `ftmarshaler_inner_QueryInterface` answered `E_NOINTERFACE`, so the caller retried
+  until a thread's stack ran out. Windows answers `S_OK` for the wrapper, which is
+  agile by definition; with that fixed the retry loop disappears entirely.
+
+- **The UDK's visual diagnostics port fails without the OS function table.** XAML
+  registers the port under `IFCFAILFAST`, so a failure is fatal. The real
+  `Microsoft.Internal.FrameworkUdk.dll` implements the port in a table at its own
+  `.rdata`; the table's slot calls into machinery Wine does not have, and the
+  `Microsoft.Internal.FrameworkUdk.System.dll` that Windows supplies is only a loader
+  for a versioned function table (`GetFunctionTableId`, `GetVersionInformation`).
+  A stand-in system DLL is loaded and its export resolves, but the UDK never asks it
+  for the table in this build. Answering the port from our own UDK stand-in works --
+  the application stops failing fast -- and breaks something else: with the stand-in
+  in place, `Microsoft.UI.Xaml.Controls.Charts.dll` can no longer produce
+  `XamlControlsChartsXamlMetaDataProvider`, because the rest of the stand-in is
+  stubs. The shim replaces too much.
+
+- **With the real UDK and `OPENWASDK_SOFT_FAILFAST=1`,** the application runs to the
+  point where it draws text: `dwritefactory_CreateMonitorRenderingParams`,
+  `d2d_device_create_device_context`, and then
+  `d2d_device_context_DrawTextLayout ... hr 0x80004005`. It still creates no window of
+  its own within the first minute, so text is the visible wall and window creation is
+  the one behind it.
+
+The order matters for what to do next: the diagnostics port is a debugging feature
+whose failure only matters because of `IFCFAILFAST`, while D2D text is on the path
+every WinUI 3 application takes.
+
 ## Why the real CoreUI is not a small patch either
 
 Wine's `CoreMessaging!CoreUICreate` now forwards to the SDK's `CoreMsgCreateSession`. Called
