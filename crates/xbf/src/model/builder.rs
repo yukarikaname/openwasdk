@@ -50,7 +50,9 @@ pub(super) struct Builder<'a> {
     pub(super) roots: Vec<usize>,
     pub(super) frames: Vec<Frame>,
     pub(super) base_namespaces: Vec<(String, String)>,
-    values: Vec<Value>,
+    pub(super) values: Vec<Value>,
+    /* The element the last closed scope produced; a dictionary key names it. */
+    pub(super) last_closed: Option<usize>,
 }
 
 impl<'a> Builder<'a> {
@@ -63,6 +65,7 @@ impl<'a> Builder<'a> {
             frames: Vec::new(),
             base_namespaces: Vec::new(),
             values: Vec::new(),
+            last_closed: None,
         }
     }
 
@@ -139,9 +142,14 @@ impl<'a> Builder<'a> {
                     namespaces: Vec::new(),
                 });
             }
-            NodeKind::PopScope
-            | NodeKind::EndInitPopScope
-            | NodeKind::EndInitProvideValuePopScope => self.pop(index, kind)?,
+            NodeKind::PopScope => self.pop(index, kind)?,
+            /*
+             * EndInitPopScope closes an object that the next node takes: SetValue assigns
+             * it, AddToCollection adds it. Keep it on the operand stack for that node.
+             */
+            NodeKind::EndInitPopScope | NodeKind::EndInitProvideValuePopScope => {
+                self.pop_object(index, kind)?
+            }
 
             /* Scopes that also spend a namespace declaration. */
             NodeKind::AddNamespace { namespace, prefix } => {
@@ -200,11 +208,26 @@ impl<'a> Builder<'a> {
 
             /* Property element scope: objects attach to the element on top. */
             NodeKind::PushScopeGetValue { property } => {
-                let Some(owner) = self.current_element() else {
-                    return Err(self.error(index, kind, "property scope has no parent element"));
-                };
                 let default = self.default_namespace();
                 let (name, namespace) = self.resolve_property(*property, &default);
+                let Some(owner) = self.current_element() else {
+                    /*
+                     * A substream continues a collection whose owner is an element in
+                     * the parent stream: the dictionary substream repeats the property
+                     * node but carries no reference back. Its entries become the roots
+                     * of this stream, which is what the merge into the dictionary
+                     * expects. Stream 0 has no such excuse.
+                     */
+                    if self.stream > 0 {
+                        self.frames.push(Frame {
+                            element: None,
+                            property: None,
+                            namespaces: Vec::new(),
+                        });
+                        return Ok(());
+                    }
+                    return Err(self.error(index, kind, "property scope has no parent element"));
+                };
                 self.frames.push(Frame {
                     element: None,
                     property: Some(PendingProperty {

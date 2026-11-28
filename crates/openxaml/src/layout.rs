@@ -256,7 +256,11 @@ pub fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> 
 fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutError> {
     match element.kind() {
         Kind::TextBlock => Ok(measure_text(element)),
-        Kind::Border => measure_border(element, available),
+        // A content host (Page, UserControl, Window) carries the same chrome: border
+        // thickness and padding deflate the one child, and nothing else is laid out.
+        Kind::Border | Kind::Page | Kind::UserControl | Kind::Window => {
+            measure_border(element, available)
+        }
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
     }
@@ -319,7 +323,9 @@ pub(super) fn arrange_with_desired(
 fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, LayoutError> {
     match element.kind() {
         Kind::TextBlock => Ok(Vec::new()),
-        Kind::Border => arrange_border(element, content),
+        Kind::Border | Kind::Page | Kind::UserControl | Kind::Window => {
+            arrange_border(element, content)
+        }
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }

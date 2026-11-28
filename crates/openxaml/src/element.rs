@@ -41,6 +41,9 @@ pub enum Kind {
     Border,
     Grid,
     TextBlock,
+    Page,
+    UserControl,
+    Window,
 }
 
 impl Kind {
@@ -51,6 +54,9 @@ impl Kind {
             Self::Border => "Microsoft.UI.Xaml.Controls.Border",
             Self::Grid => "Microsoft.UI.Xaml.Controls.Grid",
             Self::TextBlock => "Microsoft.UI.Xaml.Controls.TextBlock",
+            Self::Page => "Microsoft.UI.Xaml.Controls.Page",
+            Self::UserControl => "Microsoft.UI.Xaml.Controls.UserControl",
+            Self::Window => "Microsoft.UI.Xaml.Window",
         }
     }
 
@@ -61,6 +67,9 @@ impl Kind {
             "Border" | "Microsoft.UI.Xaml.Controls.Border" => Some(Self::Border),
             "Grid" | "Microsoft.UI.Xaml.Controls.Grid" => Some(Self::Grid),
             "TextBlock" | "Microsoft.UI.Xaml.Controls.TextBlock" => Some(Self::TextBlock),
+            "Page" | "Microsoft.UI.Xaml.Controls.Page" => Some(Self::Page),
+            "UserControl" | "Microsoft.UI.Xaml.Controls.UserControl" => Some(Self::UserControl),
+            "Window" | "Microsoft.UI.Xaml.Window" => Some(Self::Window),
             _ => None,
         }
     }

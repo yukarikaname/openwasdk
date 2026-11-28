@@ -39,6 +39,53 @@ macro_rules! type_support {
 }
 
 static TABLE: &[TypeSupport] = &[
+    /*
+     * Content hosts: Page, UserControl and Window are one child plus control chrome.
+     * Their property list is the Border set, because that is what the layout path
+     * reads; anything else a page sets is measured before it is added.
+     */
+    type_support!(
+        Kind::Page,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::UserControl,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
+    type_support!(
+        Kind::Window,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+        &property::BORDER_BRUSH,
+        &property::BORDER_THICKNESS,
+        &property::CORNER_RADIUS,
+    ),
     type_support!(
         Kind::StackPanel,
         &property::WIDTH,

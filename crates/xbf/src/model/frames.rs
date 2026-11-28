@@ -166,10 +166,17 @@ impl Builder<'_> {
         kind: &'static str,
         value: Value,
     ) -> Result<(), XbfError> {
-        let Some(owner) = self.current_element() else {
-            return Err(self.error(index, kind, "dictionary key has no current element"));
+        /*
+         * A dictionary entry is closed before its key arrives (EndInitPopScope, then
+         * AddToDictionaryWithKey), so the key names the element that scope closed;
+         * inside an open dictionary scope it names the last child of that element.
+         */
+        let target = match self.current_element() {
+            Some(owner) => self.raw[owner].children.last().copied().unwrap_or(owner),
+            None => self.last_closed.ok_or_else(|| {
+                self.error(index, kind, "dictionary key has no current element")
+            })?,
         };
-        let target = self.raw[owner].children.last().copied().unwrap_or(owner);
         self.raw[target].properties.push(Property {
             name: "x:Key".to_string(),
             namespace: XAML_NAMESPACE.to_string(),
@@ -183,6 +190,23 @@ impl Builder<'_> {
             return Err(self.error(index, kind, "scope closer has no open scope"));
         };
         self.close_frame(frame);
+        Ok(())
+    }
+
+    /*
+     * The closer of a scope whose object is a value: after it, the object it closed is the
+     * operand that SetValue or AddToCollection spends.
+     */
+    pub(super) fn pop_object(&mut self, index: usize, kind: &'static str) -> Result<(), XbfError> {
+        let Some(frame) = self.frames.pop() else {
+            return Err(self.error(index, kind, "scope closer has no open scope"));
+        };
+        let element = if frame.property.is_some() { None } else { frame.element };
+        self.close_frame(frame);
+        self.last_closed = element;
+        if let Some(element) = element {
+            self.values.push(Value::Element(Box::new(materialize(&self.raw, element))));
+        }
         Ok(())
     }
 
