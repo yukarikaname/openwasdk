@@ -1,5 +1,14 @@
 //! The element kinds, declared once.
 //!
+//! The rows are emitted from the metadata:
+//!
+//! ```sh
+//! cargo run -p comptrace -- kinds target/appsdk/Microsoft.UI.Xaml.winmd
+//! ```
+//!
+//! which decides each class's role from its base chain (`Panel`, `UIElement`, or neither)
+//! and leaves only the panels this crate actually lays out to be named by hand.
+//!
 //! A control used to be written in four places -- the enum, its WinRT name, the name lookup
 //! and the layout pass -- and one of them was missed often enough to be a bug class. The
 //! table below is the only list: the macro expands the enum, the names, the role and the

@@ -4,6 +4,7 @@
 mod diff;
 mod generate;
 mod iids;
+mod kinds;
 mod model;
 mod pe;
 mod report;
@@ -121,6 +122,13 @@ enum Command {
         /// Only this namespace
         #[arg(long)]
         namespace: Option<String>,
+    },
+    /// Emit the element-kind table from a namespace of classes
+    Kinds {
+        winmd: PathBuf,
+        /// Namespace prefix, e.g. `Microsoft.UI.Xaml.Controls`
+        #[arg(long, default_value = "Microsoft.UI.Xaml")]
+        namespace: String,
     },
     /// Emit the Rust skeleton that implements one runtime class
     Scaffold {
@@ -275,6 +283,10 @@ fn run(cli: Cli) -> Result<(), String> {
             let before = model::load(&old)?;
             let after = model::load(&new)?;
             print!("{}", diff::diff(&before, &after, namespace.as_deref()));
+        }
+        Command::Kinds { winmd, namespace } => {
+            let model = model::load(&winmd)?;
+            println!("{}", kinds::table(&model, &namespace));
         }
         Command::Classes { winmd, namespace } => {
             let model = model::load(&winmd)?;
