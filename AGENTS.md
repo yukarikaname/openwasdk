@@ -91,7 +91,7 @@ into a crate; the licence rule in `docs/scope.md` applies.
 | wine-uwp (geoffwoollams) | `github.com/geoffwoollams/wine-uwp` | not cloned | UWP `CoreWindow`, input, package identity |
 | Avalonia | `github.com/AvaloniaUI/Avalonia` | `refs/Avalonia` (sparse) | XAML parser, styling, layout |
 | Uno Platform | `github.com/unoplatform/uno` | `refs/uno` (sparse: `src/Uno.UI`) | WinUI-compatible API, dependency properties, parser |
-| microsoft-ui-xaml | `github.com/microsoft/microsoft-ui-xaml` | `../microsoft-ui-xaml` (partial: `dxaml`, `src`; `controls` not checked out) | XAML engine (`dxaml`), XAML compiler |
+| microsoft-ui-xaml | `github.com/microsoft/microsoft-ui-xaml` | `../microsoft-ui-xaml` (partial: `dxaml`, `src`) and `refs/microsoft-ui-xaml` (sparse: `dxaml`, `controls`) | XAML engine (`dxaml`), XAML compiler |
 | LiberNT (ReactOS fork) | `github.com/LiberNT/LiberNT` | not cloned | the host layer only: PE loading, ntdll/win32ss semantics; it has no Composition or XAML |
 | ReactOS | `github.com/reactos/reactos` | not cloned | the upstream of the same host-layer material |
 | Darling | `github.com/darlinghq/darling` | not cloned | architecture analogy for a host compatibility layer, not code |

@@ -27,6 +27,17 @@ removed: they were measurement scaffolding for the Windows side, not a place whe
 features are added. Any finding that would need another Wine patch is
 out of scope: it means the runtime is answering the wrong contract.
 
+## Status of the tracks
+
+The contract layer is the main line: `opencomp`, `openudk`, `opencore`, `opendispatch`, and
+the tools (`xbf`, `xwinui`, `comptrace`, preview). It is verified against Microsoft own
+binaries on Windows and does not require Wine.
+
+`openxaml` (a full XAML engine replacement) is an optional track, not a milestone: it
+duplicates Microsoft engine and Uno Platform work, and is only worth pursuing if an
+application must run without Microsoft XAML DLL at all. Until then the engine is
+Microsoft, and our job is the ABI beneath it.
+
 ## The split
 
 | piece | who provides it | why |
