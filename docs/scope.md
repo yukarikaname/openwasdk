@@ -18,7 +18,7 @@ belongs to Wine, and we do not write it.**
 | `dwmcorei.dll`, `DwmSceneI.dll`, `marshal.dll` (lifted compositor core and transport) | not replaced: our compositor takes their place | App SDK components; we answer the ABI they expose instead of rebuilding them |
 | `Microsoft.Internal.FrameworkUdk.dll` (149 flat C exports) | **us** (`openudk`) | App SDK component; the XAML DLL imports 43 of them statically |
 | `Microsoft.UI.dll`, `Microsoft.UI.Windowing.Core.dll` | official binaries | thin, and available in the package |
-| `dcomp.dll`, `dwmapi.dll`, DWM | Wine / Windows | the **system** compositor; the lifted stack does not need it |
+| `dcomp.dll`, `dwmapi.dll`, DWM | Wine / Windows | the **system** compositor. Measured 2026-11-28: the lifted stack *does* need it -- `dwmcorei`'s `DllMain` refuses to initialise without a DWM to connect to, and XAML then keeps a null device (`docs/wine-alpc.md`). This row is the one gap the Wine route has |
 | `d3d11`, `dxgi`, `d3d12` | Wine's wined3d, or DXVK (zlib) / vkd3d-proton (LGPL, linked) | graphics API, not our layer |
 | `d2d1`, `dwrite` | Wine | rasterisation and text; XAML calls them directly |
 | `combase` (`RoGetActivationFactory`, HSTRING), `win32k`, `user32`, `gdi32`, input stack | Wine / Windows | platform |
@@ -96,6 +96,13 @@ of them is this project:
 | Wine + our App SDK layer | **unmodified** Windows binaries | the App SDK's own DLLs, nothing below them | nobody |
 | a native framework, applications recompiled | applications written against it | a whole XAML runtime, control set, backend and per-language projection | Uno Platform (Apache-2.0) |
 | a native Windows | everything, unmodified | win32k, user32, combase, d3d11, d2d1 | nobody, at Darling's scale |
+
+What the 2026-11-28 measurement adds: the first route's promise of "unmodified Windows
+binaries" holds for everything except the lifted compositor core. A WinUI 3 process needs a
+DWM to connect to, Wine has none, and no open project implements one for Wine. Recompiling
+does not change that -- the dependency is at run time. So Gate D (an unmodified Gallery) is
+only reachable if somebody writes a Windows-compatible DWM for Wine, which is the
+"third route" problem below and not part of this project's App SDK layer.
 
 The second route is not a cheaper version of the first: it changes the subject
 from "run this binary" to "build against us", and it duplicates a project that
