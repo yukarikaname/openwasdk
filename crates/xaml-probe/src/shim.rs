@@ -355,7 +355,14 @@ fn install_from(module: HMODULE, entries: &[Entry]) -> Vec<(&'static str, &'stat
 }
 
 /// Answer the imports a DLL calls before it can be used, such as a wait completion packet.
+///
+/// Only for the stand-in session. With `OPENCOMP_COREUI=xp` the real CoreMessagingXP runs,
+/// and it waits on these packets for real: answering them with an event that never fires
+/// turns the engine's first wait into a hang. Wine now implements them, so let it.
 pub fn install_late(module: HMODULE) -> Vec<(&'static str, &'static str)> {
+    if std::env::var_os("OPENCOMP_COREUI").is_some_and(|value| value == "xp") {
+        return Vec::new();
+    }
     install_from(module, LATE_ENTRIES)
 }
 

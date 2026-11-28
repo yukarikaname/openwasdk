@@ -54,12 +54,28 @@ fn refused(slot: u32) -> i32 {
 /// interface's methods take different numbers of arguments and nothing here calls them.
 type Member = *const c_void;
 
-/// `HRESULT CoreUICreate(void **session)`: one process-wide object, as on Windows.
+/// `HRESULT CoreUICreate(UINT32 flags, void **session)`: one process-wide object, as on Windows.
+///
+/// With `OPENCOMP_COREUI=system` and the SDK's own file beside the application, the call is
+/// handed to its `CoreMsgCreateSession` instead: the same session under the name the SDK's
+/// file actually exports, with a real registrar and ALPC behind it.
 ///
 /// # Safety
 /// `session` is the one out pointer the caller provided.
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn CoreUICreate(session: *mut *mut c_void) -> i32 {
+pub unsafe extern "system" fn CoreUICreate(flags: u32, session: *mut *mut c_void) -> i32 {
+    if std::env::var_os("OPENCOMP_COREUI").is_some_and(|value| value == "system") {
+        let forwarded = unsafe {
+            crate::forward(
+                b"CoreMsgCreateSession\0",
+                [flags as usize, session as usize, 0, 0, 0, 0],
+            )
+        };
+        // The forward answers `E_NOTIMPL` when there is no SDK file to hand it to.
+        if forwarded != E_NOTIMPL {
+            return forwarded;
+        }
+    }
     if session.is_null() {
         return E_POINTER;
     }

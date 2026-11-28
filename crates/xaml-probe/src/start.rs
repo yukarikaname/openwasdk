@@ -382,8 +382,13 @@ pub(crate) fn run(module: HMODULE) -> i32 {
     // asks the App SDK's own CoreMessaging instead, which runs once its ntdll completion
     // packet calls are answered and then stops in `NtAlpcConnectPort`, which Wine only
     // stubs -- so it is not the default.
+    // `system` leaves the engine alone: with a `CoreMessaging.dll` that exports
+    // `CoreUICreate` the UDK's own fallback finds a real session, and nothing here should
+    // stand in front of it.
+    let system = std::env::var_os("OPENCOMP_COREUI").is_some_and(|value| value == "system");
     let xp = std::env::var_os("OPENCOMP_COREUI").is_some_and(|value| value == "xp");
-    if xp {
+    if system {
+    } else if xp {
         if let Some(messaging) = crate::windows::load(std::path::Path::new(MESSAGING)) {
             for (library, name) in crate::shim::install_late(messaging) {
                 eprintln!("xaml-probe: answered {name} for {library} (messaging)");

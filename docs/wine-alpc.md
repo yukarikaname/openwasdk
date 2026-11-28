@@ -146,3 +146,23 @@ place nothing on this side can patch around: `dwmcorei.dll`'s `DllMain` returns
 `FALSE` -- relay shows it creating a D2D1 factory successfully and then unwinding -- so
 the lifted DWM core never initialises, XAML's composition helper keeps a null device, and
 the process faults on `[null + 0x360]`.
+
+## Why the real CoreUI is not a small patch either (2026-11-28, last)
+
+Wine's `CoreMessaging!CoreUICreate` now forwards to the SDK's `CoreMsgCreateSession`, and with
+ALPC in place that call no longer aborts -- it blocks. What it waits for is the genuine
+`CoreMessagingRegistrar` service, and wine-uwp's own notes list what hosting it needs beyond
+ALPC: `WaitServiceState`, `QueryTransientObjectSecurityDescriptor`, the user32 ordinals
+`NtUserInitThreadCoreMessagingIocp2`/`DrainThreadCoreMessagingCompletions2`, and combase's
+`CoBeginProcessEvents`/`CoMsgWaitInProcessEvents`/`CoEndProcessEvents` pump, plus WinRT proxy
+registration for cross-apartment marshalling.
+
+Checking this tree with ripgrep: the user32 ordinals are here (they came in with wine-uwp's
+win32u), `WaitServiceState` and `QueryTransientObjectSecurityDescriptor` exist as spec
+entries, and `CoBeginProcessEvents` does not exist at all. So the registrar route means
+adopting wine-uwp's combase work and its native-DLL override set as well -- which is most of
+that fork, and that fork deliberately targets UWP/WinUI 2 and never touches the lifted DWM
+core that WinUI 3 requires.
+
+That is the boundary: the remaining Wine work is a tree adoption, not a patch, and even a
+complete adoption does not address `dwmcorei`.
