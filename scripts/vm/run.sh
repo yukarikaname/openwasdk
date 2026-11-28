@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Boot the Windows 11 ARM64 baseline VM under QEMU/HVF.
 #
-#   scripts/vm/run.sh [vm-dir]
+#   scripts/vm/run.sh [vm-dir]      (default: $VM_DIR or <repo>/target/vm)
 #
 # The baseline is the other half of every Wine question: the engine's private interfaces
 # only exist on Windows, so what they return has to be measured there. `autounattend.iso`
@@ -11,7 +11,8 @@
 # Needs, in the VM directory: `Win11_arm64.iso`, `autounattend.iso`, `efi.fd` (a writable
 # copy of `share/qemu/edk2-aarch64-code.fd`), and `win11.qcow2`.
 set -euo pipefail
-vm=${1:-${VM_DIR:-/Volumes/Lenovo/vm/win11}}
+here=$(cd "$(dirname "$0")/../.." && pwd)
+vm=${1:-${VM_DIR:-$here/target/vm}}
 for file in Win11_arm64.iso autounattend.iso efi.fd win11.qcow2; do
 	[ -f "$vm/$file" ] || { echo "vm: missing $vm/$file" >&2; exit 2; }
 done

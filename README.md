@@ -216,6 +216,23 @@ activatable classes, and activation fails with `REGDB_E_CLASSNOTAVAILABLE`. With
 `IActivationFactory`; `crates/opencomp/src/factory.rs` is the same code from the
 other side.
 
+## Running under Wine
+
+`scripts/wine/install-prefix.sh <wine-install> <prefix> [payload]` puts the user-mode half
+in place: `opencore` as `twinapi.appcore.dll`, Wine's own file beside it as
+`twinapi.builtin.dll` so the replacement can forward to it, the WinRT class
+registrations, and the overrides. It is the shape of `setup_dxvk.sh`, with one difference
+it states instead of hiding: the files only run on a Wine that already carries the ALPC,
+dcomp and `CoreUICreate` changes, so the install tree it is pointed at has to be one
+built from this repository's patches (`scripts/wine/build-macos.sh`,
+`scripts/wine/build-dxmt.sh`).
+
+An application then starts with the override in its environment:
+
+```sh
+WINEPREFIX=<prefix> WINEDLLOVERRIDES=twinapi.appcore=n <wine-install>/bin/wine app.exe
+```
+
 ## Building
 
 ```sh

@@ -17,8 +17,13 @@ wine_src=${1:?usage: build-dxmt.sh <wine-source> <wine-build> <work-dir>}
 wine_build=${2:?usage: build-dxmt.sh <wine-source> <wine-build> <work-dir>}
 work=${3:?usage: build-dxmt.sh <wine-source> <wine-build> <work-dir>}
 
-PATH=/opt/homebrew/opt/bison/bin:/opt/homebrew/Cellar/mingw-w64/14.0.0_3/bin:$PATH
-export PATH
+# Homebrew keeps these two out of /usr/bin: bison there is 2.3, and mingw-w64 is not
+# installed at all. Take them from brew when it exists, so a machine that provides them
+# another way only has to put them on PATH.
+if command -v brew >/dev/null 2>&1; then
+	PATH="$(brew --prefix bison)/bin:$(brew --prefix mingw-w64)/bin:$PATH"
+	export PATH
+fi
 
 # 1. LLVM 15, x86_64, the exact major DXMT wants.
 if [ ! -x "$work/toolchains/llvm/bin/llvm-config" ]; then

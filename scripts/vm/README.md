@@ -12,6 +12,9 @@ engine's own implementation exists.
   `10.0.2.2:8000`, runs the probe in both modes, and posts the output back.
 - `serve.py` is the host side: it serves the VM directory and writes every POST to
   `results.log`.
+- No path is fixed to a machine: `run.sh` takes the VM directory as its argument (or
+  `VM_DIR`), `serve.py` serves `OPENWASDK_SERVE_ROOT` and appends to
+  `OPENWASDK_RESULTS`, both defaulting to `target/vm` in the repository.
 
 The ISO is Microsoft's own ARM64 multi-edition image, downloaded from the Windows 11
 download page; it is not committed.

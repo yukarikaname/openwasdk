@@ -23,8 +23,13 @@ build=${2:?usage: build-macos.sh <wine-source> <build-dir> [jobs]}
 jobs=${3:-8}
 
 # macOS ships bison 2.3; the expression parser Wine generates needs 3.0 or newer.
-PATH=/opt/homebrew/opt/bison/bin:/opt/homebrew/Cellar/mingw-w64/14.0.0_3/bin:$PATH
-export PATH
+# Homebrew keeps these two out of /usr/bin: bison there is 2.3, and mingw-w64 is not
+# installed at all. Take them from brew when it exists, so a machine that provides them
+# another way only has to put them on PATH.
+if command -v brew >/dev/null 2>&1; then
+	PATH="$(brew --prefix bison)/bin:$(brew --prefix mingw-w64)/bin:$PATH"
+	export PATH
+fi
 
 export CC="clang -arch x86_64"
 export CXX="clang++ -arch x86_64"

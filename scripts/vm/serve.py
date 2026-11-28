@@ -1,6 +1,7 @@
 import http.server, socketserver, os, json, datetime
-ROOT = "/Volumes/Lenovo/vm/win11/serve"
-RESULTS = "/Volumes/Lenovo/vm/win11/results.log"
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.environ.get("OPENWASDK_SERVE_ROOT") or os.path.join(HERE, "..", "..", "target", "vm", "serve")
+RESULTS = os.environ.get("OPENWASDK_RESULTS") or os.path.join(HERE, "..", "..", "target", "vm", "results.log")
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k): super().__init__(*a, directory=ROOT, **k)
     def do_POST(self):

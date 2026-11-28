@@ -57,7 +57,7 @@ if [ -d "$payload/../dxmt" ]; then
 fi
 
 echo "installed into $prefix"
-echo "  twinapi.appcore.dll  $(stat -f %z "$system32/twinapi.appcore.dll") bytes (opencore)"
-echo "  twinapi.builtin.dll  $(stat -f %z "$system32/twinapi.builtin.dll") bytes (wine)"
+echo "  twinapi.appcore.dll  $(wc -c < "$system32/twinapi.appcore.dll") bytes (opencore)"
+echo "  twinapi.builtin.dll  $(wc -c < "$system32/twinapi.builtin.dll") bytes (wine)"
 echo "run an app with:"
 echo "  WINEPREFIX=$prefix WINEDLLOVERRIDES=twinapi.appcore=n $wine <app.exe>"
