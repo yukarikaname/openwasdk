@@ -232,6 +232,31 @@ That is the arrangement that works -- the engine now registers
 `FinalUnhandledErrorDetected` on the private interface and gets a session from the
 composition side -- and `scripts/wine/install-prefix.sh` is all of it.
 
+## The system half of the UDK
+
+With a session created, the Gallery's next stop was `E_NOTIMPL` from
+`Microsoft.Internal.FrameworkUdk.VisualDiagnosticsPort_Register`, which
+`DXamlCore::RegisterVisualDiagnosticsPort` calls under `IFCFAILFAST`: the failure does
+not propagate, it ends the process. Three pieces place the call:
+
+- the import slot XAML uses resolves to `VisualDiagnosticsPort_Register`, and the dxaml
+  source shows what it is for -- a CoreMessaging port Visual Studio attaches to;
+- the UDK implements it through `Microsoft.Internal.FrameworkUdk.System.dll`, loaded with
+  `LOAD_LIBRARY_SEARCH_SYSTEM32`. Wine answered `c0000135`, and the loader says so
+  itself (`load_dll looking for ... in C:\windows\system32\`), so the file has to be
+  in the prefix's system32, not beside the application;
+- that DLL is a *loader* for a versioned function table. The UDK asks it for
+  `GetFunctionTableId` and `GetVersionInformation`, validates each entry's size and
+  kind, and installs its own stub for every entry the table does not provide. The stub
+  behind the diagnostics slot returns `E_NOTIMPL`.
+
+So what is missing is not one API but the OS-side function table: Windows 10 1809 and
+later ship that DLL, Wine does not, and no amount of prefix surgery invents its contents.
+Writing a table with the diagnostics entry is the next piece of work. Until then
+`OPENWASDK_SOFT_FAILFAST=1` lets `RoFailFastWithErrorContextInternal2` return instead of
+raising, which is enough to see what lies past the point -- the application then reaches
+D2D text rendering, further than the fail fast ever allowed.
+
 ## Why the real CoreUI is not a small patch either
 
 Wine's `CoreMessaging!CoreUICreate` now forwards to the SDK's `CoreMsgCreateSession`. Called

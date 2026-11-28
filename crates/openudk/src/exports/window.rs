@@ -143,6 +143,9 @@ pub unsafe extern "system" fn VisualDiagnosticsPort_Register(
     callback: VisualDiagnosticsCallback,
     context: *mut c_void,
 ) -> i32 {
+    if std::env::var_os("OPENUDK_TRACE").is_some() {
+        eprintln!("openudk: VisualDiagnosticsPort_Register");
+    }
     if callback.is_none() {
         return E_INVALIDARG;
     }
@@ -171,23 +174,19 @@ pub unsafe extern "system" fn VisualDiagnosticsPort_Register(
     S_OK
 }
 
+/// The lifted XAML calls this with no arguments when the core shuts down, so the
+/// export takes none even though a port is published under a name.
+///
 /// # Safety
-/// `name` must point to a NUL-terminated UTF-16 string.
+/// Only touches the global port list.
 #[unsafe(no_mangle)]
-pub unsafe extern "system" fn VisualDiagnosticsPort_Unregister(name: *const u16) -> i32 {
-    let Some(name) = (unsafe { wide_string(name) }) else {
-        return E_INVALIDARG;
-    };
+pub unsafe extern "system" fn VisualDiagnosticsPort_Unregister() -> i32 {
     let Ok(mut ports) = DIAGNOSTIC_PORTS.lock() else {
         return E_FAIL;
     };
-    let before = ports.len();
-    ports.retain(|port| port.name != name);
-    if ports.len() == before {
-        // Nothing was published under that name; that is not an error.
-        return S_FALSE;
-    }
-    S_OK
+    let had_ports = !ports.is_empty();
+    ports.clear();
+    if had_ports { S_OK } else { S_FALSE }
 }
 
 // The real export takes a window and a dark-theme flag, and applies the theme with
@@ -271,8 +270,8 @@ mod tests {
             assert_eq!(ports[0].context, context as usize);
         }
         unsafe {
-            assert_eq!(VisualDiagnosticsPort_Unregister(name.as_ptr()), S_OK);
-            assert_eq!(VisualDiagnosticsPort_Unregister(name.as_ptr()), S_FALSE);
+            assert_eq!(VisualDiagnosticsPort_Unregister(), S_OK);
+            assert_eq!(VisualDiagnosticsPort_Unregister(), S_FALSE);
         }
         assert_eq!(port_count(), 0);
     }
@@ -301,8 +300,8 @@ mod tests {
                 E_INVALIDARG
             );
             assert_eq!(
-                VisualDiagnosticsPort_Unregister(std::ptr::null()),
-                E_INVALIDARG
+                VisualDiagnosticsPort_Unregister(),
+                S_FALSE
             );
         }
     }
