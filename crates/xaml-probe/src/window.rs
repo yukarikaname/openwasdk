@@ -68,14 +68,28 @@ pub(crate) fn show(get: GetActivationFactory) {
     check("IPanel.Background", panel.set_background(&brush));
 
     let element: UIElement = cast(&grid, "QueryInterface(UIElement)");
+
+    // `WindowChrome::OnContentChanged` expects the window to be inside a XamlIslandRoot
+    // already, and the island is created when the window is activated. Windows has one by
+    // the time content is set; whether that holds here is what the flag measures.
+    let activate_first = std::env::var_os("OPENCOMP_XAML_PROBE_ACTIVATE_FIRST").is_some();
+    if activate_first {
+        mark("window activate");
+        window
+            .Activate()
+            .unwrap_or_else(|error| fail("Window.Activate", error.code().0));
+    }
+
     window
         .SetContent(&element)
         .unwrap_or_else(|error| fail("Window.Content", error.code().0));
 
-    mark("window activate");
-    window
-        .Activate()
-        .unwrap_or_else(|error| fail("Window.Activate", error.code().0));
+    if !activate_first {
+        mark("window activate");
+        window
+            .Activate()
+            .unwrap_or_else(|error| fail("Window.Activate", error.code().0));
+    }
 
     match window.Bounds() {
         Ok(bounds) => eprintln!(
