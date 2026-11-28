@@ -52,3 +52,41 @@ impl ICompositorPrivate_Impl for crate::compositor::Compositor_Impl {
     slot!(Slot12, 12);
     slot!(Slot13, 13);
 }
+
+/// `{fc084699-67d8-40e1-ade7-08901d84ffda}`: asked on the composition target while XAML
+/// loads a window's markup. The identifier appears only in `Microsoft.ui.xaml.dll` and in
+/// the SDK's `dcompi.dll`, so it is the composition bridge's private interface; our
+/// replacement bridge answers the query and refuses the slots by name.
+#[interface("fc084699-67d8-40e1-ade7-08901d84ffda")]
+pub unsafe trait ICompositionBridgePrivate: IUnknown {
+    unsafe fn Slot6(&self) -> HRESULT;
+    unsafe fn Slot7(&self) -> HRESULT;
+    unsafe fn Slot8(&self) -> HRESULT;
+    unsafe fn Slot9(&self) -> HRESULT;
+    unsafe fn Slot10(&self) -> HRESULT;
+    unsafe fn Slot11(&self) -> HRESULT;
+    unsafe fn Slot12(&self) -> HRESULT;
+    unsafe fn Slot13(&self) -> HRESULT;
+}
+
+macro_rules! bridge_slot {
+    ($name:ident, $index:expr) => {
+        unsafe fn $name(&self) -> HRESULT {
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("opencomp: composition bridge slot {} called", $index);
+            }
+            E_NOTIMPL
+        }
+    };
+}
+
+impl ICompositionBridgePrivate_Impl for crate::compositor::Compositor_Impl {
+    bridge_slot!(Slot6, 6);
+    bridge_slot!(Slot7, 7);
+    bridge_slot!(Slot8, 8);
+    bridge_slot!(Slot9, 9);
+    bridge_slot!(Slot10, 10);
+    bridge_slot!(Slot11, 11);
+    bridge_slot!(Slot12, 12);
+    bridge_slot!(Slot13, 13);
+}
