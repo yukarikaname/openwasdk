@@ -1,6 +1,6 @@
 import http.server, socketserver, os, json, datetime
-ROOT = "/Volumes/Lenovo/openwasdk-vm/serve"
-RESULTS = "/Volumes/Lenovo/openwasdk-vm/results.log"
+ROOT = "/Volumes/Lenovo/vm/win11/serve"
+RESULTS = "/Volumes/Lenovo/vm/win11/results.log"
 class H(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k): super().__init__(*a, directory=ROOT, **k)
     def do_POST(self):
