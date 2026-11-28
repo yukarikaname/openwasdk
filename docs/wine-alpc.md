@@ -69,7 +69,7 @@ upstream. What it buys is the answer to one question that cannot be answered oth
 with a real core underneath, which of our DLLs are still wrong, and what does the engine
 do with a core it can talk to.
 
-## What it does now (2026-11-28)
+## What it does now
 
 The cross build completes (`Wine build complete.`) and the patch is live:
 
@@ -98,7 +98,7 @@ The next wall is inside the engine rather than in front of it: the probe now ans
 `QueryInterface` for `{9d4b87ff-6dca-5ce2-b69ce52705b0fef4}` with the probe's own `E_FAIL`
 and combase fail-fasts on it.
 
-## Where the wall is now (2026-11-28, later)
+## Where the wall is now
 
 With ALPC, wine-uwp's dcomp, the WinRT class registrations and a patched
 `RtlGetDeviceFamilyInfoEnum` in place, the probe reaches XAML's own composition setup.
@@ -125,7 +125,7 @@ look at: the feature-level table wined3d builds depends on the API version the i
 was created with.
 
 
-## Metal instead of Vulkan (2026-11-28)
+## Metal instead of Vulkan
 
 wined3d on this machine tops out below what XAML asks for whatever the renderer: the GL
 backend cannot reach the feature levels, and the Vulkan backend needs MoltenVK wired up
@@ -147,7 +147,7 @@ place nothing on this side can patch around: `dwmcorei.dll`'s `DllMain` returns
 the lifted DWM core never initialises, XAML's composition helper keeps a null device, and
 the process faults on `[null + 0x360]`.
 
-## Why the real CoreUI is not a small patch either (2026-11-28, last)
+## Why the real CoreUI is not a small patch either
 
 Wine's `CoreMessaging!CoreUICreate` now forwards to the SDK's `CoreMsgCreateSession`, and with
 ALPC in place that call no longer aborts -- it blocks. What it waits for is the genuine

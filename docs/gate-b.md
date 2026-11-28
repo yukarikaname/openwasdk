@@ -203,7 +203,7 @@ application, and it reaches further than `Start` does:
 
 ## What the next step is
 
-> Superseded by the section at the end of this file (2026-11-28): the dispatcher
+> Superseded by the section at the end of this file: the dispatcher
 > answers, and the start now stops in the CoreUI session.
 
 The dispatcher is still what stands between the call and the callback: on Windows
@@ -225,7 +225,7 @@ there is no Windows host here, and Wine still fails before the callback. The Win
 step is the first place it will be seen. `layout-probe` is deleted; its hand-written
 slots were the source of the faults the generated bindings avoid.
 
-## The window start under Wine, step by step (2026-11-28)
+## The window start under Wine, step by step
 
 The container is gone: the probe now builds on the host for `x86_64-pc-windows-gnu` and
 runs under a native Wine 11.21, so one run is a few seconds and the loop is measured in
@@ -326,7 +326,7 @@ The registrar conversation is ALPC by design, so this route needs an ALPC implem
 inside Wine and cannot be answered by a shim. It stays in the probe, one environment
 variable away, for the day Wine has one.
 
-## What the Windows run says about the CoreUI question (2026-11-28)
+## What the Windows run says about the CoreUI question
 
 The proxy run on the Windows runner (artifact `coreui-trace`, job `Test (windows)`) reaches
 the callback and prints the measurement's steps. It never asks the system for the CoreUI
@@ -347,7 +347,7 @@ The two traces agree up to the last activation before the branch
 carries as a semi-stub) and diverge there. The next step is to name the class that call
 activates, on both sides, and to walk the UDK function that decides.
 
-## The Windows baseline, and what it settles (2026-11-28)
+## The Windows baseline, and what it settles
 
 There is now a Windows 11 ARM64 VM under QEMU/HVF with the same probe installed, reached
 over SSH (`scripts/vm/`). Its purpose is the half of every question that only exists on
@@ -379,7 +379,7 @@ that `CoreMessagingXP` implements, and that conversation is ALPC on the registra
 So Gate B's *measurement* is closed on both platforms, and its *window* is blocked by the
 absence of ALPC in Wine, not by anything in this repository.
 
-## The queue is not replaceable in isolation (2026-11-28)
+## The queue is not replaceable in isolation
 
 `opendispatch` now answers `{7F3C9B24-EFC1-53A2-A2A9-88280F241AC0}`. That IID is not in
 any metadata; it sits next to `IDispatcherQueue`'s own IID in the SDK's

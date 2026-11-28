@@ -47,7 +47,7 @@ sound and the runtime is where the build expects; only then does the same direct
 under Wine, where a failure means something the platform is missing rather than something
 the project got wrong.
 
-## What it does on Windows, and what it does under Wine (2026-11-28)
+## What it does on Windows, and what it does under Wine
 
 The Windows baseline is a window: `Gate C: 0`, a `Count` button, `VStack` spacing. Two
 things were wrong before it appeared, and both are worth writing down because they cost a

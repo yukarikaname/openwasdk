@@ -3,11 +3,12 @@
 An open SDK for WinUI 3 and Windows App SDK applications outside Windows:
 **build them anywhere, and run existing binaries on Linux under Wine**.
 
-> Status: Gate A done, Gate B started. A composition-only client presents frames on
-> Windows and under Wine, and Microsoft's own `Microsoft.ui.xaml.dll` now runs on top of
-> our layers: its `Application.Start` reaches our callback under Wine 11 and measures a
-> `StackPanel` at 38 px, the number our ported layout rule predicts. What is missing for
-> Gate B is a visible window, not a working engine.
+> Status: Gate A is done. Gate B's measurement is done on both platforms: a composition-only
+> client presents frames on Windows and under Wine, and Microsoft's `Microsoft.ui.xaml.dll`
+> runs on our layers far enough to reach `Application.Start` and measure a `StackPanel` at
+> 38 px. The window is blocked by one thing, and it is not our layer: WinUI 3's lifted
+> compositor core (`dwmcorei.dll`) needs a DWM to connect to, and Wine has none. The
+> evidence is in `docs/gate-b.md` and `docs/wine-alpc.md`.
 >
 > Not affiliated with Microsoft.
 
@@ -25,8 +26,9 @@ app.exe + resources.pri + *.xbf
 
 Wine replaces the bottom row and runs the closed DLLs unmodified. OpenWASDK
 replaces the two closed DLLs in the middle instead, so the compositor and the
-XAML engine stop depending on DWM and DirectComposition. The application, its
-compiled XAML and the Wine host stay as they are.
+XAML engine stop depending on DirectComposition. The lifted compositor core is
+the exception: it asks for a DWM that Wine does not have, which is what Gate B's
+window is waiting on.
 
 | Component | Role | State |
 | --- | --- | --- |
