@@ -10,10 +10,14 @@ use std::ffi::c_void;
 
 use windows_core::{GUID, HRESULT, IUnknown, interface};
 
+const S_OK: HRESULT = HRESULT(0);
 const E_NOTIMPL: HRESULT = HRESULT(0x8000_4001u32 as i32);
 const E_POINTER: HRESULT = HRESULT(0x8000_4003u32 as i32);
 
 pub(crate) const IID: GUID = GUID::from_u128(0xd361_6837_3ed3_484e_ac26_cf5b_e382_541e);
+
+/// The identifier of the composition bridge interface answered above.
+pub(crate) const BRIDGE_IID: GUID = GUID::from_u128(0xfc08_4699_67d8_40e1_ade7_0890_1d84_ffda);
 
 macro_rules! slot {
     ($name:ident, $index:expr) => {
@@ -24,7 +28,7 @@ macro_rules! slot {
             if out.is_null() {
                 return E_POINTER;
             }
-            unsafe { *out = crate::composite::private_stub(IID) };
+            unsafe { *out = crate::composite::private_stub(BRIDGE_IID) };
             E_NOTIMPL
         }
     };
@@ -75,12 +79,14 @@ macro_rules! bridge_slot {
             if std::env::var_os("OPENCOMP_TRACE").is_some() {
                 eprintln!("opencomp: composition bridge slot {} called", $index);
             }
-            // The caller reads the out value even when the slot refuses, so it is cleared
-            // instead of left with whatever the stack held.
-            if !out.is_null() {
-                unsafe { *out = std::ptr::null_mut() };
+            if out.is_null() {
+                return E_POINTER;
             }
-            E_NOTIMPL
+            // The caller stores this value in a member it later calls through, so a cleared
+            // pointer crashes it. The padded stub keeps the object alive and names every
+            // slot the caller goes on to use.
+            unsafe { *out = crate::composite::private_stub(IID) };
+            S_OK
         }
     };
 }
