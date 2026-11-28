@@ -1,7 +1,7 @@
 From 25603d396ada1ea94e7d4a2296ff5342df057cf4 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
 Date: Sat, 28 Nov 2026 18:40:57 +0800
-Subject: [PATCH 2/8] dcomp: serve the composition interfaces XAML drives
+Subject: [PATCH 2/9] dcomp: serve the composition interfaces XAML drives
 
 The tree the lifted engine builds is the system API, so the device and visual
 objects have to exist even though nothing presents them. Taken from wine-uwp and
@@ -16,7 +16,7 @@ extended where a slot a WinUI 3 tree touches would otherwise stow E_NOTIMPL.
  6 files changed, 998 insertions(+), 16 deletions(-)
 
 diff --git a/dlls/dcomp/Makefile.in b/dlls/dcomp/Makefile.in
-index 3c14125a2..25e322f32 100644
+index 3c14125a..25e322f3 100644
 --- a/dlls/dcomp/Makefile.in
 +++ b/dlls/dcomp/Makefile.in
 @@ -1,6 +1,8 @@
@@ -29,7 +29,7 @@ index 3c14125a2..25e322f32 100644
 +	composition.c \
  	device.c
 diff --git a/dlls/dcomp/dcomp.spec b/dlls/dcomp/dcomp.spec
-index 2120ce8b6..9b9d3c4dd 100644
+index 2120ce8b..9b9d3c4d 100644
 --- a/dlls/dcomp/dcomp.spec
 +++ b/dlls/dcomp/dcomp.spec
 @@ -1,13 +1,14 @@
@@ -70,7 +70,7 @@ index 2120ce8b6..9b9d3c4dd 100644
 +@ stdcall -private __wine_dcomp_repaint_window_rect(long ptr)
 +@ stdcall -private __wine_dcomp_create_matrix_transform(ptr)
 diff --git a/dlls/dcomp/device.c b/dlls/dcomp/device.c
-index 2744d758e..62c077265 100644
+index 2744d758..62c07726 100644
 --- a/dlls/dcomp/device.c
 +++ b/dlls/dcomp/device.c
 @@ -17,31 +17,961 @@
@@ -1042,7 +1042,7 @@ index 2744d758e..62c077265 100644
      return E_NOTIMPL;
  }
 diff --git a/dlls/dwmapi/Makefile.in b/dlls/dwmapi/Makefile.in
-index cf889cb14..2be9ba369 100644
+index cf889cb1..2be9ba36 100644
 --- a/dlls/dwmapi/Makefile.in
 +++ b/dlls/dwmapi/Makefile.in
 @@ -1,5 +1,5 @@
@@ -1053,7 +1053,7 @@ index cf889cb14..2be9ba369 100644
  
  VER_FILEDESCRIPTION_STR = "Desktop Window Manager API"
 diff --git a/dlls/dwmapi/dwmapi.spec b/dlls/dwmapi/dwmapi.spec
-index e69c3e3e8..a25c240d4 100644
+index e69c3e3e..a25c240d 100644
 --- a/dlls/dwmapi/dwmapi.spec
 +++ b/dlls/dwmapi/dwmapi.spec
 @@ -20,7 +20,7 @@
@@ -1066,7 +1066,7 @@ index e69c3e3e8..a25c240d4 100644
  129 stub -noname DwmpDxgiDisableRedirection
  130 stub -noname DwmpDxgiEnableRedirection
 diff --git a/dlls/dwmapi/dwmapi_main.c b/dlls/dwmapi/dwmapi_main.c
-index 49e05cd20..e1d1ea1ab 100644
+index 49e05cd2..e1d1ea1a 100644
 --- a/dlls/dwmapi/dwmapi_main.c
 +++ b/dlls/dwmapi/dwmapi_main.c
 @@ -73,14 +73,55 @@ HRESULT WINAPI DwmExtendFrameIntoClientArea(HWND hwnd, const MARGINS* margins)

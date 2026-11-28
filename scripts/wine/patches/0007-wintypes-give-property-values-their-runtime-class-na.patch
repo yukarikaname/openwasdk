@@ -1,7 +1,7 @@
 From eed6c83bdc77e045142b56308079e09e4f6f6708 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
 Date: Sat, 28 Nov 2026 18:50:16 +0800
-Subject: [PATCH 7/8] wintypes: give property values their runtime class name
+Subject: [PATCH 7/9] wintypes: give property values their runtime class name
 
 A value from PropertyValue is an IReference of its primitive type, and the projection
 asks for the class name to decide what the managed object is. Answering E_NOTIMPL left
@@ -12,7 +12,7 @@ InvalidCastException and the application ended during resource initialisation.
  1 file changed, 32 insertions(+), 2 deletions(-)
 
 diff --git a/dlls/wintypes/main.c b/dlls/wintypes/main.c
-index 2c5d4c45f..3355c6852 100644
+index 2c5d4c45..3355c685 100644
 --- a/dlls/wintypes/main.c
 +++ b/dlls/wintypes/main.c
 @@ -627,10 +627,40 @@ static HRESULT STDMETHODCALLTYPE property_value_GetIids(IPropertyValue *iface, U

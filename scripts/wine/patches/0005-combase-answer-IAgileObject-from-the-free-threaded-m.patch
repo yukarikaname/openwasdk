@@ -1,7 +1,7 @@
 From 4efb6268c6d810b6dec56223a625b9bc3554a29c Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
 Date: Sat, 28 Nov 2026 18:40:58 +0800
-Subject: [PATCH 5/8] combase: answer IAgileObject from the free-threaded
+Subject: [PATCH 5/9] combase: answer IAgileObject from the free-threaded
  marshaler
 
 An object wrapped with CoCreateFreeThreadedMarshaler is agile, and callers that
@@ -13,7 +13,7 @@ QueryInterface until a thread's stack runs out.
  1 file changed, 7 insertions(+)
 
 diff --git a/dlls/combase/marshal.c b/dlls/combase/marshal.c
-index 6e3d35ce5..44ffea1c8 100644
+index 6e3d35ce..44ffea1c 100644
 --- a/dlls/combase/marshal.c
 +++ b/dlls/combase/marshal.c
 @@ -179,6 +179,13 @@ static HRESULT WINAPI ftmarshaler_inner_QueryInterface(IUnknown *iface, REFIID r

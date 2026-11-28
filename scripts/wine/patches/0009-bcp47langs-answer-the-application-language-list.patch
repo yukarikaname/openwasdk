@@ -1,0 +1,90 @@
+From 86a46ac0acb1c3ad333ff67e0dab99222fa969a9 Mon Sep 17 00:00:00 2001
+From: Yukari Kaname <yukari@aliciaworks.com>
+Date: Sat, 28 Nov 2026 18:54:00 +0800
+Subject: [PATCH 9/9] bcp47langs: answer the application language list
+
+The lifted UDK asks bcp47langs for the application's languages and then for their MUI
+form while it resolves resource languages. Both were stubs, and the first call aborted
+the process through the unimplemented-function path. The list is opaque to the caller --
+the value is only handed back to LanguageListAsMuiForm -- so a token and the user's
+locale are enough.
+---
+ dlls/bcp47langs/Makefile.in     |  2 ++
+ dlls/bcp47langs/bcp47langs.spec |  4 ++--
+ dlls/bcp47langs/main.c          | 26 ++++++++++++++++++++++++++
+ 3 files changed, 30 insertions(+), 2 deletions(-)
+
+diff --git a/dlls/bcp47langs/Makefile.in b/dlls/bcp47langs/Makefile.in
+index ee013421..8040b318 100644
+--- a/dlls/bcp47langs/Makefile.in
++++ b/dlls/bcp47langs/Makefile.in
+@@ -1,5 +1,7 @@
+ MODULE    = bcp47langs.dll
+ IMPORTLIB = bcp47langs
+ 
++IMPORTS = combase
++
+ SOURCES = \
+ 	main.c
+diff --git a/dlls/bcp47langs/bcp47langs.spec b/dlls/bcp47langs/bcp47langs.spec
+index 19040212..714f7d2b 100644
+--- a/dlls/bcp47langs/bcp47langs.spec
++++ b/dlls/bcp47langs/bcp47langs.spec
+@@ -31,7 +31,7 @@
+ @ stub DllGetActivationFactory
+ @ stub DllGetClassObject
+ @ stub GetApplicationLanguageOverride
+-@ stub GetApplicationLanguages
++@ stdcall GetApplicationLanguages(long long ptr)
+ @ stub GetApplicationManifestLanguages
+ @ stub GetAppropriateUserLocaleForUserLanguages
+ @ stub GetAppropriateUserPreferredAndDisplayLanguagesForUser
+@@ -53,7 +53,7 @@
+ @ stub GetUserLanguagesForUser
+ @ stub GetUserLocaleFromLanguageProfileOptOut
+ @ stub IsTransientLcid
+-@ stub LanguageListAsMuiForm
++@ stdcall LanguageListAsMuiForm(long ptr long ptr)
+ @ stub LcidFromBcp47
+ @ stub RemoveInputsForAllLanguagesInternal
+ @ stub RemoveUserLanguageInputMethods
+diff --git a/dlls/bcp47langs/main.c b/dlls/bcp47langs/main.c
+index ab0a0b59..02dee5b8 100644
+--- a/dlls/bcp47langs/main.c
++++ b/dlls/bcp47langs/main.c
+@@ -57,6 +57,32 @@ HRESULT WINAPI GetFontFallbackLanguageList(const WCHAR *lang, size_t buffer_leng
+     return S_OK;
+ }
+ 
++/* The lifted UDK asks for the application's language list and then for its MUI form
++ * while it resolves resource languages. The list is opaque to it: the only thing it does
++ * with the value is hand it back to LanguageListAsMuiForm, so a token is enough and the
++ * form is the user's locale, which is what the English resources are looked up with. */
++HRESULT WINAPI GetApplicationLanguages(ULONG flags, ULONG kind, void **list)
++{
++    TRACE("flags %#lx, kind %#lx, list %p\n", flags, kind, list);
++
++    if (!list) return E_POINTER;
++    *list = (void *)1;
++    return S_OK;
++}
++
++HRESULT WINAPI LanguageListAsMuiForm(ULONG kind, void *list, ULONG flags, HSTRING *form)
++{
++    WCHAR locale[LOCALE_NAME_MAX_LENGTH];
++    int len;
++
++    TRACE("kind %#lx, list %p, flags %#lx, form %p\n", kind, list, flags, form);
++
++    if (!form) return E_POINTER;
++    if (!GetUserDefaultLocaleName(locale, ARRAY_SIZE(locale))) return E_FAIL;
++    len = wcslen(locale);
++    return WindowsCreateString(locale, len, form);
++}
++
+ HRESULT WINAPI GetUserLanguages(WCHAR delim, HSTRING *langs)
+ {
+     FIXME("%lc, %p\n", delim, langs);
+-- 
+2.54.0 (Apple Git-157)
+

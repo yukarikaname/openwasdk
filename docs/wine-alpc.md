@@ -302,10 +302,25 @@ Two smaller gaps sat between those walls and the window:
   look-up fails and the cell size stays zero; every thread that opened a console crashed
   with a division by zero. A default text cell keeps the arithmetic defined.
 
-Past the window the application asks for `dcompi.dll`, which is ours and was not deployed;
-with it in the application directory the composition activation reaches `opencomp`, which
-is asked for the private compositor statics and fails fast on the slot it does not answer
-yet. That is the next piece of work, and it is ours rather than Wine's.
+Past the window the application asks for `dcompi.dll`, which is ours and was not deployed.
+With it in the application directory the composition activation reaches `opencomp`, and
+two more things became visible:
+
+- **`bcp47langs.GetApplicationLanguages` was a stub.** The UDK calls it (with two small
+  integers and an out pointer) and then `LanguageListAsMuiForm` with the value it got
+  back, while resolving resource languages; the stub aborted the process through the
+  unimplemented-function path. The list is opaque to the caller, so a token and the user's
+  locale are enough to satisfy both calls.
+- **The private statics slot wants one object that is two things.** XAML calls it with
+  `{75f6468d-1b8e-447c-9bc6-75fea80b5b25}`, the `IDCompositionDevice2` IID, and then
+  uses the result as a `Microsoft.UI.Composition` compositor: the same object has to
+  answer both the dcomp device interfaces and the WinRT `ICompositor` family. Handing
+  back only a dcomp device returns `S_OK` and crashes at the next dereference, and
+  handing back only our compositor fails the same way from the other side.
+
+So the next piece is a composite object in `opencomp`: a compositor whose
+`QueryInterface` forwards the dcomp device IIDs to a device created through
+`DCompositionCreateDevice3` and keeps the WinRT interfaces for itself.
 
 The order matters for what to do next: the diagnostics port is a debugging feature
 whose failure only matters because of `IFCFAILFAST`, while D2D text is on the path

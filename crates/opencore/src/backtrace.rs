@@ -10,6 +10,7 @@ use std::ptr;
 use std::sync::Once;
 
 const EXCEPTION_FAIL_FAST: u32 = 0xC000_0602;
+const EXCEPTION_ACCESS_VIOLATION: u32 = 0xC000_0005;
 const CONTINUE_SEARCH: i32 = 0;
 const FROM_ADDRESS: u32 = 4;
 const UNCHANGED_REFCOUNT: u32 = 2;
@@ -59,11 +60,15 @@ pub fn install() {
 
 unsafe extern "system" fn on_exception(info: *mut ExceptionPointers) -> i32 {
     let record = unsafe { (*info).record };
-    if record.is_null() || unsafe { (*record).code } != EXCEPTION_FAIL_FAST {
+    if record.is_null() {
+        return CONTINUE_SEARCH;
+    }
+    let code = unsafe { (*record).code };
+    if code != EXCEPTION_FAIL_FAST && code != EXCEPTION_ACCESS_VIOLATION {
         return CONTINUE_SEARCH;
     }
     eprintln!(
-        "opencore: fail fast at {:?} in pid {}",
+        "opencore: exception {code:#x} at {:?} in pid {}",
         unsafe { (*record).address },
         std::process::id()
     );
