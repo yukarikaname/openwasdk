@@ -137,7 +137,7 @@ unsafe extern "system" fn method<const SLOT: usize>(
 ) -> i32 {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!(
-            "opencomp: private Compositor statics slot {SLOT} flags {flags:?} context {context:?}"
+            "opencomp: private Compositor statics slot {SLOT} flags {flags:?} context {context:?} iid {iid:?} out {out:?}"
         );
         trace_stack();
     }
