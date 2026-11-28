@@ -45,11 +45,17 @@ replacements, not a patch queue.
 
 ## Building it
 
-`scripts/wine/build-macos.sh` configures Wine 11.22 with `--enable-archs=x86_64`: the unix
-side stays arm64, the PE side is x86_64, which is the same shape as the prebuilt Wine this
-project already uses, so the same x86_64 binaries run on both. Only the subsystems this
-project touches are enabled; everything else (`x11`, `alsa`, `dbus`, `gnutls`-adjacent
-network stacks) is configured out.
+The first build configured `--enable-archs=x86_64` on the arm64 host: an arm64 unix side
+and an x86_64 PE side. That is the Windows-on-ARM shape, and it does not run here -- the
+prebuilt Wine this project uses is x86_64 on both sides, executing under Rosetta, and the
+arm64 build died on start with no output at all. So the unix side has to be built for
+x86_64 as well, which is a cross build on this machine: `--host=x86_64-apple-darwin
+--build=aarch64-apple-darwin`, with `clang -arch x86_64` for the unix objects, the mingw
+x86_64 compiler for the PE objects, and `--with-wine-tools` pointed at the arm64 tree
+because the tools (`winebuild`, `widl`, `wmc`) have to run on the build machine.
+
+Only the subsystems this project touches are enabled; everything else (`x11`, `alsa`,
+`dbus`, the network stacks) is configured out.
 
 The source is the release tarball rather than a git checkout, because a checkout has no
 `configure` and `autoconf` is not installed here.
@@ -62,3 +68,32 @@ Wine built here is not something a user would install, and nothing in it is prop
 upstream. What it buys is the answer to one question that cannot be answered otherwise:
 with a real core underneath, which of our DLLs are still wrong, and what does the engine
 do with a core it can talk to.
+
+## What it does now (2026-11-28)
+
+The cross build completes (`Wine build complete.`) and the patch is live:
+
+    NtAlpcCreatePort=... NtAlpcConnectPort=... NtAlpcSendWaitReceivePort=...
+    NtAlpcConnectPort(NULL) = c000000d      STATUS_INVALID_PARAMETER
+                                            (was c0000002, NOT_IMPLEMENTED)
+
+`c000000d` rather than `c0000002` is the whole point: the port object now exists and
+validates its arguments. On the same Wine, the Gate B probe reaches
+`DispatcherQueueController.CreateOnCurrentThread hr=S_OK`, `Application.Start`, and then
+the engine's own `UISettings` — all of which the Wine in use before this could not do.
+
+Two things had to be fixed to get there, and neither is ALPC:
+
+- `wineboot` hangs while installing Wine Mono (`control.exe appwiz.cpl install_mono`), so
+  the prefix never finishes booting and every process waits on the boot event forever. The
+  documented workaround applies: `WINEDLLOVERRIDES="mscoree,mshtml=" wineboot -u`.
+- The build does not generate the WinRT class table (`HKLM\Software\Microsoft\WindowsRuntime\
+  ActivatableClassId`), so combase cannot resolve `Windows.Foundation.Metadata.ApiInformation`
+  and the engine fail-fasts at `RoGetActivationFactory`. The entries are produced by
+  `widl --register` at build time and something in this cross build skips them; exporting
+  the subtree from a working prefix and importing it gets past, which is enough to keep
+  experimenting but is a build gap, not a fix.
+
+The next wall is inside the engine rather than in front of it: the probe now answers a
+`QueryInterface` for `{9d4b87ff-6dca-5ce2-b69ce52705b0fef4}` with the probe's own `E_FAIL`
+and combase fail-fasts on it.

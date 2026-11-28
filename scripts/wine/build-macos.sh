@@ -1,27 +1,45 @@
 #!/bin/sh
-# Configure a patched Wine 11.22 to run x86_64 Windows binaries on macOS arm64.
+# Build a patched Wine 11.22 that runs x86_64 Windows binaries on macOS.
 #
-# The unix side is arm64 and the PE side is x86_64, which is Wine's "new wow64" and
-# what the prebuilt Wine here does. Only x86_64 is enabled: mingw-w64 provides both
-# targets, but nothing in this project needs 32-bit Windows binaries.
+# The unix side has to be x86_64 as well, not the arm64 host: macOS runs x86_64 through
+# Rosetta, and every Wine that works on this machine is x86_64 on both sides. Building the
+# unix side for the host produces the Windows-on-ARM shape instead, which links, starts,
+# and then dies with no output at all.
 #
-# usage: build-macos.sh <wine-source> [make -j level]
+# So this is a cross build: unix objects with `clang -arch x86_64`, PE objects with mingw,
+# and the build tools taken from an arm64 tree because `winebuild`, `widl` and `wmc` have to
+# run while the tree is being built for something else.
+#
+# Freetype is off: the only x86_64 one available would have to be built by hand, and the
+# text in these applications is drawn by the App SDK's DWrite, not by Wine. An out-of-tree
+# build also regenerates `server_protocol.h` from `protocol.def`, which is what an in-tree
+# build of a release tarball does not do on its own.
+#
+# usage: build-macos.sh <wine-source> <build-dir> [jobs]
 set -e
 
-src=${1:?usage: build-macos.sh <wine-source> [jobs]}
-jobs=${2:-8}
-shift 2 2>/dev/null || shift $#
-mingw=/opt/homebrew/Cellar/mingw-w64/14.0.0_3/bin
+src=${1:?usage: build-macos.sh <wine-source> <build-dir> [jobs]}
+build=${2:?usage: build-macos.sh <wine-source> <build-dir> [jobs]}
+jobs=${3:-8}
 
 # macOS ships bison 2.3; the expression parser Wine generates needs 3.0 or newer.
-PATH=/opt/homebrew/opt/bison/bin:$PATH
+PATH=/opt/homebrew/opt/bison/bin:/opt/homebrew/Cellar/mingw-w64/14.0.0_3/bin:$PATH
 export PATH
 
-cd "$src"
-./configure \
-	--enable-archs=x86_64 \
-	--with-mingw="$mingw/x86_64-w64-mingw32-gcc" \
+export CC="clang -arch x86_64"
+export CXX="clang++ -arch x86_64"
+export OBJC="clang -arch x86_64"
+export OBJCXX="clang++ -arch x86_64"
+
+mkdir -p "$build"
+cd "$build"
+
+"$src/configure" \
+	--host=x86_64-apple-darwin \
+	--build=aarch64-apple-darwin \
+	--with-wine-tools="$src" \
 	--without-x \
+	--without-freetype \
 	--without-alsa \
 	--without-capi \
 	--without-cups \
@@ -37,7 +55,6 @@ cd "$src"
 	--without-udev \
 	--without-usb \
 	--without-v4l2 \
-	--disable-tests \
-	"$@"
+	--disable-tests
 
 make -j"$jobs"
