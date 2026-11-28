@@ -147,10 +147,67 @@ place nothing on this side can patch around: `dwmcorei.dll`'s `DllMain` returns
 the lifted DWM core never initialises, XAML's composition helper keeps a null device, and
 the process faults on `[null + 0x360]`.
 
+## What `CoreUICreate` actually takes
+
+The forwarding wrapper used to declare `CoreUICreate(flags, session)` and pass both
+through to `CoreMsgCreateSession`. The first Gallery run under that wrapper showed the
+declaration was one parameter wrong:
+
+    fixme:messaging:CoreUICreate flags ac1ce7b0 session 0000000000000000 -> 0x80004003
+
+`0xac1ce7b0` is the low half of a stack address, not a flag word. Disassembling the
+caller explains it: `Microsoft.Internal.FrameworkUdk.dll` resolves the export with
+`GetProcAddress` and sets only `rcx` at the call site.
+
+    18000dd0c  movq $0x0, 0x20(%rsp)     ; session = NULL
+    18000dd15  lea  rcx, [rsp+0x20]      ; &session
+    18000dd1a  call CoreUICreate
+
+The SDK's own call site in `Microsoft.UI.Input.dll` supplies the other half of the
+pairing: `CoreMsgCreateSession(0, &session)`. So the system entry point takes the out
+pointer alone, and the session creator takes a flags word first. Forwarding the single
+argument with flags zero gives what the SDK itself does, and the session is created:
+
+    fixme:messaging:CoreUICreate session 000000CAAD78FDA0 -> 0
+
+With a real session the Gallery moves one step further and fails on `0x80004001`,
+`E_NOTIMPL`, from the same XAML frame. That is a different door, and the stack names it
+before any guessing starts -- see the note on `RoFailFastWithErrorContextInternal2`
+below.
+
+## Naming the failure
+
+`RoFailFastWithErrorContextInternal2` is where WinUI 3 ends an unrecoverable path, and
+Wine's stub printed the code and nothing else, so every failure looked like whatever
+logged last. Two things make it name itself:
+
+A handler armed inside the replacement DLL is not enough: the process that raises the
+fail fast is not the one that asked for the `CoreApplication` factory, so `OPENCOMP_BT`
+never fired. The stub in Wine's `combase` always runs, and its dump prints the raising
+thread's frames as `module+offset`:
+
+    combase.dll+0x12fe2
+    Microsoft.ui.xaml.dll+0x3d4fa9
+    Microsoft.ui.xaml.dll+0x363af0
+    Microsoft.ui.xaml.dll+0x16cf64
+    Microsoft.ui.xaml.dll+0x151cad
+    coreclr.dll+0x183b03
+
+Two instructions of arithmetic turn that into the failing call: `Microsoft.ui.xaml.dll`
+loads at its preferred base `0x180000000`, so `0x151cad` is the instruction after
+`call 0x18016cc58`, and the frame above it is a branch the same function takes on a
+failed `HRESULT`. That is how the `E_NOTIMPL` was placed without any symbols.
+
+Symbols would still be better. The PDB key is in the image's CodeView record --
+`Microsoft.ui.xaml.dll` asks for `Microsoft.ui.xaml.pdb` with key
+`6411D3D9B984BE17D2E95023B4EBD0022` -- but the public symbol server answers 404 for that
+name, so offsets it is.
+
 ## Why the real CoreUI is not a small patch either
 
-Wine's `CoreMessaging!CoreUICreate` now forwards to the SDK's `CoreMsgCreateSession`, and with
-ALPC in place that call no longer aborts -- it blocks. What it waits for is the genuine
+Wine's `CoreMessaging!CoreUICreate` now forwards to the SDK's `CoreMsgCreateSession`. Called
+with the argument list the lifted layer uses it returns a session rather than an error, and
+the next call on that session is what asks for the rest. What that rest needs is the genuine
 `CoreMessagingRegistrar` service, and wine-uwp's own notes list what hosting it needs beyond
 ALPC: `WaitServiceState`, `QueryTransientObjectSecurityDescriptor`, the user32 ordinals
 `NtUserInitThreadCoreMessagingIocp2`/`DrainThreadCoreMessagingCompletions2`, and combase's
