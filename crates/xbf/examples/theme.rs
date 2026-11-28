@@ -150,13 +150,3 @@ fn visit(file: &Xbf, element: &Element, wanted: &str) {
         visit(file, child, wanted);
     }
 }
-
-/// The first deferred stream this element carries, wherever it appears.
-fn deferred_stream(element: &Element) -> Option<usize> {
-    for property in &element.properties {
-        if let Value::Deferred { substream } = &property.value {
-            return Some(*substream as usize);
-        }
-    }
-    element.children.iter().find_map(deferred_stream)
-}

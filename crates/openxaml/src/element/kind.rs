@@ -122,6 +122,30 @@ pub enum Kind {
     CommandBarFlyout,
 }
 
+/// What a kind means to layout: a panel, a content host, text, or nothing visual.
+///
+/// The layout pass matches this, not the two hundred kinds, so adding a control is a name
+/// in one table rather than an arm in every pass.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Role {
+    /// A panel with its own measure/arrange.
+    Panel(Panel),
+    /// One child inside border thickness and padding.
+    ContentHost,
+    /// Paints a string; children are not laid out.
+    Text,
+    /// Nothing below it is arranged, painted or composed.
+    NonVisual,
+}
+
+/// The panels this crate actually lays out; every other panel is a content host.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Panel {
+    Stack,
+    Grid,
+    Canvas,
+}
+
 impl Kind {
     /// The WinRT name used by XBF and `IXamlMetadataProvider`.
     pub const fn type_name(self) -> &'static str {

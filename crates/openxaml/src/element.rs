@@ -36,8 +36,10 @@ pub use crate::value::{
 /// the port will add variants one at a time, and every layout pass has to make
 /// a decision for each one.
 pub use kind::Kind;
+pub use role::{Panel, Role};
 
 mod kind;
+mod role;
 
 /// One node of the XAML tree.
 #[derive(Clone, Debug, PartialEq)]

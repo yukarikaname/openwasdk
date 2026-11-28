@@ -6,7 +6,7 @@ use opencomp_core::Rect;
 use super::border::{arrange_border, measure_border};
 use super::stack::{arrange_stack, horizontal_box, measure_stack, vertical_box};
 use super::{Layout, LayoutError, Size, canvas, grid, layout_round};
-use crate::element::{Element, Kind, Length, Thickness};
+use crate::element::{Element, Length, Panel, Role, Thickness};
 
 /// Measure an element, applying the outer `FrameworkElement` rules and then the
 /// rule for its kind.
@@ -61,115 +61,19 @@ pub fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> 
 }
 
 fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutError> {
-    match element.kind() {
-        Kind::TextBlock => Ok(measure_text(element)),
-        // A content host (Page, UserControl, Window) carries the same chrome: border
-        // thickness and padding deflate the one child, and nothing else is laid out.
-        Kind::Border
-        | Kind::Page
-        | Kind::UserControl
-        | Kind::Window
-        | Kind::ContentDialog
-        | Kind::Button
-        | Kind::ScrollViewer
-        | Kind::TextBox
-        | Kind::RichTextBlock
-        | Kind::InfoBar
-        | Kind::TitleBar
-        | Kind::SplitButton
-        | Kind::ContentPresenter
-        | Kind::PasswordBox
-        | Kind::SymbolIcon
-        | Kind::Viewbox
-        | Kind::MenuBar
-        | Kind::MenuBarItem
-        | Kind::VariableSizedWrapGrid
-        | Kind::MediaPlayerElement
-        | Kind::TreeView
-        | Kind::TreeViewItem
-        | Kind::ToggleSplitButton
-        | Kind::ItemsRepeaterScrollHost
-        | Kind::Expander
-        | Kind::ProgressRing
-        | Kind::SelectorBar
-        | Kind::Unrealized
-        | Kind::ColorPicker
-        | Kind::PersonPicture
-        | Kind::ItemsControl
-        | Kind::WrapPanel
-        | Kind::WebView2
-        | Kind::UniformGrid
-        | Kind::NavigationView
-        | Kind::NavigationViewItem
-        | Kind::DropDownButton
-        | Kind::AppBarButton
-        | Kind::AppBarToggleButton
-        | Kind::Frame
-        | Kind::FlipView
-        | Kind::ProgressBar
-        | Kind::TeachingTip
-        | Kind::CommandBar
-        | Kind::MenuFlyout
-        | Kind::MenuFlyoutItem
-        | Kind::TabViewItem
-        | Kind::NumberBox
-        | Kind::RadioButtons
-        | Kind::Slider
-        | Kind::BreadcrumbBar
-        | Kind::RelativePanel
-        | Kind::SelectorBarItem
-        | Kind::AutoSuggestBox
-        | Kind::ListView
-        | Kind::GridView
-        | Kind::TabView
-        | Kind::ItemsRepeater
-        | Kind::ScrollView
-        | Kind::DatePicker
-        | Kind::RichEditBox
-        | Kind::CheckBox
-        | Kind::Image
-        | Kind::ComboBox
-        | Kind::ComboBoxItem
-        | Kind::ListViewItem
-        | Kind::GridViewItem
-        | Kind::ToggleSwitch
-        | Kind::RadioButton
-        | Kind::HyperlinkButton
-        | Kind::RepeatButton
-        | Kind::ToggleButton => measure_border(element, available),
-        // A resource dictionary and an Application are not part of the visual tree.
-        Kind::ResourceDictionary
-        | Kind::Application
-        | Kind::Style
-        | Kind::DataTemplate
-        | Kind::Paragraph
-        | Kind::Run
-        | Kind::Span
-        | Kind::MicaBackdrop
-        | Kind::SystemBackdropElement
-        | Kind::FontIcon
-        | Kind::Double
-        | Kind::String
-        | Kind::Boolean
-        | Kind::Thickness
-        | Kind::Ellipse
-        | Kind::Rectangle
-        | Kind::Line
-        | Kind::ToolTip
-        | Kind::Binding
-        | Kind::Flyout
-        | Kind::ImplicitAnimationSet
-        | Kind::MenuFlyoutSeparator
-        | Kind::ImageIconSource
-        | Kind::UniformGridLayout
-        | Kind::SymbolIconSource
-        | Kind::CommandBarFlyout
-        | Kind::ItemsPanelTemplate
-        | Kind::ControlTemplate
-        | Kind::DataTemplateSelector => Ok(Size::new(0.0, 0.0)),
-        Kind::StackPanel => measure_stack(element, available),
-        Kind::Grid => grid::measure(element, available),
-        Kind::Canvas => canvas::measure_canvas(element, available),
+    match element.kind().role() {
+        Role::Text => Ok(measure_text(element)),
+        // A panel measures its children its own way.
+        Role::Panel(panel) => match panel {
+            Panel::Stack => measure_stack(element, available),
+            Panel::Grid => grid::measure(element, available),
+            Panel::Canvas => canvas::measure_canvas(element, available),
+        },
+        // A content host carries only chrome: border thickness and padding deflate the one
+        // child, and nothing else is laid out.
+        Role::ContentHost => measure_border(element, available),
+        // A resource dictionary, a style, an inline: nothing visual below it.
+        Role::NonVisual => Ok(Size::new(0.0, 0.0)),
     }
 }
 
@@ -228,113 +132,16 @@ pub(crate) fn arrange_with_desired(
 }
 
 fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, LayoutError> {
-    match element.kind() {
-        Kind::TextBlock => Ok(Vec::new()),
-        Kind::Border
-        | Kind::Page
-        | Kind::UserControl
-        | Kind::Window
-        | Kind::ContentDialog
-        | Kind::Button
-        | Kind::ScrollViewer
-        | Kind::TextBox
-        | Kind::RichTextBlock
-        | Kind::InfoBar
-        | Kind::TitleBar
-        | Kind::SplitButton
-        | Kind::ContentPresenter
-        | Kind::PasswordBox
-        | Kind::SymbolIcon
-        | Kind::Viewbox
-        | Kind::MenuBar
-        | Kind::MenuBarItem
-        | Kind::VariableSizedWrapGrid
-        | Kind::MediaPlayerElement
-        | Kind::TreeView
-        | Kind::TreeViewItem
-        | Kind::ToggleSplitButton
-        | Kind::ItemsRepeaterScrollHost
-        | Kind::Expander
-        | Kind::ProgressRing
-        | Kind::SelectorBar
-        | Kind::Unrealized
-        | Kind::ColorPicker
-        | Kind::PersonPicture
-        | Kind::ItemsControl
-        | Kind::WrapPanel
-        | Kind::WebView2
-        | Kind::UniformGrid
-        | Kind::NavigationView
-        | Kind::NavigationViewItem
-        | Kind::DropDownButton
-        | Kind::AppBarButton
-        | Kind::AppBarToggleButton
-        | Kind::Frame
-        | Kind::FlipView
-        | Kind::ProgressBar
-        | Kind::TeachingTip
-        | Kind::CommandBar
-        | Kind::MenuFlyout
-        | Kind::MenuFlyoutItem
-        | Kind::TabViewItem
-        | Kind::NumberBox
-        | Kind::RadioButtons
-        | Kind::Slider
-        | Kind::BreadcrumbBar
-        | Kind::RelativePanel
-        | Kind::SelectorBarItem
-        | Kind::AutoSuggestBox
-        | Kind::ListView
-        | Kind::GridView
-        | Kind::TabView
-        | Kind::ItemsRepeater
-        | Kind::ScrollView
-        | Kind::DatePicker
-        | Kind::RichEditBox
-        | Kind::CheckBox
-        | Kind::Image
-        | Kind::ComboBox
-        | Kind::ComboBoxItem
-        | Kind::ListViewItem
-        | Kind::GridViewItem
-        | Kind::ToggleSwitch
-        | Kind::RadioButton
-        | Kind::HyperlinkButton
-        | Kind::RepeatButton
-        | Kind::ToggleButton => arrange_border(element, content),
+    match element.kind().role() {
+        Role::Text => Ok(Vec::new()),
+        Role::Panel(panel) => match panel {
+            Panel::Stack => arrange_stack(element, content),
+            Panel::Grid => grid::arrange(element, content),
+            Panel::Canvas => canvas::arrange_canvas(element, content),
+        },
+        Role::ContentHost => arrange_border(element, content),
         // Nothing below a non-visual host is arranged, so nothing of it is composed.
-        Kind::ResourceDictionary
-        | Kind::Application
-        | Kind::Style
-        | Kind::DataTemplate
-        | Kind::Paragraph
-        | Kind::Run
-        | Kind::Span
-        | Kind::MicaBackdrop
-        | Kind::SystemBackdropElement
-        | Kind::FontIcon
-        | Kind::Double
-        | Kind::String
-        | Kind::Boolean
-        | Kind::Thickness
-        | Kind::Ellipse
-        | Kind::Rectangle
-        | Kind::Line
-        | Kind::ToolTip
-        | Kind::Binding
-        | Kind::Flyout
-        | Kind::ImplicitAnimationSet
-        | Kind::MenuFlyoutSeparator
-        | Kind::ImageIconSource
-        | Kind::UniformGridLayout
-        | Kind::SymbolIconSource
-        | Kind::CommandBarFlyout
-        | Kind::ItemsPanelTemplate
-        | Kind::ControlTemplate
-        | Kind::DataTemplateSelector => Ok(Vec::new()),
-        Kind::StackPanel => arrange_stack(element, content),
-        Kind::Grid => grid::arrange(element, content),
-        Kind::Canvas => canvas::arrange_canvas(element, content),
+        Role::NonVisual => Ok(Vec::new()),
     }
 }
 
