@@ -283,7 +283,10 @@ impl Kind {
             "ImageIconSource" | "Microsoft.UI.Xaml.Media.ImageIconSource" => {
                 Some(Self::ImageIconSource)
             }
-            "ImplicitAnimationSet" => Some(Self::ImplicitAnimationSet),
+            "Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
+            "ImplicitAnimationSet" | "Microsoft.UI.Xaml.Media.ImplicitAnimationSet" => {
+                Some(Self::ImplicitAnimationSet)
+            }
             _ => None,
         }
     }
