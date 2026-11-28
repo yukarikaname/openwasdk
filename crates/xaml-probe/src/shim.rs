@@ -129,8 +129,11 @@ unsafe extern "system" fn activation_factory(
         let iid = unsafe { *iid };
         let tail: String = iid.data4.iter().map(|byte| format!("{byte:02x}")).collect();
         eprintln!(
-            "xaml-probe: asking for {{{:08x}-{:04x}-{:04x}-{tail}}}",
-            iid.data1, iid.data2, iid.data3
+            "xaml-probe: {} wants {{{:08x}-{:04x}-{:04x}-{tail}}}",
+            class_name(class),
+            iid.data1,
+            iid.data2,
+            iid.data3
         );
     }
     let original: Original =
