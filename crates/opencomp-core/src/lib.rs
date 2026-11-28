@@ -16,9 +16,9 @@ mod host;
 #[cfg(feature = "preview")]
 mod render;
 #[cfg(feature = "preview")]
-mod texture;
-#[cfg(feature = "preview")]
 pub mod text;
+#[cfg(feature = "preview")]
+mod texture;
 
 pub use animation::{Easing, Frame, Keyframes};
 pub use color::{rgba_from_srgb_bytes, srgb, srgb_bytes_from_rgba, srgb_from_linear};

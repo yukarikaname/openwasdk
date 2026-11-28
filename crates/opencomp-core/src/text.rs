@@ -40,7 +40,9 @@ impl Engine {
             stretch: fontdb::Stretch::Normal,
             style: fontdb::Style::Normal,
         };
-        let id = db.query(&query).or_else(|| db.faces().next().map(|face| face.id))?;
+        let id = db
+            .query(&query)
+            .or_else(|| db.faces().next().map(|face| face.id))?;
         let (data, index) = db.with_face_data(id, |data, index| (data.to_vec(), index))?;
         let font = FontVec::try_from_vec_and_index(data, index).ok()?;
         Some(Engine {
@@ -66,14 +68,11 @@ impl Engine {
 
         let mut pixels = vec![0u8; (width * height * 4) as usize];
         for (id, x) in advances {
-            let Some(outline) = self
-                .font
-                .outline_glyph(ab_glyph::Glyph {
-                    id,
-                    scale,
-                    position: point(x, ascent),
-                })
-            else {
+            let Some(outline) = self.font.outline_glyph(ab_glyph::Glyph {
+                id,
+                scale,
+                position: point(x, ascent),
+            }) else {
                 continue;
             };
             let bounds = outline.px_bounds();
@@ -123,4 +122,35 @@ pub fn rasterize(text: &str, px: f32, color: [f32; 4]) -> Option<Raster> {
         height: cached.height,
         pixels: cached.pixels.clone(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::rasterize;
+
+    #[test]
+    fn a_string_becomes_pixels_with_ink() {
+        let Some(raster) = rasterize("Hello", 24.0, [0.0, 0.0, 0.0, 1.0]) else {
+            // No system font on this machine: the renderer falls back to no text.
+            return;
+        };
+        assert!(raster.width > 10, "width {}", raster.width);
+        assert!(raster.height > 10, "height {}", raster.height);
+        let inked = raster
+            .pixels
+            .chunks_exact(4)
+            .filter(|pixel| pixel[3] > 0)
+            .count();
+        assert!(inked > 100, "only {inked} covered pixels");
+    }
+
+    #[test]
+    fn the_same_string_is_rasterised_once() {
+        let Some(first) = rasterize("cached", 16.0, [0.0, 0.0, 0.0, 1.0]) else {
+            return;
+        };
+        let second = rasterize("cached", 16.0, [0.0, 0.0, 0.0, 1.0]).expect("cached");
+        assert_eq!(first.width, second.width);
+        assert_eq!(first.pixels, second.pixels);
+    }
 }

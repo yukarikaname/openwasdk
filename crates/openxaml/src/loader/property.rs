@@ -63,8 +63,8 @@ pub(super) fn load_property_with(
              * (ExampleContent on the Gallery's own control). Only an element value is a
              * child; a string such as ToggleSwitch.OnContent is state and is dropped.
              */
-            let content_style = matches!(member, "Child" | "Children" | "Items")
-                || member.ends_with("Content");
+            let content_style =
+                matches!(member, "Child" | "Children" | "Items") || member.ends_with("Content");
             if content_style {
                 for child in property_elements(property)? {
                     element.push(load_element(&child, controls, depth)?);
@@ -324,10 +324,11 @@ pub(super) fn load_property_with(
                  * track collection that is not a list, text that is not a string -- leaves
                  * the property at its default instead of failing the page.
                  */
-                Err(_) if matches!(
-                    accepted.value_type,
-                    ValueType::SolidColorBrush | ValueType::GridDefinitions | ValueType::Text
-                ) =>
+                Err(_)
+                    if matches!(
+                        accepted.value_type,
+                        ValueType::SolidColorBrush | ValueType::GridDefinitions | ValueType::Text
+                    ) =>
                 {
                     return Ok(());
                 }
