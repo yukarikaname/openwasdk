@@ -391,9 +391,13 @@ impl<'a> Builder<'a> {
                     Some(Value::Element(extension)) => extension.type_name.clone(),
                     _ => "markup extension".to_string(),
                 };
-                self.set_property(index, kind, name, namespace, Value::Extension {
-                    name: extension,
-                })?;
+                self.set_property(
+                    index,
+                    kind,
+                    name,
+                    namespace,
+                    Value::Extension { name: extension },
+                )?;
             }
 
             /*

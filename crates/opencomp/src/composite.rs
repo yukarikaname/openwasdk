@@ -59,8 +59,6 @@ pub fn create(compositor: IUnknown, device: *mut c_void) -> *mut c_void {
     Box::into_raw(composite).cast()
 }
 
-
-
 /// A refusal with a name: every slot logs which one was called and reports E_NOTIMPL.
 /// Returning this instead of E_NOINTERFACE keeps the caller alive long enough to say what
 /// it wanted, which is the only way to learn an interface nothing documents.
@@ -77,16 +75,22 @@ pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
         thread: u32,
         tail: [u8; 0xc],
     }
-    type Slot = unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32;
+    type Slot =
+        unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void, *mut c_void) -> i32;
     #[repr(C)]
     struct StubVtbl {
-        query_interface: unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32,
+        query_interface:
+            unsafe extern "system" fn(*mut c_void, *const GUID, *mut *mut c_void) -> i32,
         add_ref: unsafe extern "system" fn(*mut c_void) -> u32,
         release: unsafe extern "system" fn(*mut c_void) -> u32,
         slots: [Slot; 32],
     }
     const REFUSE: i32 = 0x8000_4001u32 as i32;
-    unsafe extern "system" fn stub_qi(this: *mut c_void, iid: *const GUID, out: *mut *mut c_void) -> i32 {
+    unsafe extern "system" fn stub_qi(
+        this: *mut c_void,
+        iid: *const GUID,
+        out: *mut *mut c_void,
+    ) -> i32 {
         if iid.is_null() || out.is_null() {
             return E_POINTER;
         }
@@ -100,7 +104,10 @@ pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
         // next interface leaves it with a null it dereferences. Answering with ourselves
         // keeps the object alive and records the slots that follow.
         if std::env::var_os("OPENCOMP_TRACE").is_some() {
-            eprintln!("opencomp: stub {:?} also asked for {iid:?}", unsafe { &*(this as *const Stub) }.iid);
+            eprintln!(
+                "opencomp: stub {:?} also asked for {iid:?}",
+                unsafe { &*(this as *const Stub) }.iid
+            );
         }
         unsafe { stub_add_ref(this) };
         unsafe { *out = this };
@@ -180,14 +187,38 @@ pub(crate) fn private_stub(iid: GUID) -> *mut c_void {
         add_ref: stub_add_ref,
         release: stub_release,
         slots: [
-            stub_iids, stub_class, stub_trust, stub_slot::<3>,
-            stub_slot::<4>, stub_slot::<5>, stub_slot::<6>, stub_slot::<7>,
-            stub_slot::<8>, stub_slot::<9>, stub_slot::<10>, stub_slot::<11>,
-            stub_slot::<12>, stub_slot::<13>, stub_slot::<14>, stub_slot::<15>,
-            stub_slot::<16>, stub_slot::<17>, stub_slot::<18>, stub_slot::<19>,
-            stub_slot::<20>, stub_slot::<21>, stub_slot::<22>, stub_slot::<23>,
-            stub_slot::<24>, stub_slot::<25>, stub_slot::<26>, stub_slot::<27>,
-            stub_slot::<28>, stub_slot::<29>, stub_slot::<30>, stub_slot::<31>,
+            stub_iids,
+            stub_class,
+            stub_trust,
+            stub_slot::<3>,
+            stub_slot::<4>,
+            stub_slot::<5>,
+            stub_slot::<6>,
+            stub_slot::<7>,
+            stub_slot::<8>,
+            stub_slot::<9>,
+            stub_slot::<10>,
+            stub_slot::<11>,
+            stub_slot::<12>,
+            stub_slot::<13>,
+            stub_slot::<14>,
+            stub_slot::<15>,
+            stub_slot::<16>,
+            stub_slot::<17>,
+            stub_slot::<18>,
+            stub_slot::<19>,
+            stub_slot::<20>,
+            stub_slot::<21>,
+            stub_slot::<22>,
+            stub_slot::<23>,
+            stub_slot::<24>,
+            stub_slot::<25>,
+            stub_slot::<26>,
+            stub_slot::<27>,
+            stub_slot::<28>,
+            stub_slot::<29>,
+            stub_slot::<30>,
+            stub_slot::<31>,
         ],
     });
     let boxed = Box::new(Stub {

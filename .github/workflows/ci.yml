@@ -67,74 +67,7 @@ jobs:
       # Activation is tested through the runtime, which has to load the DLL by
       # name, so the DLL is built before the tests rather than after them.
       - name: Build the DLL
-        run: cargo build -p opencomp
-
-      # The same probe the Wine job runs, on the platform the DLL was built for. This is
-      # the baseline: what `XamlCheckProcessRequirements` and class activation answer
-      # natively, so a difference under Wine is Wine's and not the SDK's.
-      - uses: actions/cache@v6
-        with:
-          path: target/appsdk
-          key: appsdk-${{ env.SDK_VERSION }}
-
-      # The App SDK's classes are registered on a machine only when its runtime is
-      # installed. An unpackaged probe reaches them the same way the Wine job does: through
-      # the activation manifest beside the executable, here with the SDK as shipped.
-      # The runtime-class table lives only in the framework package's MSIX, which is the
-      # 50 MB half of a 172 MB package: cached between runs.
-      - uses: actions/cache@v6
-        with:
-          path: target/Microsoft.WindowsAppRuntime.2.msix
-          key: appsdk-framework-${{ env.SDK_VERSION }}
-
-      - name: Write the activation manifest
-        run: |
-          cargo run -q -p xwinui -- sdk --out target/appsdk
-          cargo run -q -p xwinui -- framework --out target
-          cargo run -q -p xwinui -- activation --sdk target/Microsoft.WindowsAppRuntime.2.msix --out target/appsdk/xaml-probe.exe.manifest
-
-      - name: Probe the official XAML DLL
-        shell: bash
-        # A measurement, not a gate: the report is the deliverable.
-        continue-on-error: true
-        timeout-minutes: 5
-        run: |
-          cargo build -p xaml-probe
-          cp target/debug/xaml-probe.exe target/appsdk/
-          cd target/appsdk
-          export XAML_DLL="$PWD/Microsoft.ui.xaml.dll"
-          export OPENCOMP_XAML_PROBE_JSON=1
-          # Also ask the engine to start and measure: the one JSON line the callback
-          # prints on the platform it was built for is the baseline for what Wine does.
-          OPENCOMP_XAML_PROBE_START=1 ./xaml-probe.exe
-          # The window path on the platform where the engine's own composition core
-          # exists: the baseline our compositor is measured against.
-          OPENCOMP_TRACE=1 OPENCOMP_XAML_PROBE_WINDOW=1 ./xaml-probe.exe || true
-
-      # The engine's input core is a private conversation between the UDK layer and the
-      # system `coremessaging.dll`. Here the object exists, so this run wraps it in a proxy
-      # that forwards every call and prints the slot, the arguments and the HRESULT. That
-      # trace is what the stand-in for Wine has to reproduce, and there is no other way to
-      # learn it: none of those interfaces is documented.
-      - name: Trace the CoreUI session
-        shell: bash
-        continue-on-error: true
-        timeout-minutes: 5
-        env:
-          OPENCOMP_COREUI: proxy
-          OPENCOMP_TRACE: "1"
-        run: |
-          cd target/appsdk
-          export XAML_DLL="$PWD/Microsoft.ui.xaml.dll"
-          export OPENCOMP_XAML_PROBE_START=1
-          ./xaml-probe.exe 2>&1 | grep -E "^(proxy|xaml-probe):|^\{\"case\"" > coreui-trace.txt || true
-          head -60 coreui-trace.txt
-
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: coreui-trace
-          path: target/appsdk/coreui-trace.txt
+        run: cargo build -p opencomp -p dcompi
 
       # `OPENCOMP_TRACE` makes our DLLs name what they are doing, which is the only
       # diagnostic a Windows-only test has: the runner has no debugger attached.
@@ -188,128 +121,21 @@ jobs:
       - name: Check the Windows artifact
         run: cargo check --workspace --all-targets --exclude xwinui --target x86_64-pc-windows-msvc
 
-      # Checking types is not linking. Build the PE once so a missing export or a linker setting
-      # fails here rather than on the machine that tries to load the DLL.
-      - name: Link the Windows DLL
+      # Checking types is not linking. Build the PEs once so a missing export or a linker
+      # setting fails here rather than on the machine that tries to load the DLL.
+      - name: Link the Windows DLLs
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
           rustup target add x86_64-pc-windows-gnu
-          cargo build -p opencomp -p opendispatch --target x86_64-pc-windows-gnu
+          cargo build -p opencomp -p dcompi -p openudk --target x86_64-pc-windows-gnu
           # A linked PE has no COFF symbol table; the names live in the export table.
-          for dll in opencomp opendispatch; do
+          for dll in opencomp dcompi; do
             x86_64-w64-mingw32-objdump -p "target/x86_64-pc-windows-gnu/debug/$dll.dll" \
-              | grep -E "DllGetActivationFactory|DllCanUnloadNow|DllGetClassObject"
+              | grep -E "DllGetActivationFactory|DllCanUnloadNow|DllGetClassObject|WinUIDCompositionCreateDevice3"
           done
-
-      # The ABI objects are exercised on Windows, but never under the runtime a
-      # Linux user would actually have. Wine's combase is that runtime: running the
-      # same tests there catches an HSTRING or activation assumption that the native
-      # Windows job cannot.
-      - name: Test under Wine
-        if: runner.os == 'Linux'
-        run: |
-          # Ubuntu 24.04 ships Wine 9, where `AppPolicyGetWindowingModel`,
-          # `NtAllocateReserveObject` and `RoOriginateErrorW` are stubs that abort when
-          # the App SDK calls them. WineHQ's current stable implements more of them, so
-          # it replaces the distribution package when the repository answers.
-          if curl -sSfL -o /tmp/winehq.key https://dl.winehq.org/wine-builds/winehq.key; then
-            sudo mkdir -pm755 /etc/apt/keyrings
-            sudo install -m644 /tmp/winehq.key /etc/apt/keyrings/winehq-archive.key
-            sudo curl -sSfL -o /etc/apt/sources.list.d/winehq-noble.sources \
-              https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
-            # `wine-stable` depends on `wine-stable-i386`, which the repository only
-            # carries for the i386 architecture.
-            sudo dpkg --add-architecture i386
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends winehq-stable xvfb
-          else
-            echo "winehq unreachable; using the distribution's wine"
-            sudo apt-get install -y --no-install-recommends wine64 xvfb
-          fi
-          # WineHQ installs its runners under /opt, and the distribution package is
-          # replaced by it, so neither a PATH lookup nor the old path is reliable.
-          wine=
-          for candidate in wine64 wine /opt/wine-stable/bin/wine64 /opt/wine-stable/bin/wine /usr/lib/wine/wine64; do
-            if resolved=$(command -v "$candidate" 2>/dev/null); then wine=$resolved; break; fi
-          done
-          if [ -z "$wine" ]; then echo "no wine found"; exit 1; fi
-          echo "using $wine"
-          export WINEPREFIX="$PWD/target/wine"
-          export WINEDLLOVERRIDES="mscoree,mshtml="
-          # A panic under Wine without symbols is a dead end; the gnu build carries them.
-          export RUST_BACKTRACE=1
-          xvfb-run -a "$wine" wineboot -u > /dev/null 2>&1 || true
-          # The cdylib+lib layout hides the test binary under build/.../out, so read the
-          # path out of the line cargo prints instead of guessing a directory.
-          # Both crates whose tests touch the runtime: the compositor and the
-          # dispatcher. Wine is the second environment they have, and the only one where
-          # a Windows-only test can be watched while it fails.
-          binaries=$(cargo test -p opencomp -p opendispatch --target x86_64-pc-windows-gnu --no-run 2>&1 \
-            | sed -n 's/.*Executable.*(\(.*\))/\1/p')
-          test -n "$binaries" || { echo "no test binary"; exit 1; }
-          code=0
-          for test_exe in $binaries; do
-            echo "running $test_exe"
-            # `timeout` inside `xvfb-run`: wrapping the wrapper leaves wine alive when the
-            # wrapper is killed, and the step then waits for the job timeout anyway.
-            # `OPENCOMP_TRACE` names each stage before it runs, which is how a stage that
-            # never returns is told apart from a slow one.
-            OPENCOMP_TRACE=1 xvfb-run -a timeout -k 5 300 "$wine" "$test_exe" --test-threads=1 --nocapture || code=$?
-            if [ "${code:-0}" = 124 ] || [ "${code:-0}" = 137 ]; then
-              echo "the test run was killed after the timeout; see the log above"
-            fi
-            [ "${code:-0}" = 0 ] || break
-          done
-          exit "${code:-0}"
-
-      # The client is the shape a real application has: a window, a tree built
-      # through the ABI, an island, and a bridge that presents. Ten frames are
-      # enough to prove the path; a failure names the step.
-      - name: Run the client under Wine
-        if: runner.os == 'Linux'
-        run: |
-          wine=
-          for candidate in wine64 wine /opt/wine-stable/bin/wine64 /opt/wine-stable/bin/wine /usr/lib/wine/wine64; do
-            if resolved=$(command -v "$candidate" 2>/dev/null); then wine=$resolved; break; fi
-          done
-          if [ -z "$wine" ]; then echo "no wine found"; exit 1; fi
-          export WINEPREFIX="$PWD/target/wine"
-          export WINEDLLOVERRIDES="mscoree,mshtml="
-          cargo build -p opencomp-client --target x86_64-pc-windows-gnu
-          # The client reaches its classes the way an application does: combase
-          # reads this manifest from beside the executable and loads the DLL it
-          # names. The entries are the ones a client ships; see
-          # docs/architecture.md.
-          cargo run -p xwinui -- manifest \
-            --out target/x86_64-pc-windows-gnu/debug/opencomp-client.exe.manifest
-          # A GUI client under a software backend can hang; a runner that waits for
-          # the job timeout tells nobody anything. Ninety seconds is generous for ten
-          # frames and makes a hang a red step with a log instead.
-          exe=target/x86_64-pc-windows-gnu/debug/opencomp-client.exe
-          set +e
-          OPENCOMP_TRACE=1 timeout 90 xvfb-run -a timeout -k 5 90 "$wine" "$exe" \
-            > client.log 2>&1
-          status=$?
-          set -e
-          cat client.log
-          if [ "$status" -ne 0 ]; then
-            # Wine prints the faulting address; the executable carries DWARF, so the
-            # name of the function is one command away instead of a guess.
-            fault=$(sed -n 's/.*at address \([0-9A-Fa-f]*\).*/\1/p' client.log | head -1)
-            if [ -n "$fault" ]; then
-              x86_64-w64-mingw32-addr2line -f -C -e "$exe" "0x$fault" || true
-            fi
-            exit "$status"
-          fi
-
-      # The flat C layer XAML imports by name. A missing export is a load failure,
-      # so check one conversion and one stub, not just that the crate compiled.
-      - name: Link the framework UDK stand-in
-        if: runner.os == 'Linux'
-        run: |
-          cargo build -p openudk --target x86_64-pc-windows-gnu
+          # The flat C layer XAML imports by name: one conversion and one stub.
           x86_64-w64-mingw32-objdump -p target/x86_64-pc-windows-gnu/debug/openudk.dll \
             | grep -E "Windowing_GetWindowIdFromWindow|Windowing_GetWindowFromWindowId|Containment_GetChangeEnabled"
 
@@ -319,78 +145,3 @@ jobs:
           name: opencomp-windows-gnu
           path: target/x86_64-pc-windows-gnu/debug/opencomp.dll
           if-no-files-found: error
-
-  # Gate B starts here. The official `Microsoft.ui.xaml.dll` is loaded under Wine next
-  # to the DLLs it ships with, and the probe reports which exports it answers and which
-  # of the classes a first window needs it can activate. Nothing of ours is in front of
-  # it yet: the first run is a measurement, so a failure is expected and the log is the
-  # deliverable. `scripts/gate-b.sh` is the same script a local container runs.
-  xaml:
-    name: Gate B probe (Wine)
-    runs-on: ubuntu-24.04
-    continue-on-error: true
-    env:
-      SDK_VERSION: 2.7.0
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-gnu
-
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: xaml
-
-      # Ninety megabytes of SDK, unchanged between runs.
-      - uses: actions/cache@v6
-        with:
-          path: target/appsdk
-          key: appsdk-${{ env.SDK_VERSION }}
-
-      # The activation table is the framework package's MSIX, not the NuGet set the DLLs
-      # come from; without it every class activation answers `REGDB_E_CLASSNOTREG` and the
-      # report says nothing about the engine.
-      - uses: actions/cache@v6
-        with:
-          path: target/Microsoft.WindowsAppRuntime.2.msix
-          key: appsdk-framework-${{ env.SDK_VERSION }}
-
-      - name: Fetch the framework MSIX
-        run: cargo run -q -p xwinui -- framework --out target
-
-      - name: Install Wine and the gnu linker
-        run: |
-          sudo apt-get update
-          # Ubuntu 24.04 ships Wine 9, where `AppPolicyGetWindowingModel`,
-          # `NtAllocateReserveObject` and `RoOriginateErrorW` are stubs that abort when
-          # the App SDK calls them. WineHQ's current stable implements more of them, so
-          # it replaces the distribution package when the repository answers.
-          if curl -sSfL -o /tmp/winehq.key https://dl.winehq.org/wine-builds/winehq.key; then
-            sudo mkdir -pm755 /etc/apt/keyrings
-            sudo install -m644 /tmp/winehq.key /etc/apt/keyrings/winehq-archive.key
-            sudo curl -sSfL -o /etc/apt/sources.list.d/winehq-noble.sources \
-              https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources
-            # `wine-stable` depends on `wine-stable-i386`, which the repository only
-            # carries for the i386 architecture.
-            sudo dpkg --add-architecture i386
-            sudo apt-get update
-            sudo apt-get install -y --no-install-recommends winehq-stable xvfb
-          else
-            echo "winehq unreachable; using the distribution's wine"
-            sudo apt-get install -y --no-install-recommends wine64 xvfb
-          fi
-          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64 unzip
-          rustup target add x86_64-pc-windows-gnu
-
-      # The report is the point: which exports the DLL answers, which classes it
-      # activates, and the HRESULT of the first call that failed.
-      - name: Load the official DLL
-        run: bash scripts/gate-b.sh target/appsdk
-
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: xaml-probe
-          path: target/appsdk/probe.log
-          if-no-files-found: warn

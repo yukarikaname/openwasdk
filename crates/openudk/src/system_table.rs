@@ -78,7 +78,8 @@ pub unsafe extern "system" fn GetFunctionTableId(
         return ptr::null_mut();
     }
     INIT.call_once(|| unsafe {
-        let quiet_entry = quiet as unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32;
+        let quiet_entry =
+            quiet as unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32;
         let table = &raw mut HOST_TABLE;
         for slot in 0..SLOTS {
             (*table)[slot] = quiet_entry as usize;

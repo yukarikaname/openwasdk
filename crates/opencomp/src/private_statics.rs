@@ -113,7 +113,8 @@ pub(crate) fn trace_stack() {
 
     let mut frames = [std::ptr::null_mut::<c_void>(); 8];
     // 0 = this function, 1 = `method`; the caller is the third frame.
-    let count = unsafe { RtlCaptureStackBackTrace(2, 8, frames.as_mut_ptr(), std::ptr::null_mut()) };
+    let count =
+        unsafe { RtlCaptureStackBackTrace(2, 8, frames.as_mut_ptr(), std::ptr::null_mut()) };
     for (index, frame) in frames[..count as usize].iter().enumerate() {
         let mut base = std::ptr::null_mut();
         unsafe { RtlPcToFileHeader(*frame, &mut base) };
@@ -239,7 +240,11 @@ unsafe extern "system" fn dev_out2(
     unsafe { dev_out1(this, out, std::ptr::null_mut(), std::ptr::null_mut()) }
 }
 
-unsafe extern "system" fn dev_qi(this: *mut c_void, iid: *const GUID, out: *mut *mut c_void) -> i32 {
+unsafe extern "system" fn dev_qi(
+    this: *mut c_void,
+    iid: *const GUID,
+    out: *mut *mut c_void,
+) -> i32 {
     if std::env::var_os("OPENCOMP_TRACE").is_some() && !iid.is_null() {
         eprintln!("opencomp: recording device asked for {:?}", unsafe { *iid });
     }
@@ -296,8 +301,7 @@ fn dcomp_device(iid: &GUID) -> Option<*mut c_void> {
         GUID::from_u128(0xc37e_a93a_e7aa_450d_b16f_9746_cb04_07f3);
     const IID_IDCOMPOSITIONDEVICE3: GUID =
         GUID::from_u128(0x0987_cb06_f916_48bf_8d35_ce76_4178_1bd9);
-    const IID_IDXGIDEVICE: GUID =
-        GUID::from_u128(0x54ec_77fa_1377_44e6_8c32_88fd_5f44_c84c);
+    const IID_IDXGIDEVICE: GUID = GUID::from_u128(0x54ec_77fa_1377_44e6_8c32_88fd_5f44_c84c);
 
     #[link(name = "kernel32.dll", kind = "raw-dylib", modifiers = "+verbatim")]
     unsafe extern "system" {
@@ -405,7 +409,9 @@ fn dcomp_device(iid: &GUID) -> Option<*mut c_void> {
             }
             if hr >= 0 && !dev.is_null() {
                 if std::env::var_os("OPENCOMP_TRACE").is_some() {
-                    eprintln!("opencomp: dcomp device from D3D11 driver {driver} {iid:?} -> {dev:?}");
+                    eprintln!(
+                        "opencomp: dcomp device from D3D11 driver {driver} {iid:?} -> {dev:?}"
+                    );
                 }
                 return Some(dev);
             }
@@ -436,7 +442,6 @@ fn dcomp_device(iid: &GUID) -> Option<*mut c_void> {
     }
     Some(recording_device())
 }
-
 
 unsafe extern "system" fn query_interface(
     this: *mut c_void,

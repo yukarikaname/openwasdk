@@ -299,10 +299,7 @@ mod tests {
                 VisualDiagnosticsPort_Register(name.as_ptr(), None, handler),
                 E_INVALIDARG
             );
-            assert_eq!(
-                VisualDiagnosticsPort_Unregister(),
-                S_FALSE
-            );
+            assert_eq!(VisualDiagnosticsPort_Unregister(), S_FALSE);
         }
     }
 

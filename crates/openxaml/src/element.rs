@@ -234,8 +234,12 @@ impl Kind {
             "Page" | "Microsoft.UI.Xaml.Controls.Page" => Some(Self::Page),
             "UserControl" | "Microsoft.UI.Xaml.Controls.UserControl" => Some(Self::UserControl),
             "Window" | "Microsoft.UI.Xaml.Window" => Some(Self::Window),
-            "ContentDialog" | "Microsoft.UI.Xaml.Controls.ContentDialog" => Some(Self::ContentDialog),
-            "ResourceDictionary" | "Microsoft.UI.Xaml.ResourceDictionary" => Some(Self::ResourceDictionary),
+            "ContentDialog" | "Microsoft.UI.Xaml.Controls.ContentDialog" => {
+                Some(Self::ContentDialog)
+            }
+            "ResourceDictionary" | "Microsoft.UI.Xaml.ResourceDictionary" => {
+                Some(Self::ResourceDictionary)
+            }
             "Application" | "Microsoft.UI.Xaml.Application" => Some(Self::Application),
             "Style" | "Microsoft.UI.Xaml.Style" => Some(Self::Style),
             "DataTemplate" | "Microsoft.UI.Xaml.DataTemplate" => Some(Self::DataTemplate),
@@ -245,11 +249,15 @@ impl Kind {
             "Button" | "Microsoft.UI.Xaml.Controls.Button" => Some(Self::Button),
             "ScrollViewer" | "Microsoft.UI.Xaml.Controls.ScrollViewer" => Some(Self::ScrollViewer),
             "TextBox" | "Microsoft.UI.Xaml.Controls.TextBox" => Some(Self::TextBox),
-            "RichTextBlock" | "Microsoft.UI.Xaml.Controls.RichTextBlock" => Some(Self::RichTextBlock),
+            "RichTextBlock" | "Microsoft.UI.Xaml.Controls.RichTextBlock" => {
+                Some(Self::RichTextBlock)
+            }
             "InfoBar" | "Microsoft.UI.Xaml.Controls.InfoBar" => Some(Self::InfoBar),
             "TitleBar" | "Microsoft.UI.Xaml.Controls.TitleBar" => Some(Self::TitleBar),
             "SplitButton" | "Microsoft.UI.Xaml.Controls.SplitButton" => Some(Self::SplitButton),
-            "ContentPresenter" | "Microsoft.UI.Xaml.Controls.ContentPresenter" => Some(Self::ContentPresenter),
+            "ContentPresenter" | "Microsoft.UI.Xaml.Controls.ContentPresenter" => {
+                Some(Self::ContentPresenter)
+            }
             "PasswordBox" | "Microsoft.UI.Xaml.Controls.PasswordBox" => Some(Self::PasswordBox),
             "SymbolIcon" | "Microsoft.UI.Xaml.Controls.SymbolIcon" => Some(Self::SymbolIcon),
             "MicaBackdrop" | "Microsoft.UI.Xaml.Media.MicaBackdrop" => Some(Self::MicaBackdrop),
@@ -260,11 +268,13 @@ impl Kind {
             "Double" => Some(Self::Double),
             "String" => Some(Self::String),
             "Boolean" => Some(Self::Boolean),
-"Thickness" => Some(Self::Thickness),
+            "Thickness" => Some(Self::Thickness),
             "ListView" | "Microsoft.UI.Xaml.Controls.ListView" => Some(Self::ListView),
             "GridView" | "Microsoft.UI.Xaml.Controls.GridView" => Some(Self::GridView),
             "TabView" | "Microsoft.UI.Xaml.Controls.TabView" => Some(Self::TabView),
-            "ItemsRepeater" | "Microsoft.UI.Xaml.Controls.ItemsRepeater" => Some(Self::ItemsRepeater),
+            "ItemsRepeater" | "Microsoft.UI.Xaml.Controls.ItemsRepeater" => {
+                Some(Self::ItemsRepeater)
+            }
             "ScrollView" | "Microsoft.UI.Xaml.Controls.ScrollView" => Some(Self::ScrollView),
             "DatePicker" | "Microsoft.UI.Xaml.Controls.DatePicker" => Some(Self::DatePicker),
             "RichEditBox" | "Microsoft.UI.Xaml.Controls.RichEditBox" => Some(Self::RichEditBox),
@@ -276,20 +286,26 @@ impl Kind {
             "GridViewItem" | "Microsoft.UI.Xaml.Controls.GridViewItem" => Some(Self::GridViewItem),
             "ToggleSwitch" | "Microsoft.UI.Xaml.Controls.ToggleSwitch" => Some(Self::ToggleSwitch),
             "RadioButton" | "Microsoft.UI.Xaml.Controls.RadioButton" => Some(Self::RadioButton),
-            "HyperlinkButton" | "Microsoft.UI.Xaml.Controls.HyperlinkButton" => Some(Self::HyperlinkButton),
+            "HyperlinkButton" | "Microsoft.UI.Xaml.Controls.HyperlinkButton" => {
+                Some(Self::HyperlinkButton)
+            }
             "RepeatButton" | "Microsoft.UI.Xaml.Controls.RepeatButton" => Some(Self::RepeatButton),
-"ToggleButton" | "Microsoft.UI.Xaml.Controls.ToggleButton" => Some(Self::ToggleButton),
+            "ToggleButton" | "Microsoft.UI.Xaml.Controls.ToggleButton" => Some(Self::ToggleButton),
             "Ellipse" | "Microsoft.UI.Xaml.Shapes.Ellipse" => Some(Self::Ellipse),
             "Rectangle" | "Microsoft.UI.Xaml.Shapes.Rectangle" => Some(Self::Rectangle),
-"Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
+            "Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
             "ToolTip" | "Microsoft.UI.Xaml.Controls.ToolTip" => Some(Self::ToolTip),
-"Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
+            "Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
             "Expander" | "Microsoft.UI.Xaml.Controls.Expander" => Some(Self::Expander),
-"ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
-"SelectorBar" | "Microsoft.UI.Xaml.Controls.SelectorBar" => Some(Self::SelectorBar),
-"SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => Some(Self::SelectorBarItem),
+            "ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
+            "SelectorBar" | "Microsoft.UI.Xaml.Controls.SelectorBar" => Some(Self::SelectorBar),
+            "SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => {
+                Some(Self::SelectorBarItem)
+            }
             "ColorPicker" | "Microsoft.UI.Xaml.Controls.ColorPicker" => Some(Self::ColorPicker),
-            "AutoSuggestBox" | "Microsoft.UI.Xaml.Controls.AutoSuggestBox" => Some(Self::AutoSuggestBox),
+            "AutoSuggestBox" | "Microsoft.UI.Xaml.Controls.AutoSuggestBox" => {
+                Some(Self::AutoSuggestBox)
+            }
             "Flyout" | "Microsoft.UI.Xaml.Controls.Flyout" => Some(Self::Flyout),
             "MenuFlyoutSeparator" | "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator" => {
                 Some(Self::MenuFlyoutSeparator)
@@ -297,14 +313,20 @@ impl Kind {
             "ImageIconSource" | "Microsoft.UI.Xaml.Media.ImageIconSource" => {
                 Some(Self::ImageIconSource)
             }
-"Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
+            "Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
             "NumberBox" | "Microsoft.UI.Xaml.Controls.NumberBox" => Some(Self::NumberBox),
             "RadioButtons" | "Microsoft.UI.Xaml.Controls.RadioButtons" => Some(Self::RadioButtons),
             "Slider" | "Microsoft.UI.Xaml.Controls.Slider" => Some(Self::Slider),
-            "BreadcrumbBar" | "Microsoft.UI.Xaml.Controls.BreadcrumbBar" => Some(Self::BreadcrumbBar),
-            "RelativePanel" | "Microsoft.UI.Xaml.Controls.RelativePanel" => Some(Self::RelativePanel),
+            "BreadcrumbBar" | "Microsoft.UI.Xaml.Controls.BreadcrumbBar" => {
+                Some(Self::BreadcrumbBar)
+            }
+            "RelativePanel" | "Microsoft.UI.Xaml.Controls.RelativePanel" => {
+                Some(Self::RelativePanel)
+            }
             "Canvas" | "Microsoft.UI.Xaml.Controls.Canvas" => Some(Self::Canvas),
-            "UniformGridLayout" | "Microsoft.UI.Xaml.Controls.UniformGridLayout" => Some(Self::UniformGridLayout),
+            "UniformGridLayout" | "Microsoft.UI.Xaml.Controls.UniformGridLayout" => {
+                Some(Self::UniformGridLayout)
+            }
             "ImplicitAnimationSet" | "Microsoft.UI.Xaml.Media.ImplicitAnimationSet" => {
                 Some(Self::ImplicitAnimationSet)
             }

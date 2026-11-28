@@ -1,3 +1,5 @@
+#![cfg(windows)]
+
 //! Gate A: a window, a tree, an island, a bridge, and a frame.
 //!
 //! The client binary runs the same path, but a panic there is a page fault with no

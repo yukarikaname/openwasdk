@@ -1,3 +1,5 @@
+#![cfg(windows)]
+
 //! Activation through the Windows runtime, not through our export.
 //!
 //! A WinUI application never calls `DllGetActivationFactory`: it calls

@@ -173,9 +173,9 @@ impl Builder<'_> {
          */
         let target = match self.current_element() {
             Some(owner) => self.raw[owner].children.last().copied().unwrap_or(owner),
-            None => self.last_closed.ok_or_else(|| {
-                self.error(index, kind, "dictionary key has no current element")
-            })?,
+            None => self
+                .last_closed
+                .ok_or_else(|| self.error(index, kind, "dictionary key has no current element"))?,
         };
         self.raw[target].properties.push(Property {
             name: "x:Key".to_string(),
@@ -201,11 +201,16 @@ impl Builder<'_> {
         let Some(frame) = self.frames.pop() else {
             return Err(self.error(index, kind, "scope closer has no open scope"));
         };
-        let element = if frame.property.is_some() { None } else { frame.element };
+        let element = if frame.property.is_some() {
+            None
+        } else {
+            frame.element
+        };
         self.close_frame(frame);
         self.last_closed = element;
         if let Some(element) = element {
-            self.values.push(Value::Element(Box::new(materialize(&self.raw, element))));
+            self.values
+                .push(Value::Element(Box::new(materialize(&self.raw, element))));
         }
         Ok(())
     }

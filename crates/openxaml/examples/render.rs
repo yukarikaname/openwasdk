@@ -17,8 +17,12 @@ use openxaml::{Controls, Rect, Size};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = std::env::args().skip(1);
-    let source = args.next().ok_or("usage: render <page.xbf> <out.ppm> [w h]")?;
-    let out = args.next().ok_or("usage: render <page.xbf> <out.ppm> [w h]")?;
+    let source = args
+        .next()
+        .ok_or("usage: render <page.xbf> <out.ppm> [w h]")?;
+    let out = args
+        .next()
+        .ok_or("usage: render <page.xbf> <out.ppm> [w h]")?;
     let width: u32 = args.next().map_or(Ok(800), |v| v.parse())?;
     let height: u32 = args.next().map_or(Ok(600), |v| v.parse())?;
 
@@ -49,7 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut file = std::io::BufWriter::new(std::fs::File::create(&out)?);
     use std::io::Write;
     write!(file, "P6\n{width} {height}\n255\n")?;
-    for pixel in pixels.chunks_exact(4) {
+    for pixel in pixels.as_chunks::<4>().0 {
         file.write_all(&pixel[..3])?;
     }
     eprintln!("wrote {out}");
@@ -88,10 +92,10 @@ fn bodies(root: &Path) -> Controls {
     // drawn as the box the page asked for, because its content is built in code.
     let mut named: Vec<String> = Vec::new();
     for path in files.values() {
-        if let Ok(file) = xbf::parse_file(path) {
-            if let Ok(model) = file.model() {
-                application_types(&model.roots, &mut named);
-            }
+        if let Ok(file) = xbf::parse_file(path)
+            && let Ok(model) = file.model()
+        {
+            application_types(&model.roots, &mut named);
         }
     }
     for name in &named {
@@ -122,7 +126,11 @@ fn bodies(root: &Path) -> Controls {
 fn application_types(elements: &[xbf::model::Element], out: &mut Vec<String>) {
     for element in elements {
         if element.type_name.starts_with("using:") {
-            let simple = element.type_name.rsplit('.').next().unwrap_or(&element.type_name);
+            let simple = element
+                .type_name
+                .rsplit('.')
+                .next()
+                .unwrap_or(&element.type_name);
             out.push(simple.to_string());
         }
         application_types(&element.children, out);
@@ -137,10 +145,10 @@ fn collect(dir: &Path, out: &mut HashMap<String, PathBuf>) {
         let path = entry.path();
         if path.is_dir() {
             collect(&path, out);
-        } else if path.extension().is_some_and(|kind| kind == "xbf") {
-            if let Some(stem) = path.file_stem().and_then(|stem| stem.to_str()) {
-                out.entry(stem.to_string()).or_insert(path);
-            }
+        } else if path.extension().is_some_and(|kind| kind == "xbf")
+            && let Some(stem) = path.file_stem().and_then(|stem| stem.to_str())
+        {
+            out.entry(stem.to_string()).or_insert(path);
         }
     }
 }

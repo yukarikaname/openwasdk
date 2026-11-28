@@ -8,8 +8,7 @@
 use std::fmt;
 
 use crate::element::{
-    Kind,
-    CornerRadius, Element, GridLength, GridTrack, HorizontalAlignment, Length, Orientation,
+    CornerRadius, Element, GridLength, GridTrack, HorizontalAlignment, Kind, Length, Orientation,
     Thickness, Value, VerticalAlignment, Visibility,
 };
 use crate::property::ValueType;
@@ -149,7 +148,14 @@ fn load_body(
         return Ok(element);
     };
     for property in &source.properties {
-        load_property_with(&mut element, support, &source.type_name, property, controls, depth)?;
+        load_property_with(
+            &mut element,
+            support,
+            &source.type_name,
+            property,
+            controls,
+            depth,
+        )?;
     }
     for child in &source.children {
         element.push(load_element(child, controls, depth + 1)?);
@@ -179,7 +185,14 @@ fn build(
 ) -> Result<Element, LoadError> {
     let mut element = Element::new(support.kind);
     for property in &source.properties {
-        load_property_with(&mut element, support, &source.type_name, property, controls, depth)?;
+        load_property_with(
+            &mut element,
+            support,
+            &source.type_name,
+            property,
+            controls,
+            depth,
+        )?;
     }
     // A dictionary's entries are resources (Double, String, brushes); nothing in this
     // renderer resolves them, so they are not built as elements.
@@ -230,9 +243,7 @@ fn load_property_with(
             if name.contains("AutomationProperties.") {
                 return Ok(());
             }
-            let member = name
-                .rsplit_once(['_', '.'])
-                .map_or(name, |(_, tail)| tail);
+            let member = name.rsplit_once(['_', '.']).map_or(name, |(_, tail)| tail);
             /*
              * A content property holds the child that a content control shows. It is a
              * child for layout and painting, so it joins the element's children.

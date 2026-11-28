@@ -1,3 +1,7 @@
+// These exports exist to be loaded by a Windows process; on any other host the crate is
+// empty, so `cargo check --workspace` still type-checks everything around it.
+#![cfg(windows)]
+
 //! `dcompi.dll`: the lifted compositor's activation shim.
 //!
 //! The engine loads this DLL by name and asks it for the composition classes and for the
@@ -39,11 +43,7 @@ fn entry(dll: &std::ffi::CStr, name: &std::ffi::CStr) -> Option<*mut c_void> {
         return None;
     }
     let entry = unsafe { GetProcAddress(module, name.as_ptr().cast()) };
-    if entry.is_null() {
-        None
-    } else {
-        Some(entry)
-    }
+    if entry.is_null() { None } else { Some(entry) }
 }
 
 fn trace(args: std::fmt::Arguments) {
@@ -59,7 +59,9 @@ fn ours_first(class: *mut c_void) -> bool {
     };
     let list = list.to_string_lossy().to_ascii_lowercase();
     let name = class_name(class).to_ascii_lowercase();
-    list.split(',').map(str::trim).any(|item| !item.is_empty() && name.contains(item))
+    list.split(',')
+        .map(str::trim)
+        .any(|item| !item.is_empty() && name.contains(item))
 }
 
 /// The engine's own activation entry point, or nothing when it is not beside us.
@@ -93,7 +95,10 @@ pub unsafe extern "system" fn DllGetActivationFactory(
                 trace(format_args!("ours: {:?}", class_name(class)));
                 return hr;
             }
-            trace(format_args!("ours refused {:?}: {hr:#x}", class_name(class)));
+            trace(format_args!(
+                "ours refused {:?}: {hr:#x}",
+                class_name(class)
+            ));
         }
     }
     if let Some(get) = engine_factory() {
@@ -101,10 +106,16 @@ pub unsafe extern "system" fn DllGetActivationFactory(
         if hr >= 0 {
             return hr;
         }
-        trace(format_args!("engine refused {:?}: {hr:#x}", class_name(class)));
+        trace(format_args!(
+            "engine refused {:?}: {hr:#x}",
+            class_name(class)
+        ));
         return hr;
     }
-    trace(format_args!("no engine beside us for {:?}", class_name(class)));
+    trace(format_args!(
+        "no engine beside us for {:?}",
+        class_name(class)
+    ));
     CLASS_E_CLASSNOTAVAILABLE
 }
 

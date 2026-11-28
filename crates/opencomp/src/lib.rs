@@ -10,6 +10,9 @@
 //! The crate-level allows are for the ABI: method names like `CreateContainerVisual` are fixed by
 //! the metadata, and the generated module has its own spelling conventions.
 
+// The crate is the ABI in front of a Windows engine: on any other host it is empty, so
+// `cargo check --workspace` and `cargo test --workspace` still cover everything around it.
+#![cfg(windows)]
 #![allow(
     non_snake_case,
     non_camel_case_types,

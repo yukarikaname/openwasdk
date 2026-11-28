@@ -275,11 +275,14 @@ pub static GRID_COLUMNS: Property = Property::new(
 /// silent default.
 /// `UIElement.Opacity`: 0..1, default 1, multiplied down the subtree (WinUI:
 /// learn.microsoft.com/windows/windows-app-sdk/api/winrt/microsoft.ui.xaml.uielement.opacity).
-pub static OPACITY: Property = Property::new("Opacity", ValueType::Double, &Value::Number(1.0), false);
+pub static OPACITY: Property =
+    Property::new("Opacity", ValueType::Double, &Value::Number(1.0), false);
 
 /// `Canvas.Left` / `Canvas.Top`: the attached offsets a Canvas child asks for.
-pub static CANVAS_LEFT: Property = Property::new("Canvas.Left", ValueType::Double, &Value::Number(0.0), false);
-pub static CANVAS_TOP: Property = Property::new("Canvas.Top", ValueType::Double, &Value::Number(0.0), false);
+pub static CANVAS_LEFT: Property =
+    Property::new("Canvas.Left", ValueType::Double, &Value::Number(0.0), false);
+pub static CANVAS_TOP: Property =
+    Property::new("Canvas.Top", ValueType::Double, &Value::Number(0.0), false);
 
 pub static PROPERTIES: &[&Property] = &[
     &CANVAS_LEFT,

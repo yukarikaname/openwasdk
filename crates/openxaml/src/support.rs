@@ -820,16 +820,8 @@ static TABLE: &[TypeSupport] = &[
         &property::BORDER_THICKNESS,
         &property::CORNER_RADIUS,
     ),
-    type_support!(
-        Kind::Style,
-        &property::WIDTH,
-        &property::HEIGHT,
-    ),
-    type_support!(
-        Kind::DataTemplate,
-        &property::WIDTH,
-        &property::HEIGHT,
-    ),
+    type_support!(Kind::Style, &property::WIDTH, &property::HEIGHT,),
+    type_support!(Kind::DataTemplate, &property::WIDTH, &property::HEIGHT,),
     type_support!(
         Kind::ContentDialog,
         &property::WIDTH,
@@ -846,11 +838,7 @@ static TABLE: &[TypeSupport] = &[
         &property::WIDTH,
         &property::HEIGHT,
     ),
-    type_support!(
-        Kind::Application,
-        &property::WIDTH,
-        &property::HEIGHT,
-    ),
+    type_support!(Kind::Application, &property::WIDTH, &property::HEIGHT,),
     /*
      * Content hosts: Page, UserControl and Window are one child plus control chrome.
      * Their property list is the Border set, because that is what the layout path

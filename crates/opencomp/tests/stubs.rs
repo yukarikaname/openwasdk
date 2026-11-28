@@ -1,3 +1,5 @@
+#![cfg(windows)]
+
 //! The stub table is a document about this crate, so the numbers in it can be checked.
 //!
 //! `docs/opencomp-stubs.md` is how a reader learns what is real and what is not. It is
