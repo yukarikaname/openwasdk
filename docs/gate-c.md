@@ -40,6 +40,10 @@ the baseline VM (`scripts/vm/`), which also means the ARM64 guest cross-publishe
 `SSH_TIMEOUT` raises it, and the build log goes to a file so a dropped session does not
 take the error with it.
 
+The guest needs the full Windows SDK (10.0.22621) before this succeeds: the App SDK's
+self-contained targets resolve the `mt.exe` and metadata tools from it, and a guest with
+only the .NET SDK fails in the same place macOS does, for the same reason.
+
 ## Order of measurement
 
 Same discipline as Gate B: run it on Windows first. A window there says the project is
