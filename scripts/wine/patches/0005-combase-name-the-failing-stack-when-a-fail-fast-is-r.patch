@@ -1,0 +1,83 @@
+From 4fad51dd65177fc1dd686f62bf890bec641c53ee Mon Sep 17 00:00:00 2001
+From: Yukari Kaname <yukari@aliciaworks.com>
+Date: Sat, 28 Nov 2026 18:12:09 +0800
+Subject: [PATCH 5/5] combase: name the failing stack when a fail fast is
+ reported
+
+RoFailFastWithErrorContextInternal2 is where WinUI 3 ends an unrecoverable path,
+and the stub printed the code alone, which made every failure look like whatever
+logged last. OPENWASDK_FAILFAST turns on a dump of the raising thread's frames as
+module+offset plus the stowed exception bytes.
+---
+ dlls/combase/roapi.c | 49 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 49 insertions(+)
+
+diff --git a/dlls/combase/roapi.c b/dlls/combase/roapi.c
+index e5c18c0..8e92214 100644
+--- a/dlls/combase/roapi.c
++++ b/dlls/combase/roapi.c
+@@ -470,12 +470,61 @@ HRESULT WINAPI RoGetAgileReference(enum AgileReferenceOptions option, REFIID rii
+     return S_OK;
+ }
+ 
++/***********************************************************************
++ *      RoFailFastWithErrorContextInternal2 (combase.@)
++ */
++/* The stowed exception layout is not public; hexdump it and let the caller read it. */
++static void dump_error_context( const void *information )
++{
++    const unsigned char *bytes = information;
++    char line[3 * 16 + 1];
++    int i, j;
++
++    if (!information) return;
++    for (i = 0; i < 256; i += 16)
++    {
++        for (j = 0; j < 16; j++) sprintf( line + 3 * j, "%02x ", bytes[i + j] );
++        line[3 * 16] = 0;
++        FIXME("ctx %03x: %s\n", i, line);
++    }
++}
++
++static void dump_fail_fast_stack(void)
++{
++    void *frames[32];
++    char path[MAX_PATH];
++    HMODULE module;
++    USHORT i, count;
++
++    FIXME("pid %lx\n", GetCurrentProcessId());
++    count = RtlCaptureStackBackTrace( 0, ARRAY_SIZE(frames), frames, NULL );
++    for (i = 0; i < count; i++)
++    {
++        if (!GetModuleHandleExA( GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS |
++                                 GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT,
++                                 (const char *)frames[i], &module ))
++        {
++            FIXME("  %p\n", frames[i]);
++            continue;
++        }
++        GetModuleFileNameA( module, path, sizeof(path) );
++        FIXME("  %s+%#lx\n", path, (char *)frames[i] - (char *)module);
++    }
++}
++
+ /***********************************************************************
+  *      RoFailFastWithErrorContextInternal2 (combase.@)
+  */
+ void WINAPI RoFailFastWithErrorContextInternal2(HRESULT error, ULONG exception_count, /* PSTOWED_EXCEPTION_INFORMATION_V2 */void *information)
+ {
+     FIXME("%#lx, %lu, %p stub.\n", error, exception_count, information);
++    /* Off by default: the dump is worth having when the caller is unknown, and noise
++     * otherwise. */
++    if (getenv( "OPENWASDK_FAILFAST" ))
++    {
++        dump_fail_fast_stack();
++        dump_error_context( information );
++    }
+     RaiseFailFastException(NULL, NULL, 0);
+ }
+ 
+-- 
+2.54.0 (Apple Git-157)
+

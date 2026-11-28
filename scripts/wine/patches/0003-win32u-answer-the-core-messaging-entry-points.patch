@@ -1,0 +1,1137 @@
+From fc91b95ee91150aa51c96ab0a92cf707db45a581 Mon Sep 17 00:00:00 2001
+From: Yukari Kaname <yukari@aliciaworks.com>
+Date: Sat, 28 Nov 2026 18:12:09 +0800
+Subject: [PATCH 3/5] win32u: answer the core messaging entry points
+
+The UDK layer and the composed window path go through user32 ordinals that Wine
+carries as stubs: the thread core messaging IOCP, its completion drain, and the
+input queue plumbing behind them. Wine's win32u syscall table has to learn the
+same numbers, which is why the wow64 side moves with it.
+---
+ dlls/win32u/defwnd.c         |  61 +++++++++
+ dlls/win32u/font.c           |  31 ++++-
+ dlls/win32u/input.c          |  33 +++++
+ dlls/win32u/main.c           |  25 ++++
+ dlls/win32u/message.c        | 259 ++++++++++++++++++++++++++++++++++-
+ dlls/win32u/ntuser_private.h |   6 +
+ dlls/win32u/syscall.c        |   3 +
+ dlls/win32u/sysparams.c      |  17 +++
+ dlls/win32u/win32syscalls.h  |  30 ++--
+ dlls/win32u/win32u.spec      |  12 +-
+ dlls/win32u/win32u_private.h |   1 +
+ dlls/win32u/window.c         |  29 ++++
+ dlls/wow64/syscall.c         |  18 +++
+ dlls/wow64win/user.c         |  42 ++++++
+ include/ntuser.h             |   8 ++
+ server/queue.c               |  60 +++++++-
+ 16 files changed, 597 insertions(+), 38 deletions(-)
+
+diff --git a/dlls/win32u/defwnd.c b/dlls/win32u/defwnd.c
+index a88304f..0085c1f 100644
+--- a/dlls/win32u/defwnd.c
++++ b/dlls/win32u/defwnd.c
+@@ -2643,6 +2643,67 @@ LRESULT default_window_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam,
+         }
+         break;
+ 
++    case WM_QUERYUISTATE:
++        {
++            WND *win;
++            if (!(win = get_win_ptr( hwnd )) || win == WND_OTHER_PROCESS || win == WND_DESKTOP) break;
++            result = win->ui_state & (UISF_HIDEFOCUS | UISF_HIDEACCEL | UISF_ACTIVE);
++            release_win_ptr( win );
++        }
++        break;
++
++    case WM_CHANGEUISTATE:
++        {
++            /* Keyboard-cue state, like Windows: a child forwards to its top-level window, which
++             * applies the change and broadcasts WM_UPDATEUISTATE down its tree. UIS_INITIALIZE
++             * hides focus rectangles and accelerator underlines unless keyboard cues are on. */
++            WND *win;
++            HWND parent = NtUserGetAncestor( hwnd, GA_PARENT );
++            UINT action = LOWORD(wparam), flags = HIWORD(wparam), old, new;
++
++            if (parent && parent != get_desktop_window())
++            {
++                send_message( parent, msg, wparam, lparam );
++                break;
++            }
++            if (action == UIS_INITIALIZE)
++            {
++                BOOL cues = FALSE;
++                NtUserSystemParametersInfo( SPI_GETKEYBOARDCUES, 0, &cues, 0 );
++                flags = cues ? 0 : (UISF_HIDEFOCUS | UISF_HIDEACCEL);
++                action = UIS_SET;
++            }
++            flags &= UISF_HIDEFOCUS | UISF_HIDEACCEL | UISF_ACTIVE;
++            if (!(win = get_win_ptr( hwnd )) || win == WND_OTHER_PROCESS || win == WND_DESKTOP) break;
++            old = win->ui_state & ~WIN_UISTATE_INITIALIZED;
++            new = action == UIS_SET ? old | flags : action == UIS_CLEAR ? old & ~flags : old;
++            win->ui_state |= WIN_UISTATE_INITIALIZED;
++            release_win_ptr( win );
++            if (new != old || LOWORD(wparam) == UIS_INITIALIZE)
++                send_message( hwnd, WM_UPDATEUISTATE, MAKEWPARAM( action, flags ), 0 );
++        }
++        break;
++
++    case WM_UPDATEUISTATE:
++        {
++            WND *win;
++            HWND *list;
++            UINT action = LOWORD(wparam), flags = HIWORD(wparam);
++
++            flags &= UISF_HIDEFOCUS | UISF_HIDEACCEL | UISF_ACTIVE;
++            if (!(win = get_win_ptr( hwnd )) || win == WND_OTHER_PROCESS || win == WND_DESKTOP) break;
++            if (action == UIS_SET) win->ui_state |= flags;
++            else if (action == UIS_CLEAR) win->ui_state &= ~flags;
++            release_win_ptr( win );
++            if ((list = list_window_children( hwnd )))
++            {
++                HWND *child;
++                for (child = list; *child; child++) send_message( *child, msg, wparam, lparam );
++                free( list );
++            }
++        }
++        break;
++
+     case WM_GETTEXT:
+         if (wparam)
+         {
+diff --git a/dlls/win32u/font.c b/dlls/win32u/font.c
+index 97936e9..93cad86 100644
+--- a/dlls/win32u/font.c
++++ b/dlls/win32u/font.c
+@@ -6603,11 +6603,8 @@ static void update_external_font_keys(void)
+                 free( path );
+                 continue;
+             }
+-            if (!(face->flags & ADDFONT_EXTERNAL_FONT))
+-            {
+-                free( path );
+-                continue;
+-            }
++            /* a face from C:\windows\fonts replaced the host's copy: drop the stale entry, the
++             * loop below registers the Windows one */
+         }
+         if (tmp && !*tmp) *tmp = ' ';
+         if (!(key = malloc( sizeof(*key) ))) break;
+@@ -6650,6 +6647,30 @@ static void update_external_font_keys(void)
+             set_reg_value( hkey, value, REG_SZ, file, len );
+         }
+     }
++    /* Fonts in C:\windows\fonts are listed under their bare file names, as Windows lists them.
++     * Nothing else registers them here, and dwrite builds its system collection from this key. */
++    {
++        WCHAR fonts_dir[MAX_PATH];
++        size_t dir_len;
++
++        get_fonts_win_dir_path( NULL, fonts_dir );
++        dir_len = wcslen( fonts_dir );
++        WINE_RB_FOR_EACH_ENTRY( family, &family_name_tree, struct gdi_font_family, name_entry )
++        {
++            LIST_FOR_EACH_ENTRY( face, &family->faces, struct gdi_font_face, entry )
++            {
++                if (face->flags & ADDFONT_EXTERNAL_FONT) continue;
++                if (!face->file || wcslen( face->file ) <= dir_len || wcsnicmp( face->file, fonts_dir, dir_len )) continue;
++                if (!face->full_name) continue;
++                lstrcpyW( value, face->full_name );
++                if (face->scalable) lstrcatW( value, true_type_suffixW );
++                file = face->file + dir_len;
++                len = (lstrlenW(file) + 1) * sizeof(WCHAR);
++                set_reg_value( winnt_key, value, REG_SZ, file, len );
++                set_reg_value( win9x_key, value, REG_SZ, file, len );
++            }
++        }
++    }
+     NtClose( win9x_key );
+     NtClose( winnt_key );
+     NtClose( hkey );
+diff --git a/dlls/win32u/input.c b/dlls/win32u/input.c
+index 40f076a..f6e07a4 100644
+--- a/dlls/win32u/input.c
++++ b/dlls/win32u/input.c
+@@ -2209,6 +2209,10 @@ BOOL set_active_window( HWND hwnd, HWND *prev, BOOL mouse, BOOL focus, DWORD new
+                       (LPARAM)previous );
+         if (NtUserGetAncestor( hwnd, GA_PARENT ) == get_desktop_window())
+             NtUserPostMessage( get_desktop_window(), WM_PARENTNOTIFY, WM_NCACTIVATE, (LPARAM)hwnd );
++        /* like Windows, a top-level window's keyboard-cue state is initialised when it is first
++         * activated, which sends WM_UPDATEUISTATE down its tree */
++        if (!ui_state_initialized( hwnd ))
++            send_message( hwnd, WM_CHANGEUISTATE, MAKEWPARAM( UIS_INITIALIZE, 0 ), 0 );
+     }
+ 
+     /* now change focus if necessary */
+@@ -3020,6 +3024,13 @@ static POINTER_INFO pointer_info_from_msg( const MSG *msg )
+     case WM_POINTERUPDATE: info.pointerFlags |= POINTER_FLAG_UPDATE; break;
+     case WM_POINTERDOWN: info.pointerFlags |= POINTER_FLAG_DOWN; break;
+     case WM_POINTERUP: info.pointerFlags |= POINTER_FLAG_UP; break;
++    case WM_POINTERWHEEL:
++    case WM_POINTERHWHEEL:
++        /* the high word carries the wheel delta, not pointer flags */
++        info.pointerFlags = POINTER_FLAG_INRANGE | POINTER_FLAG_PRIMARY |
++                            (msg->message == WM_POINTERWHEEL ? POINTER_FLAG_WHEEL : POINTER_FLAG_HWHEEL);
++        info.InputData = (short)HIWORD( msg->wParam );
++        break;
+     }
+     info.ptPixelLocation = info.ptPixelLocationRaw = location;
+ 
+@@ -3167,6 +3178,13 @@ BOOL WINAPI NtUserGetPointerInfoList( UINT32 id, POINTER_INPUT_TYPE type, UINT_P
+         RtlSetLastWin32Error( ERROR_INVALID_PARAMETER );
+         return FALSE;
+     }
++    /* only for the current message's pointer (see note_retrieved_message) */
++    if (get_user_thread_info()->current_pointer_id != id)
++    {
++        TRACE( "pointer id %d is not the current message's (%u)\n", id, get_user_thread_info()->current_pointer_id );
++        RtlSetLastWin32Error( ERROR_INVALID_PARAMETER );
++        return FALSE;
++    }
+ 
+     if (type != PT_POINTER) FIXME( "Pointer type %#x not implemented\n", type );
+ 
+@@ -3200,3 +3218,18 @@ BOOL WINAPI NtUserGetPointerDeviceRects( HANDLE handle, RECT *device_rect, RECT
+     TRACE( "returning device %s, display %s\n", wine_dbgstr_rect(device_rect), wine_dbgstr_rect(display_rect) );
+     return TRUE;
+ }
++
++/***********************************************************************
++ *       NtQueryCompositionInputSinkLuid (win32u.so)
++ *
++ * Returns a stable LUID for a composition input sink handle. XAML looks
++ * this up after create_composition_input_sink; a unique-enough value is
++ * enough for hit-testing bookkeeping.
++ */
++NTSTATUS WINAPI NtQueryCompositionInputSinkLuid( HANDLE sink, LUID *luid )
++{
++    if (!luid) return STATUS_INVALID_PARAMETER;
++    luid->LowPart = HandleToULong( sink );
++    luid->HighPart = 0x55495043; /* 'CPIU' */
++    return STATUS_SUCCESS;
++}
+diff --git a/dlls/win32u/main.c b/dlls/win32u/main.c
+index 22e5368..38e7b0b 100644
+--- a/dlls/win32u/main.c
++++ b/dlls/win32u/main.c
+@@ -2150,6 +2150,31 @@ INT SYSCALL_API NtUserScheduleDispatchNotification( HWND hwnd )
+     SYSCALL_FUNC( NtUserScheduleDispatchNotification );
+ }
+ 
++void * SYSCALL_API NtUserInitThreadCoreMessagingIocp( HWND hwnd, void *params )
++{
++    SYSCALL_FUNC( NtUserInitThreadCoreMessagingIocp );
++}
++
++void * SYSCALL_API NtUserInitThreadCoreMessagingIocp2( HWND hwnd, void *params )
++{
++    SYSCALL_FUNC( NtUserInitThreadCoreMessagingIocp2 );
++}
++
++DWORD SYSCALL_API NtUserDrainThreadCoreMessagingCompletions( void *cookie )
++{
++    SYSCALL_FUNC( NtUserDrainThreadCoreMessagingCompletions );
++}
++
++DWORD SYSCALL_API NtUserDrainThreadCoreMessagingCompletions2( void *cookie )
++{
++    SYSCALL_FUNC( NtUserDrainThreadCoreMessagingCompletions2 );
++}
++
++DWORD SYSCALL_API NtUserGetQueueStatusReadonly( UINT flags )
++{
++    SYSCALL_FUNC( NtUserGetQueueStatusReadonly );
++}
++
+ BOOL SYSCALL_API NtUserScrollDC( HDC hdc, INT dx, INT dy, const RECT *scroll, const RECT *clip,
+                                  HRGN ret_update_rgn, RECT *update_rect )
+ {
+diff --git a/dlls/win32u/message.c b/dlls/win32u/message.c
+index de1a484..5650d3d 100644
+--- a/dlls/win32u/message.c
++++ b/dlls/win32u/message.c
+@@ -40,6 +40,7 @@
+ WINE_DEFAULT_DEBUG_CHANNEL(msg);
+ WINE_DECLARE_DEBUG_CHANNEL(key);
+ WINE_DECLARE_DEBUG_CHANNEL(relay);
++WINE_DECLARE_DEBUG_CHANNEL(ptrdisp);
+ 
+ #define QS_DRIVER       0x80000000
+ #define QS_HARDWARE     0x40000000
+@@ -2594,6 +2595,41 @@ static WORD pointer_buttons_from_mouse_buttons( WORD mouse_flags )
+     return pointer_flags;
+ }
+ 
++/* A UWP app that renders DirectX into a XAML SwapChainPanel gets its pointer input through
++ * SwapChainPanel.CreateCoreIndependentInputSource: Windows.UI creates a message-only
++ * "Windows.UI.Core.CoreIndependentInputSource" window on a worker thread and pumps it with
++ * CoreDispatcher.ProcessEvents. On Windows the compositor's input redirection delivers pointer
++ * input over the panel to that window. Wine has no such redirection, so the window never gets a
++ * message and the app never sees a click (Solitaire: its four pointer handlers never fire).
++ * Stand in for the redirection: a pointer message delivered to a CoreWindow is also posted to
++ * the process's independent input source window, if it has one. */
++static BOOL is_window_class( HWND hwnd, const WCHAR *class, size_t len )
++{
++    WCHAR buf[64];
++    UNICODE_STRING name = { 0, sizeof(buf), buf };
++    INT n = NtUserGetClassName( hwnd, FALSE, &name );
++    return n == len && !memcmp( buf, class, len * sizeof(WCHAR) );
++}
++
++static void forward_pointer_to_independent_input( HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam )
++{
++    static const WCHAR core_windowW[] = {'W','i','n','d','o','w','s','.','U','I','.','C','o','r','e','.','C','o','r','e','W','i','n','d','o','w'};
++    static const WCHAR input_sourceW[] = {'W','i','n','d','o','w','s','.','U','I','.','C','o','r','e','.','C','o','r','e','I','n','d','e','p','e','n','d','e','n','t','I','n','p','u','t','S','o','u','r','c','e'};
++    static const WCHAR dcomp_sinkW[] = {'_','_','w','i','n','e','_','d','c','o','m','p','_','i','n','p','u','t','_','s','i','n','k',0};
++    UNICODE_STRING class = { sizeof(input_sourceW), sizeof(input_sourceW), (WCHAR *)input_sourceW };
++    HWND target;
++    DWORD pid;
++
++    if (!is_window_class( hwnd, core_windowW, ARRAY_SIZE(core_windowW) )) return;
++    if (!(target = NtUserFindWindowEx( HWND_MESSAGE, 0, &class, NULL, 0 ))) return;
++    if (!NtUserGetWindowThread( target, &pid ) || pid != GetCurrentProcessId()) return;
++    /* dcomp routes input over the swapchain to this window itself (dlls/dcomp/device.c); forwarding
++     * everything as well would hand the engine clicks meant for the XAML controls above it */
++    if (NtUserGetProp( target, dcomp_sinkW )) return;
++    TRACE( "forwarding %#x from core window %p to independent input source %p\n", message, hwnd, target );
++    NtUserPostMessage( target, message, wparam, lparam );
++}
++
+ /***********************************************************************
+  *          process_mouse_message
+  *
+@@ -2707,7 +2743,13 @@ static BOOL process_mouse_message( MSG *msg, UINT hw_id, ULONG_PTR extra_info, H
+             };
+ 
+             update_pointer_from_msg( PT_MOUSE, &pointer_msg );
++            TRACE_(ptrdisp)( "sending %#x to %p at %d,%d, input at %u (now %u)\n", message, msg->hwnd,
++                             (int)msg->pt.x, (int)msg->pt.y, (unsigned)msg->time, (unsigned)NtGetTickCount() );
++            /* this is the thread's current message while it is handled (see note_retrieved_message); the mouse
++             * message that follows replaces it when it is handed out */
++            get_user_thread_info()->current_pointer_id = LOWORD( pointer_msg.wParam );
+             send_message( msg->hwnd, message, pointer_msg.wParam, pointer_msg.lParam );
++            forward_pointer_to_independent_input( msg->hwnd, message, pointer_msg.wParam, pointer_msg.lParam );
+         }
+     }
+ 
+@@ -3182,6 +3224,16 @@ static int peek_message( MSG *msg, const struct peek_message_filter *filter )
+             }
+             continue;
+         case MSG_POSTED:
++            if ((info.msg.message >= WM_POINTERUPDATE && info.msg.message <= WM_POINTERLEAVE) ||
++                info.msg.message == WM_POINTERWHEEL || info.msg.message == WM_POINTERHWHEEL)
++            {
++                /* a forwarded pointer message: pointer state is per thread, so the receiving
++                 * thread's GetPointerInfo needs it too (see forward_pointer_to_independent_input) */
++                MSG pointer_msg = info.msg;
++                pointer_msg.pt.x = (short)LOWORD( info.msg.lParam );
++                pointer_msg.pt.y = (short)HIWORD( info.msg.lParam );
++                update_pointer_from_msg( PT_MOUSE, &pointer_msg );
++            }
+             if (info.msg.message & 0x80000000)  /* internal message */
+             {
+                 if (flags & PM_REMOVE)
+@@ -3479,14 +3531,50 @@ static HANDLE normalize_std_handle( HANDLE handle )
+     return handle;
+ }
+ 
++/* Hand one completion from CoreMessaging's port to CoreMessaging, as win32k's drain does. CoreMessaging associates
++ * its wait packets with the port with KeyContext = the wait's record (a singly linked node: next at +0, the wait's
++ * handle-table id at +8) and ApcContext = its per-thread slot; the queue's own notification has ApcContext bit 31
++ * set. It then reads the records from the CoreMessaging entry it keeps at TEB+0x9e8 (the last Win32ClientInfo slot:
++ * the callback at [0], a list head per slot after it), reversing each list
++ * (UserAdapter::ProcessPendingWaitsCommon) - so records are pushed on the front. Without this no timer or wait
++ * ever completed in CoreMessaging, which three byte patches worked around. */
++static BOOL deliver_coremsg_completion( const FILE_IO_COMPLETION_INFORMATION *entry )
++{
++    ULONG_PTR slot = (ULONG_PTR)entry->CompletionValue, **teb_entry, *record = (ULONG_PTR *)entry->CompletionKey;
++
++    if (slot & 0x80000000) return FALSE;   /* the queue's own notification */
++    teb_entry = (ULONG_PTR **)((char *)NtCurrentTeb() + 0x9e8);
++    TRACE( "key %p value %#lx (record next %p id %#lx), entry %p\n", record, (long)slot,
++           record ? (void *)record[0] : NULL, record ? (long)record[1] : 0, *teb_entry );
++    if (!*teb_entry || !record || slot >= 5) return FALSE;
++    record[0] = (*teb_entry)[1 + slot];
++    (*teb_entry)[1 + slot] = (ULONG_PTR)record;
++    return TRUE;
++}
++
++/* Empty the thread's CoreMessaging port into CoreMessaging's lists; returns how many waits were handed over. */
++static unsigned int drain_coremsg_port(void)
++{
++    HANDLE iocp = get_user_thread_info()->coremsg_iocp;
++    FILE_IO_COMPLETION_INFORMATION entries[16];
++    LARGE_INTEGER zero = {{0}};
++    unsigned int rounds = 0, delivered = 0;
++    ULONG removed, i;
++
++    while (iocp && rounds++ < 64 &&
++           !NtRemoveIoCompletionEx( iocp, entries, ARRAY_SIZE(entries), &removed, &zero, FALSE ) && removed)
++        for (i = 0; i < removed; i++) delivered += deliver_coremsg_completion( &entries[i] );
++    return delivered;
++}
++
+ /***********************************************************************
+  *           NtUserMsgWaitForMultipleObjectsEx   (win32u.@)
+  */
+ DWORD WINAPI NtUserMsgWaitForMultipleObjectsEx( DWORD count, const HANDLE *handles,
+                                                 DWORD timeout, DWORD mask, DWORD flags )
+ {
+-    HANDLE wait_handles[MAXIMUM_WAIT_OBJECTS];
+-    DWORD i;
++    HANDLE wait_handles[MAXIMUM_WAIT_OBJECTS], iocp;
++    DWORD i, n, ret;
+ 
+     if (count > MAXIMUM_WAIT_OBJECTS-1)
+     {
+@@ -3496,10 +3584,31 @@ DWORD WINAPI NtUserMsgWaitForMultipleObjectsEx( DWORD count, const HANDLE *handl
+ 
+     /* add the queue to the handle list */
+     for (i = 0; i < count; i++) wait_handles[i] = normalize_std_handle( handles[i] );
+-    wait_handles[count] = get_server_queue_handle();
+-
+-    return wait_objects( count+1, wait_handles, timeout,
+-                         (flags & MWMO_INPUTAVAILABLE) ? mask : 0, mask, flags );
++    n = count;
++    /* A thread with a CoreMessaging completion port is woken by a completion on it as by input, as win32k does
++     * for the port NtUserInitThreadCoreMessagingIocp ties to the queue. CoreMessaging passes only its events to
++     * this wait (through combase's CoMsgWaitInProcessEvents), so a timer or wait packet arriving on the port - a
++     * dispatcher RunAsync, XAML's frame timer - never woke the UI thread, and three CoreMessaging byte patches, a
++     * Windows.UI trampoline and a 16 ms poll stood in for it. The port goes just before the queue, which
++     * wait_message expects last, and a wake from it reports input available. */
++    if ((iocp = get_user_thread_info()->coremsg_iocp) && !(flags & MWMO_WAITALL) && count < MAXIMUM_WAIT_OBJECTS - 1)
++        wait_handles[n++] = iocp;
++    wait_handles[n] = get_server_queue_handle();
++
++    ret = wait_objects( n + 1, wait_handles, timeout, (flags & MWMO_INPUTAVAILABLE) ? mask : 0, mask, flags );
++    if (n != count && ret == WAIT_OBJECT_0 + count)
++    {
++        /* a completion on the port: hand its waits to CoreMessaging now and, if there were any, have its adapter
++         * window run its work (message 0x60, kind 1, what UserAdapter::AsyncPostMessage posts), which processes
++         * them - what win32k does for the thread. The queue's own notification needs nothing: the queue handle
++         * wakes this wait anyway, and answering it with 0x60 kept an idle app turning, ~100 times a second (its
++         * work re-arms a 0 ms dispatch timer, whose WM_TIMER posted the notification again). */
++        HWND hwnd = get_user_thread_info()->coremsg_hwnd;
++        if (drain_coremsg_port() && hwnd) NtUserPostMessage( hwnd, 0x60, 1, 0 );
++        ret = WAIT_OBJECT_0 + count;
++    }
++    else if (n != count && ret == WAIT_OBJECT_0 + n) ret = WAIT_OBJECT_0 + count;
++    return ret;
+ }
+ 
+ /***********************************************************************
+@@ -3562,6 +3671,27 @@ BOOL WINAPI NtUserWaitMessage(void)
+     return NtUserMsgWaitForMultipleObjectsEx( 0, NULL, INFINITE, QS_ALLINPUT, 0 ) != WAIT_FAILED;
+ }
+ 
++/* GetPointerInfo answers for "the current message": the pointer message the thread retrieved last, until it retrieves
++ * another message. XAML depends on that. Its CXcpBrowserHost::ReplayPreviousPointerUpdate re-hit-tests the last pointer
++ * update from its frame tick, and it only does so when GetPointerInfo still answers for the recorded pointer. When a
++ * MenuFlyout opened, the replay hit the popup light-dismiss layer, the row under the pointer got PointerExited, and
++ * Shapr3D's History row dropped its "..." button although the pointer had not moved. */
++static void note_retrieved_message( const MSG *msg )
++{
++    UINT message = msg->message;
++    BOOL pointer = (message >= WM_POINTERUPDATE && message <= WM_POINTERLEAVE) ||
++                   message == WM_POINTERWHEEL || message == WM_POINTERHWHEEL;
++
++    /* A mouse message that follows its mouse-in-pointer WM_POINTER* send keeps that pointer current: on Windows the
++     * mouse message is generated while the pointer message is handled, so it is still the current message's pointer.
++     * Windows.UI's CoreWindow asks GetPointerInfo while handling the click that activates it, and a refusal there
++     * throws and destroys the CoreWindow (an app's window vanished when clicked from another window). */
++    if (!pointer && message >= WM_MOUSEFIRST && message <= WM_MOUSELAST && get_user_thread_info()->current_pointer_id == 1)
++        return;
++
++    get_user_thread_info()->current_pointer_id = pointer ? LOWORD( msg->wParam ) : 0;
++}
++
+ /***********************************************************************
+  *           NtUserPeekMessage  (win32u.@)
+  */
+@@ -3608,6 +3738,10 @@ BOOL WINAPI NtUserPeekMessage( MSG *msg_out, HWND hwnd, UINT first, UINT last, U
+         return FALSE;
+     }
+     *msg_out = msg;
++    if (flags & PM_REMOVE) note_retrieved_message( &msg );
++    if ((msg.message >= WM_POINTERUPDATE && msg.message <= WM_POINTERUP) || msg.message == WM_MOUSEWHEEL)
++        TRACE_(ptrdisp)( "peeked %#x for %p flags %#x, posted at %u (now %u)\n", msg.message, msg.hwnd, flags,
++                         (unsigned)msg.time, (unsigned)NtGetTickCount() );
+     return TRUE;
+ }
+ 
+@@ -3644,6 +3778,10 @@ BOOL WINAPI NtUserGetMessage( MSG *msg, HWND hwnd, UINT first, UINT last )
+     if (ret < 0) return -1;
+ 
+     check_for_driver_events();
++    note_retrieved_message( msg );
++    if ((msg->message >= WM_POINTERUPDATE && msg->message <= WM_POINTERUP) || msg->message == WM_MOUSEWHEEL)
++        TRACE_(ptrdisp)( "got %#x for %p, posted at %u (now %u)\n", msg->message, msg->hwnd,
++                         (unsigned)msg->time, (unsigned)NtGetTickCount() );
+ 
+     return msg->message != WM_QUIT;
+ }
+@@ -4042,6 +4180,9 @@ LRESULT WINAPI NtUserDispatchMessage( const MSG *msg )
+     struct win_proc_params params;
+     LRESULT retval = 0;
+ 
++    if ((msg->message >= WM_POINTERUPDATE && msg->message <= WM_POINTERUP) || msg->message == WM_MOUSEWHEEL)
++        TRACE_(ptrdisp)( "%#x to %p, posted at %u (now %u)\n", msg->message, msg->hwnd, (unsigned)msg->time,
++                                 (unsigned)NtGetTickCount() );
+     /* Process timer messages */
+     if (msg->lParam && msg->message == WM_TIMER)
+     {
+@@ -4905,3 +5046,109 @@ BOOL WINAPI NtUserGetCurrentInputMessageSource( INPUT_MESSAGE_SOURCE *source )
+     *source = get_user_thread_info()->client_info->msg_source;
+     return TRUE;
+ }
++
++/***********************************************************************
++ *           NtUserInitThreadCoreMessagingIocp2   (win32u.@)
++ *
++ * CoreMessaging asks for an I/O completion port tied to the calling thread's message queue: whenever
++ * the queue becomes signaled, a completion is posted so its event loop knows to drain Win32 messages.
++ * The completion carries ApcContext with bit 31 set, which is how CoreMessaging tells queue
++ * notifications from its wait completion packets. Returns the port handle; hwnd is the thread's
++ * dispatcher window and the parameter block is opaque to us.
++ */
++void * WINAPI NtUserInitThreadCoreMessagingIocp2( HWND hwnd, void *params )
++{
++    unsigned int status;
++    HANDLE iocp;
++
++    FIXME( "%p %p: semi-stub\n", hwnd, params );
++    NtUserGetQueueStatus( 0 );   /* make sure the thread queue exists */
++    if ((status = NtCreateIoCompletion( &iocp, IO_COMPLETION_ALL_ACCESS, NULL, 0 )))
++    {
++        WARN( "creating completion port failed, status %#x\n", status );
++        return NULL;
++    }
++    SERVER_START_REQ( set_queue_completion )
++    {
++        req->completion = wine_server_obj_handle( iocp );
++        req->key        = 0;
++        req->value      = 0x80000000;
++        status = wine_server_call( req );
++    }
++    SERVER_END_REQ;
++    if (status)
++    {
++        WARN( "attaching completion port %p failed, status %#x\n", iocp, status );
++        NtClose( iocp );
++        return NULL;
++    }
++    TRACE( "thread %04x: port %p\n", (int)GetCurrentThreadId(), iocp );
++    /* our own handle for the message wait, which CoreMessaging closing its copy cannot invalidate */
++    {
++        struct user_thread_info *info = get_user_thread_info();
++        HANDLE dup;
++        if (!NtDuplicateObject( GetCurrentProcess(), iocp, GetCurrentProcess(), &dup, 0, 0, DUPLICATE_SAME_ACCESS ))
++        {
++            if (info->coremsg_iocp) NtClose( info->coremsg_iocp );
++            info->coremsg_iocp = dup;
++            info->coremsg_hwnd = hwnd;
++        }
++    }
++    return iocp;
++}
++
++/***********************************************************************
++ *           NtUserInitThreadCoreMessagingIocp   (win32u.@)
++ */
++void * WINAPI NtUserInitThreadCoreMessagingIocp( HWND hwnd, void *params )
++{
++    return NtUserInitThreadCoreMessagingIocp2( hwnd, params );
++}
++
++/***********************************************************************
++ *           NtUserDrainThreadCoreMessagingCompletions2   (win32u.@)
++ */
++DWORD WINAPI NtUserDrainThreadCoreMessagingCompletions2( void *cookie )
++{
++    unsigned int status;
++
++    TRACE( "%p\n", cookie );
++    /* Empty the port: CoreMessaging's user-integrated wait (Win32EventLoopBridge) never waits on it itself. A
++     * completion on it - a wait completion packet firing for one of its timers or waits - wakes the thread's
++     * message wait (NtUserMsgWaitForMultipleObjectsEx), after which CoreMessaging calls this and then checks its
++     * registered waits (UserAdapter::ProcessPendingWaitsCommon). Left on the port, the completion kept the wait
++     * signalled for ever. */
++    drain_coremsg_port();
++    SERVER_START_REQ( drain_queue_completion )
++    {
++        status = wine_server_call( req );
++    }
++    SERVER_END_REQ;
++    /* nonzero on success: CoreMessaging's DrainSignaledIocpWaits fail-fasts on 0 (FailFast::ForWin32, E_FAIL with no
++     * last error), which a CoreMessaging byte patch used to jump over */
++    return !status;
++}
++
++/***********************************************************************
++ *           NtUserDrainThreadCoreMessagingCompletions   (win32u.@)
++ */
++DWORD WINAPI NtUserDrainThreadCoreMessagingCompletions( void *cookie )
++{
++    return NtUserDrainThreadCoreMessagingCompletions2( cookie );
++}
++
++/***********************************************************************
++ *           NtUserGetQueueStatusReadonly   (win32u.@)
++ */
++DWORD WINAPI NtUserGetQueueStatusReadonly( UINT flags )
++{
++    DWORD ret;
++    SERVER_START_REQ( get_queue_status )
++    {
++        req->clear_bits = 0;
++        wine_server_call( req );
++        ret = MAKELONG( reply->changed_bits & flags, reply->wake_bits & flags );
++    }
++    SERVER_END_REQ;
++    return ret;
++}
+diff --git a/dlls/win32u/ntuser_private.h b/dlls/win32u/ntuser_private.h
+index 3a9dfa2..59256e4 100644
+--- a/dlls/win32u/ntuser_private.h
++++ b/dlls/win32u/ntuser_private.h
+@@ -58,6 +58,7 @@ typedef struct tagWND
+     UINT               dwExStyle;     /* Extended style (from CreateWindowEx) */
+     UINT               helpContext;   /* Help context ID */
+     UINT               flags;         /* Misc. flags (see below) */
++    UINT               ui_state;      /* UISF_* flags (WM_CHANGEUISTATE / WM_QUERYUISTATE) */
+     HMENU              hSysMenu;      /* window's copy of System Menu */
+     HICON              hIcon;         /* window's icon */
+     HICON              hIconSmall;    /* window's small icon */
+@@ -83,6 +84,8 @@ typedef struct tagWND
+ #define WIN_CHILDREN_MOVED        0x0040 /* children may have moved, ignore stored positions */
+ #define WIN_HAS_IME_WIN           0x0080 /* the window has been registered with imm32 */
+ 
++#define WIN_UISTATE_INITIALIZED   0x80000000 /* WND.ui_state has seen WM_CHANGEUISTATE(UIS_INITIALIZE) */
++
+ #define WND_OTHER_PROCESS ((WND *)1)  /* returned by get_win_ptr on unknown window handles */
+ #define WND_DESKTOP       ((WND *)2)  /* returned by get_win_ptr on the desktop window */
+ 
+@@ -133,6 +136,9 @@ struct user_thread_info
+     struct mouse_tracking_info   *mouse_tracking_info;    /* NtUserTrackMouseEvent handling */
+     struct opengl_thread_data    *opengl_data;            /* OpenGL private thread data */
+     struct list                   known_pointers;         /* list of known pointers */
++    HANDLE                        coremsg_iocp;           /* our duplicate of CoreMessaging's completion port */
++    HWND                          coremsg_hwnd;           /* CoreMessaging's adapter window, which runs its work on 0x60 */
++    UINT32                        current_pointer_id;     /* pointer of the message last retrieved, 0 if not a pointer message */
+ };
+ 
+ extern struct user_thread_info *get_user_thread_info(void);
+diff --git a/dlls/win32u/syscall.c b/dlls/win32u/syscall.c
+index ca1be72..5ce0de5 100644
+--- a/dlls/win32u/syscall.c
++++ b/dlls/win32u/syscall.c
+@@ -137,6 +137,9 @@ static void stub_syscall( const char *name )
+     NtRaiseException( &rec, &context, TRUE );
+ }
+ 
++/* Implemented in input.c — must be declared before the syscall table. */
++extern NTSTATUS WINAPI NtQueryCompositionInputSinkLuid( HANDLE sink, LUID *luid );
++
+ #define SYSCALL_STUB(name) static void name(void) { stub_syscall( #name ); }
+ ALL_SYSCALL_STUBS
+ 
+diff --git a/dlls/win32u/sysparams.c b/dlls/win32u/sysparams.c
+index c9cc892..cf6da6a 100644
+--- a/dlls/win32u/sysparams.c
++++ b/dlls/win32u/sysparams.c
+@@ -7277,6 +7277,22 @@ int get_system_metrics( int index )
+         return 0;
+     case SM_CMETRICS:
+         return SM_CMETRICS;
++    case 0x1800:
++    {
++        /* Undocumented; XAML's CPopup::DoesPlatformSupportWindowedPopup asks it whether popups may be
++         * windows of their own, which is what every desktop Windows answers. Windowless popups put a
++         * light-dismiss layer over the whole CoreWindow, and XAML's pointer replay then takes the hover
++         * away from whatever opened the flyout. On by default; WINE_UWP_WINDOWED_POPUPS=0 turns it off. It was
++         * opt-in while Shapr3D stalled blank at start-up about one start in eight with it: each windowed popup hooks
++         * a CoreWindow position event, one more chance for the CoreMessaging wake win32u did not deliver then. */
++        static int enabled = -1;
++        if (enabled < 0)
++        {
++            const char *env = getenv( "WINE_UWP_WINDOWED_POPUPS" );
++            enabled = !env || atoi( env );
++        }
++        return enabled;
++    }
+     default:
+         return 0;
+     }
+@@ -7583,6 +7599,7 @@ static void thread_detach(void)
+     cleanup_opengl_thread();
+     NtClose( thread_info->server_queue );
+     if (thread_info->idle_event) NtClose( thread_info->idle_event );
++    if (thread_info->coremsg_iocp) NtClose( thread_info->coremsg_iocp );
+     free( thread_info->session_data );
+     free( thread_info->mouse_tracking_info );
+     free( thread_info );
+diff --git a/dlls/win32u/win32syscalls.h b/dlls/win32u/win32syscalls.h
+index 132ac47..b63aac0 100644
+--- a/dlls/win32u/win32syscalls.h
++++ b/dlls/win32u/win32syscalls.h
+@@ -742,7 +742,7 @@
+     SYSCALL_ENTRY( 0x12e2, NtQueryCompositionInputIsImplicit, 0 ) \
+     SYSCALL_ENTRY( 0x12e3, NtQueryCompositionInputQueueAndTransform, 0 ) \
+     SYSCALL_ENTRY( 0x12e4, NtQueryCompositionInputSink, 0 ) \
+-    SYSCALL_ENTRY( 0x12e5, NtQueryCompositionInputSinkLuid, 0 ) \
++    SYSCALL_ENTRY( 0x12e5, NtQueryCompositionInputSinkLuid, 8 ) \
+     SYSCALL_ENTRY( 0x12e6, NtQueryCompositionInputSinkViewId, 0 ) \
+     SYSCALL_ENTRY( 0x12e7, NtQueryCompositionSurfaceBinding, 0 ) \
+     SYSCALL_ENTRY( 0x12e8, NtQueryCompositionSurfaceFrameRate, 0 ) \
+@@ -918,8 +918,8 @@
+     SYSCALL_ENTRY( 0x1392, NtUserDownlevelTouchpad, 0 ) \
+     SYSCALL_ENTRY( 0x1393, NtUserDragDetect, 12 ) \
+     SYSCALL_ENTRY( 0x1394, NtUserDragObject, 20 ) \
+-    SYSCALL_ENTRY( 0x1395, NtUserDrainThreadCoreMessagingCompletions, 0 ) \
+-    SYSCALL_ENTRY( 0x1396, NtUserDrainThreadCoreMessagingCompletions2, 0 ) \
++    SYSCALL_ENTRY( 0x1395, NtUserDrainThreadCoreMessagingCompletions, 4 ) \
++    SYSCALL_ENTRY( 0x1396, NtUserDrainThreadCoreMessagingCompletions2, 4 ) \
+     SYSCALL_ENTRY( 0x1397, NtUserDrawAnimatedRects, 0 ) \
+     SYSCALL_ENTRY( 0x1398, NtUserDrawCaption, 0 ) \
+     SYSCALL_ENTRY( 0x1399, NtUserDrawCaptionTemp, 28 ) \
+@@ -1085,7 +1085,7 @@
+     SYSCALL_ENTRY( 0x1439, NtUserGetProp2, 0 ) \
+     SYSCALL_ENTRY( 0x143a, NtUserGetQueueIocp, 0 ) \
+     SYSCALL_ENTRY( 0x143b, NtUserGetQueueStatus, 4 ) \
+-    SYSCALL_ENTRY( 0x143c, NtUserGetQueueStatusReadonly, 0 ) \
++    SYSCALL_ENTRY( 0x143c, NtUserGetQueueStatusReadonly, 4 ) \
+     SYSCALL_ENTRY( 0x143d, NtUserGetRawInputBuffer, 12 ) \
+     SYSCALL_ENTRY( 0x143e, NtUserGetRawInputData, 20 ) \
+     SYSCALL_ENTRY( 0x143f, NtUserGetRawInputDeviceInfo, 16 ) \
+@@ -1144,8 +1144,8 @@
+     SYSCALL_ENTRY( 0x1474, NtUserInheritWindowMonitor, 0 ) \
+     SYSCALL_ENTRY( 0x1475, NtUserInitAnsiOem, 0 ) \
+     SYSCALL_ENTRY( 0x1476, NtUserInitTask, 0 ) \
+-    SYSCALL_ENTRY( 0x1477, NtUserInitThreadCoreMessagingIocp, 0 ) \
+-    SYSCALL_ENTRY( 0x1478, NtUserInitThreadCoreMessagingIocp2, 0 ) \
++    SYSCALL_ENTRY( 0x1477, NtUserInitThreadCoreMessagingIocp, 8 ) \
++    SYSCALL_ENTRY( 0x1478, NtUserInitThreadCoreMessagingIocp2, 8 ) \
+     SYSCALL_ENTRY( 0x1479, NtUserInitialize, 0 ) \
+     SYSCALL_ENTRY( 0x147a, NtUserInitializeClientPfnArrays, 16 ) \
+     SYSCALL_ENTRY( 0x147b, NtUserInitializeGenericHidInjection, 0 ) \
+@@ -2284,7 +2284,7 @@
+     SYSCALL_ENTRY( 0x12e2, NtQueryCompositionInputIsImplicit, 0 ) \
+     SYSCALL_ENTRY( 0x12e3, NtQueryCompositionInputQueueAndTransform, 0 ) \
+     SYSCALL_ENTRY( 0x12e4, NtQueryCompositionInputSink, 0 ) \
+-    SYSCALL_ENTRY( 0x12e5, NtQueryCompositionInputSinkLuid, 0 ) \
++    SYSCALL_ENTRY( 0x12e5, NtQueryCompositionInputSinkLuid, 16 ) \
+     SYSCALL_ENTRY( 0x12e6, NtQueryCompositionInputSinkViewId, 0 ) \
+     SYSCALL_ENTRY( 0x12e7, NtQueryCompositionSurfaceBinding, 0 ) \
+     SYSCALL_ENTRY( 0x12e8, NtQueryCompositionSurfaceFrameRate, 0 ) \
+@@ -2460,8 +2460,8 @@
+     SYSCALL_ENTRY( 0x1392, NtUserDownlevelTouchpad, 0 ) \
+     SYSCALL_ENTRY( 0x1393, NtUserDragDetect, 24 ) \
+     SYSCALL_ENTRY( 0x1394, NtUserDragObject, 40 ) \
+-    SYSCALL_ENTRY( 0x1395, NtUserDrainThreadCoreMessagingCompletions, 0 ) \
+-    SYSCALL_ENTRY( 0x1396, NtUserDrainThreadCoreMessagingCompletions2, 0 ) \
++    SYSCALL_ENTRY( 0x1395, NtUserDrainThreadCoreMessagingCompletions, 8 ) \
++    SYSCALL_ENTRY( 0x1396, NtUserDrainThreadCoreMessagingCompletions2, 8 ) \
+     SYSCALL_ENTRY( 0x1397, NtUserDrawAnimatedRects, 0 ) \
+     SYSCALL_ENTRY( 0x1398, NtUserDrawCaption, 0 ) \
+     SYSCALL_ENTRY( 0x1399, NtUserDrawCaptionTemp, 56 ) \
+@@ -2627,7 +2627,7 @@
+     SYSCALL_ENTRY( 0x1439, NtUserGetProp2, 0 ) \
+     SYSCALL_ENTRY( 0x143a, NtUserGetQueueIocp, 0 ) \
+     SYSCALL_ENTRY( 0x143b, NtUserGetQueueStatus, 8 ) \
+-    SYSCALL_ENTRY( 0x143c, NtUserGetQueueStatusReadonly, 0 ) \
++    SYSCALL_ENTRY( 0x143c, NtUserGetQueueStatusReadonly, 8 ) \
+     SYSCALL_ENTRY( 0x143d, NtUserGetRawInputBuffer, 24 ) \
+     SYSCALL_ENTRY( 0x143e, NtUserGetRawInputData, 40 ) \
+     SYSCALL_ENTRY( 0x143f, NtUserGetRawInputDeviceInfo, 32 ) \
+@@ -2686,8 +2686,8 @@
+     SYSCALL_ENTRY( 0x1474, NtUserInheritWindowMonitor, 0 ) \
+     SYSCALL_ENTRY( 0x1475, NtUserInitAnsiOem, 0 ) \
+     SYSCALL_ENTRY( 0x1476, NtUserInitTask, 0 ) \
+-    SYSCALL_ENTRY( 0x1477, NtUserInitThreadCoreMessagingIocp, 0 ) \
+-    SYSCALL_ENTRY( 0x1478, NtUserInitThreadCoreMessagingIocp2, 0 ) \
++    SYSCALL_ENTRY( 0x1477, NtUserInitThreadCoreMessagingIocp, 16 ) \
++    SYSCALL_ENTRY( 0x1478, NtUserInitThreadCoreMessagingIocp2, 16 ) \
+     SYSCALL_ENTRY( 0x1479, NtUserInitialize, 0 ) \
+     SYSCALL_ENTRY( 0x147a, NtUserInitializeClientPfnArrays, 32 ) \
+     SYSCALL_ENTRY( 0x147b, NtUserInitializeGenericHidInjection, 0 ) \
+@@ -3618,7 +3618,6 @@
+     SYSCALL_STUB( NtQueryCompositionInputIsImplicit ) \
+     SYSCALL_STUB( NtQueryCompositionInputQueueAndTransform ) \
+     SYSCALL_STUB( NtQueryCompositionInputSink ) \
+-    SYSCALL_STUB( NtQueryCompositionInputSinkLuid ) \
+     SYSCALL_STUB( NtQueryCompositionInputSinkViewId ) \
+     SYSCALL_STUB( NtQueryCompositionSurfaceBinding ) \
+     SYSCALL_STUB( NtQueryCompositionSurfaceFrameRate ) \
+@@ -3744,8 +3743,6 @@
+     SYSCALL_STUB( NtUserDoSoundDisconnect ) \
+     SYSCALL_STUB( NtUserDoUninitMessagePumpHook ) \
+     SYSCALL_STUB( NtUserDownlevelTouchpad ) \
+-    SYSCALL_STUB( NtUserDrainThreadCoreMessagingCompletions ) \
+-    SYSCALL_STUB( NtUserDrainThreadCoreMessagingCompletions2 ) \
+     SYSCALL_STUB( NtUserDrawAnimatedRects ) \
+     SYSCALL_STUB( NtUserDrawCaption ) \
+     SYSCALL_STUB( NtUserDwmGetRemoteSessionOcclusionEvent ) \
+@@ -3839,7 +3836,6 @@
+     SYSCALL_STUB( NtUserGetProcessUIContextInformation ) \
+     SYSCALL_STUB( NtUserGetProp2 ) \
+     SYSCALL_STUB( NtUserGetQueueIocp ) \
+-    SYSCALL_STUB( NtUserGetQueueStatusReadonly ) \
+     SYSCALL_STUB( NtUserGetRawPointerDeviceData ) \
+     SYSCALL_STUB( NtUserGetRequiredCursorSizes ) \
+     SYSCALL_STUB( NtUserGetResizeDCompositionSynchronizationObject ) \
+@@ -3877,8 +3873,6 @@
+     SYSCALL_STUB( NtUserInheritWindowMonitor ) \
+     SYSCALL_STUB( NtUserInitAnsiOem ) \
+     SYSCALL_STUB( NtUserInitTask ) \
+-    SYSCALL_STUB( NtUserInitThreadCoreMessagingIocp ) \
+-    SYSCALL_STUB( NtUserInitThreadCoreMessagingIocp2 ) \
+     SYSCALL_STUB( NtUserInitialize ) \
+     SYSCALL_STUB( NtUserInitializeGenericHidInjection ) \
+     SYSCALL_STUB( NtUserInitializeInputDeviceInjection ) \
+diff --git a/dlls/win32u/win32u.spec b/dlls/win32u/win32u.spec
+index 2c40901..4dfb31d 100644
+--- a/dlls/win32u/win32u.spec
++++ b/dlls/win32u/win32u.spec
+@@ -740,7 +740,7 @@
+ @ stub -syscall NtQueryCompositionInputIsImplicit
+ @ stub -syscall NtQueryCompositionInputQueueAndTransform
+ @ stub -syscall NtQueryCompositionInputSink
+-@ stub -syscall NtQueryCompositionInputSinkLuid
++@ stdcall -syscall NtQueryCompositionInputSinkLuid(ptr ptr)
+ @ stub -syscall NtQueryCompositionInputSinkViewId
+ @ stub -syscall NtQueryCompositionSurfaceBinding
+ @ stub -syscall NtQueryCompositionSurfaceFrameRate
+@@ -916,8 +916,8 @@
+ @ stub -syscall NtUserDownlevelTouchpad
+ @ stdcall -syscall NtUserDragDetect(long long long)
+ @ stdcall -syscall NtUserDragObject(long long long long long)
+-@ stub -syscall NtUserDrainThreadCoreMessagingCompletions
+-@ stub -syscall NtUserDrainThreadCoreMessagingCompletions2
++@ stdcall -syscall NtUserDrainThreadCoreMessagingCompletions(ptr)
++@ stdcall -syscall NtUserDrainThreadCoreMessagingCompletions2(ptr)
+ @ stub -syscall NtUserDrawAnimatedRects
+ @ stub -syscall NtUserDrawCaption
+ @ stdcall -syscall NtUserDrawCaptionTemp(long long ptr long long wstr long)
+@@ -1083,7 +1083,7 @@
+ @ stub -syscall NtUserGetProp2
+ @ stub -syscall NtUserGetQueueIocp
+ @ stdcall -syscall NtUserGetQueueStatus(long)
+-@ stub -syscall NtUserGetQueueStatusReadonly
++@ stdcall -syscall NtUserGetQueueStatusReadonly(long)
+ @ stdcall -syscall NtUserGetRawInputBuffer(ptr ptr long)
+ @ stdcall -syscall NtUserGetRawInputData(ptr long ptr ptr long)
+ @ stdcall -syscall NtUserGetRawInputDeviceInfo(ptr long ptr ptr)
+@@ -1142,8 +1142,8 @@
+ @ stub -syscall NtUserInheritWindowMonitor
+ @ stub -syscall NtUserInitAnsiOem
+ @ stub -syscall NtUserInitTask
+-@ stub -syscall NtUserInitThreadCoreMessagingIocp
+-@ stub -syscall NtUserInitThreadCoreMessagingIocp2
++@ stdcall -syscall NtUserInitThreadCoreMessagingIocp(ptr ptr)
++@ stdcall -syscall NtUserInitThreadCoreMessagingIocp2(ptr ptr)
+ @ stub -syscall NtUserInitialize
+ @ stdcall -syscall NtUserInitializeClientPfnArrays(ptr ptr ptr ptr)
+ @ stub -syscall NtUserInitializeGenericHidInjection
+diff --git a/dlls/win32u/win32u_private.h b/dlls/win32u/win32u_private.h
+index 4f3eea7..79c33c5 100644
+--- a/dlls/win32u/win32u_private.h
++++ b/dlls/win32u/win32u_private.h
+@@ -311,6 +311,7 @@ extern HWND is_current_process_window( HWND hwnd );
+ extern HWND is_current_thread_window( HWND hwnd );
+ extern BOOL is_desktop_window( HWND hwnd );
+ extern BOOL is_iconic( HWND hwnd );
++extern BOOL ui_state_initialized( HWND hwnd );
+ extern BOOL is_window_drawable( HWND hwnd, BOOL icon );
+ extern BOOL is_window_enabled( HWND hwnd );
+ extern BOOL is_window_unicode( HWND hwnd );
+diff --git a/dlls/win32u/window.c b/dlls/win32u/window.c
+index 4f0610c..1160791 100644
+--- a/dlls/win32u/window.c
++++ b/dlls/win32u/window.c
+@@ -1320,6 +1320,18 @@ BOOL is_iconic( HWND hwnd )
+     return (get_window_long( hwnd, GWL_STYLE ) & WS_MINIMIZE) != 0;
+ }
+ 
++/* has the window's keyboard-cue state been initialised (WM_CHANGEUISTATE UIS_INITIALIZE)? */
++BOOL ui_state_initialized( HWND hwnd )
++{
++    WND *win = get_win_ptr( hwnd );
++    BOOL ret;
++
++    if (!win || win == WND_OTHER_PROCESS || win == WND_DESKTOP) return TRUE;
++    ret = !!(win->ui_state & WIN_UISTATE_INITIALIZED);
++    release_win_ptr( win );
++    return ret;
++}
++
+ BOOL is_zoomed( HWND hwnd )
+ {
+     return (get_window_long( hwnd, GWL_STYLE ) & WS_MAXIMIZE) != 0;
+@@ -2510,6 +2522,20 @@ static BOOL apply_window_pos( HWND hwnd, HWND insert_after, UINT swp_flags, stru
+     return ret;
+ }
+ 
++static BOOL flush_window_surface( HWND hwnd )
++{
++    struct window_surface *surface;
++    WND *win;
++
++    if (!(win = get_win_ptr( hwnd )) || win == WND_DESKTOP || win == WND_OTHER_PROCESS) return FALSE;
++    if ((surface = win->surface)) window_surface_add_ref( surface );
++    release_win_ptr( win );
++    if (!surface) return FALSE;
++    window_surface_flush( surface );
++    window_surface_release( surface );
++    return TRUE;
++}
++
+ static BOOL expose_window_surface( HWND hwnd, UINT flags, const RECT *rect )
+ {
+     struct window_surface *surface;
+@@ -6297,6 +6323,9 @@ ULONG_PTR WINAPI NtUserCallHwnd( HWND hwnd, DWORD code )
+     case NtUserCallHwnd_GetDpiForWindow:
+         return get_dpi_for_window( hwnd ).num;
+ 
++    case NtUserCallHwnd_FlushWindowSurface:
++        return flush_window_surface( hwnd );
++
+     case NtUserCallHwnd_GetLastActivePopup:
+         return (ULONG_PTR)get_last_active_popup( hwnd );
+ 
+diff --git a/dlls/wow64/syscall.c b/dlls/wow64/syscall.c
+index d6fea09..a5f1a94 100644
+--- a/dlls/wow64/syscall.c
++++ b/dlls/wow64/syscall.c
+@@ -497,6 +497,24 @@ NTSTATUS WINAPI wow64_NtAlpcAcceptConnectPort( UINT *args )
+     return status;
+ }
+ 
++/**********************************************************************
++ *           wow64_NtAlpcConnectPortEx
++ */
++NTSTATUS WINAPI wow64_NtAlpcConnectPortEx( UINT *args )
++{
++    FIXME( "not implemented for 32-bit callers\n" );
++    return STATUS_NOT_IMPLEMENTED;
++}
++
++/**********************************************************************
++ *           wow64_NtAlpcQueryInformation
++ */
++NTSTATUS WINAPI wow64_NtAlpcQueryInformation( UINT *args )
++{
++    FIXME( "not implemented for 32-bit callers\n" );
++    return STATUS_NOT_IMPLEMENTED;
++}
++
+ /**********************************************************************
+  *           wow64_NtAlpcConnectPort
+  */
+diff --git a/dlls/wow64win/user.c b/dlls/wow64win/user.c
+index 0d549da..34a9eee 100644
+--- a/dlls/wow64win/user.c
++++ b/dlls/wow64win/user.c
+@@ -2917,6 +2917,16 @@ static void pointer_info_list_64to32( UINT size, UINT count, void *out, const vo
+     }
+ }
+ 
++extern NTSTATUS WINAPI NtQueryCompositionInputSinkLuid( HANDLE sink, LUID *luid );
++
++NTSTATUS WINAPI wow64_NtQueryCompositionInputSinkLuid( UINT *args )
++{
++    HANDLE sink = get_handle( &args );
++    LUID *luid = get_ptr( &args );
++
++    return NtQueryCompositionInputSinkLuid( sink, luid );
++}
++
+ NTSTATUS WINAPI wow64_NtUserGetPointerInfoList( UINT *args )
+ {
+     NTSTATUS ret;
+@@ -4256,6 +4266,38 @@ NTSTATUS WINAPI wow64_NtUserReplyMessage( UINT *args )
+     return NtUserReplyMessage( result );
+ }
+ 
++NTSTATUS WINAPI wow64_NtUserInitThreadCoreMessagingIocp( UINT *args )
++{
++    HANDLE iocp = get_handle( &args );
++    void *params = get_ptr( &args );
++    return HandleToULong( NtUserInitThreadCoreMessagingIocp( iocp, params ));
++}
++
++NTSTATUS WINAPI wow64_NtUserInitThreadCoreMessagingIocp2( UINT *args )
++{
++    HANDLE iocp = get_handle( &args );
++    void *params = get_ptr( &args );
++    return HandleToULong( NtUserInitThreadCoreMessagingIocp2( iocp, params ));
++}
++
++NTSTATUS WINAPI wow64_NtUserDrainThreadCoreMessagingCompletions( UINT *args )
++{
++    void *cookie = get_ptr( &args );
++    return NtUserDrainThreadCoreMessagingCompletions( cookie );
++}
++
++NTSTATUS WINAPI wow64_NtUserDrainThreadCoreMessagingCompletions2( UINT *args )
++{
++    void *cookie = get_ptr( &args );
++    return NtUserDrainThreadCoreMessagingCompletions2( cookie );
++}
++
++NTSTATUS WINAPI wow64_NtUserGetQueueStatusReadonly( UINT *args )
++{
++    UINT flags = get_ulong( &args );
++    return NtUserGetQueueStatusReadonly( flags );
++}
++
+ NTSTATUS WINAPI wow64_NtUserScheduleDispatchNotification( UINT *args )
+ {
+     HWND hwnd = get_handle( &args );
+diff --git a/include/ntuser.h b/include/ntuser.h
+index ad0eccb..90e6634 100644
+--- a/include/ntuser.h
++++ b/include/ntuser.h
+@@ -970,6 +970,11 @@ W32KAPI BOOL    WINAPI NtUserRemoveMenu( HMENU menu, UINT id, UINT flags );
+ W32KAPI HANDLE  WINAPI NtUserRemoveProp( HWND hwnd, const WCHAR *str );
+ W32KAPI BOOL    WINAPI NtUserReplyMessage( LRESULT result );
+ W32KAPI INT     WINAPI NtUserScheduleDispatchNotification( HWND hwnd );
++void *  WINAPI NtUserInitThreadCoreMessagingIocp( HWND hwnd, void *params );
++void *  WINAPI NtUserInitThreadCoreMessagingIocp2( HWND hwnd, void *params );
++DWORD   WINAPI NtUserDrainThreadCoreMessagingCompletions( void *cookie );
++DWORD   WINAPI NtUserDrainThreadCoreMessagingCompletions2( void *cookie );
++DWORD   WINAPI NtUserGetQueueStatusReadonly( UINT flags );
+ W32KAPI BOOL    WINAPI NtUserScrollDC( HDC hdc, INT dx, INT dy, const RECT *scroll, const RECT *clip,
+                                        HRGN ret_update_rgn, RECT *update_rect );
+ W32KAPI INT     WINAPI NtUserScrollWindowEx( HWND hwnd, INT dx, INT dy, const RECT *rect,
+@@ -1311,6 +1316,9 @@ enum
+     NtUserGetFullWindowHandle,
+     NtUserIsCurrentProcessWindow,
+     NtUserIsCurrentThreadWindow,
++    /* wine-uwp: copy what was drawn into a window's surface to the display now (dcomp paints off the UI
++     * thread, and a surface is otherwise flushed only when some thread's message loop goes idle) */
++    NtUserCallHwnd_FlushWindowSurface,
+ };
+ 
+ static inline void NtUserActivateOtherWindow( HWND hwnd )
+diff --git a/server/queue.c b/server/queue.c
+index 2449f0c..b6cc920 100644
+--- a/server/queue.c
++++ b/server/queue.c
+@@ -136,6 +136,10 @@ struct msg_queue
+     int                    exit_code;       /* exit code of pending quit message */
+     int                    cursor_count;    /* per-queue cursor show count */
+     struct list            msg_list[NB_MSG_KINDS];  /* lists of messages */
++    struct completion     *completion;      /* completion port notified when the queue gets signaled */
++    apc_param_t            completion_key;  /* key for those completions */
++    apc_param_t            completion_value;/* value for those completions */
++    int                    completion_posted; /* a completion is queued and not yet drained */
+     struct list            send_result;     /* stack of sent messages waiting for result */
+     struct list            callback_result; /* list of callback messages waiting for result */
+     struct message_result *recv_result;     /* stack of received messages waiting for result */
+@@ -286,7 +290,10 @@ static struct msg_queue *create_msg_queue( struct thread *thread, struct thread_
+         queue->input           = (struct thread_input *)grab_object( input );
+         queue->hooks           = NULL;
+         queue->keystate_lock   = 0;
+-        list_init( &queue->send_result );
++        queue->completion = NULL;
++    queue->completion_key = queue->completion_value = 0;
++    queue->completion_posted = 0;
++    list_init( &queue->send_result );
+         list_init( &queue->callback_result );
+         list_init( &queue->pending_timers );
+         list_init( &queue->expired_timers );
+@@ -709,6 +716,23 @@ static inline int get_queue_status( struct msg_queue *queue )
+             queue_shm->internal_bits;
+ }
+ 
++/* tell CoreMessaging's completion port that the queue has work, if one is attached */
++static void queue_signal_completion( struct msg_queue *queue )
++{
++    if (queue->completion && !queue->completion_posted)
++    {
++        queue->completion_posted = 1;
++        add_completion( queue->completion, queue->completion_key, queue->completion_value, STATUS_SUCCESS, 0 );
++    }
++}
++
++/* signal the queue sync, and the completion port if one is attached */
++static void queue_signal( struct msg_queue *queue )
++{
++    signal_sync( queue->sync );
++    queue_signal_completion( queue );
++}
++
+ /* set some queue bits */
+ static inline void set_queue_bits( struct msg_queue *queue, unsigned int bits )
+ {
+@@ -732,6 +756,8 @@ static inline void set_queue_bits( struct msg_queue *queue, unsigned int bits )
+     SHARED_WRITE_END;
+ 
+     if (get_queue_status( queue )) signal_sync( queue->sync );
++    /* CoreMessaging's loop waits on its completion port rather than through a wake mask */
++    if (bits) queue_signal_completion( queue );
+ }
+ 
+ /* clear some queue bits */
+@@ -1289,6 +1315,7 @@ static void msg_queue_dump( struct object *obj, int verbose )
+ static void msg_queue_destroy( struct object *obj )
+ {
+     struct msg_queue *queue = (struct msg_queue *)obj;
++    if (queue->completion) release_object( queue->completion );
+     struct list *ptr;
+     struct hotkey *hotkey, *hotkey2;
+     input_shm_t *input_shm = queue->input->shared;
+@@ -3109,7 +3136,7 @@ DECL_HANDLER(set_queue_mask)
+     SHARED_WRITE_END;
+ 
+     if (!get_queue_status( queue )) reset_sync( queue->sync );
+-    else signal_sync( queue->sync );
++    else queue_signal( queue );
+ }
+ 
+ 
+@@ -3134,6 +3161,33 @@ DECL_HANDLER(get_queue_status)
+ }
+ 
+ 
++DECL_HANDLER(set_queue_completion)
++{
++    struct msg_queue *queue = get_current_queue();
++
++    if (!queue) return;
++    if (queue->completion) release_object( queue->completion );
++    queue->completion = NULL;
++    queue->completion_posted = 0;
++    if (req->completion)
++    {
++        if (!(queue->completion = get_completion_obj( current->process, req->completion, IO_COMPLETION_MODIFY_STATE ))) return;
++        queue->completion_key   = req->key;
++        queue->completion_value = req->value;
++        if (queue->shared->wake_bits) queue_signal_completion( queue );
++    }
++}
++
++DECL_HANDLER(drain_queue_completion)
++{
++    struct msg_queue *queue = current->queue;
++
++    if (!queue) return;
++    queue->completion_posted = 0;
++    if (queue->shared->wake_bits) queue_signal_completion( queue );
++}
++
++
+ /* send a message to a thread queue */
+ DECL_HANDLER(send_message)
+ {
+@@ -3389,7 +3443,7 @@ DECL_HANDLER(get_message)
+     SHARED_WRITE_END;
+ 
+     if (!get_queue_status( queue )) reset_sync( queue->sync );
+-    else signal_sync( queue->sync );
++    else queue_signal( queue );
+     set_error( STATUS_PENDING );  /* FIXME */
+ }
+ 
+-- 
+2.54.0 (Apple Git-157)
+
