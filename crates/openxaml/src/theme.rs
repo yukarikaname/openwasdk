@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use xbf::model::{Element as XbfElement, Value};
 
 /// What a style setter holds: a theme-resource key, or a typed constant.
+#[derive(Clone)]
 pub enum SetterValue {
     /// A theme resource: the key names a colour in `palette`.
     Key(String),
@@ -23,8 +24,11 @@ pub enum SetterValue {
 }
 
 /// A control's implicit style: its template body and the property values it sets.
+#[derive(Clone)]
 pub struct Style {
     pub body: Option<XbfElement>,
+    /// Another style this one starts from (`BasedOn`), by key.
+    pub based_on: Option<String>,
     /// Setter property (as the style names it, e.g. `Control_Background`) and its value.
     pub setters: Vec<(String, SetterValue)>,
 }
@@ -33,6 +37,8 @@ pub struct Style {
 #[derive(Default)]
 pub struct Theme {
     styles: HashMap<String, Style>,
+    /// Styles a page reaches by key, e.g. `Style="{StaticResource BodyTextBlockStyle}"`.
+    by_key: HashMap<String, Style>,
     /// Non-colour resources the dictionary defines: `ButtonPadding` is a Thickness, and a
     /// style setter names it by key just like a brush.
     resources: HashMap<String, xbf::model::Value>,
@@ -83,6 +89,26 @@ impl Theme {
         self.styles.get(&simple(type_name))
     }
 
+    /// The setters a style key names, following `BasedOn` so a derived style starts from its
+    /// base. This is how `Style="{StaticResource BodyTextBlockStyle}"` reaches a TextBlock.
+    pub fn setters_for_key(&self, key: &str) -> Vec<(String, SetterValue)> {
+        let mut chain = Vec::new();
+        let mut current = self.by_key.get(key);
+        for _ in 0..8 {
+            let Some(style) = current else { break };
+            chain.push(style);
+            current = style
+                .based_on
+                .as_deref()
+                .and_then(|base| self.by_key.get(base));
+        }
+        chain
+            .into_iter()
+            .rev()
+            .flat_map(|style| style.setters.iter().cloned())
+            .collect()
+    }
+
     pub fn len(&self) -> usize {
         self.styles.len()
     }
@@ -122,10 +148,31 @@ impl Theme {
         if element.type_name.ends_with("Style")
             && let Some(target) = type_property(element, "TargetType")
         {
-            self.styles.entry(target).or_insert_with(|| Style {
+            let key = element
+                .properties
+                .iter()
+                .find(|property| property.name.contains("Key"))
+                .and_then(|property| match &property.value {
+                    Value::String(key) => Some(key.clone()),
+                    _ => None,
+                });
+            let based_on = element
+                .properties
+                .iter()
+                .find(|property| property.name.ends_with("BasedOn"))
+                .and_then(|property| match &property.value {
+                    Value::Resource { key, .. } => Some(key.clone()),
+                    _ => None,
+                });
+            let style = Style {
                 body: template_body(file, element),
+                based_on,
                 setters: setters(file, element),
-            });
+            };
+            if let Some(key) = key {
+                self.by_key.entry(key).or_insert_with(|| style.clone());
+            }
+            self.styles.entry(target).or_insert(style);
         }
         for child in &element.children {
             self.walk(file, child);

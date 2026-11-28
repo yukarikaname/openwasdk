@@ -268,7 +268,7 @@ fn build_with(
      * template binds to them.
      */
     if let Some(style) = controls.theme.style_for(&source.type_name) {
-        apply_setters(&mut element, style, &controls.theme);
+        apply_setters(&mut element, &style.setters, &controls.theme);
         if let Some(body) = style.body.as_ref() {
             // The control's own content belongs inside the template, not beside it.
             let content = element.take_children();
@@ -303,8 +303,12 @@ fn build_with(
 }
 
 /// The style's own values: theme colours through the palette, typed constants as they are.
-fn apply_setters(element: &mut Element, style: &crate::theme::Style, theme: &crate::theme::Theme) {
-    for (name, value) in &style.setters {
+fn apply_setters(
+    element: &mut Element,
+    setters: &[(String, crate::theme::SetterValue)],
+    theme: &crate::theme::Theme,
+) {
+    for (name, value) in setters {
         let member = name
             .rsplit_once(['_', '.'])
             .map_or(name.as_str(), |(_, tail)| tail);

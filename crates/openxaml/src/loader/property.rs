@@ -53,6 +53,18 @@ pub(super) fn load_property_with(
              * A content property holds the child that a content control shows. It is a
              * child for layout and painting, so it joins the element's children.
              */
+            /*
+             * `Style="{StaticResource BodyTextBlockStyle}"`: a style reached by key, whose
+             * setters give a control its typography. Applied here, before the rest of the
+             * element's own values, so a local value still wins.
+             */
+            if member == "Style" {
+                if let xbf::model::Value::Resource { key, .. } = &property.value {
+                    let setters = controls.theme.setters_for_key(key);
+                    super::apply_setters(element, &setters, &controls.theme);
+                }
+                return Ok(());
+            }
             /* FrameworkElement.Name is x:Name under the spelling the writer picked. */
             if member == "Name" {
                 element.set_name(string_value(type_name, property)?);
