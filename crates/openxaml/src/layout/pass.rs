@@ -38,13 +38,19 @@ pub fn measure(element: &Element, available: Size) -> Result<Size, LayoutError> 
 
     // `CLayoutElement::MeasureCore` rounds the content and the margin sums
     // separately before adding the margin back.
+    /*
+     * `MinWidth`/`MaxWidth` (and their height pair) clamp what the content asked for; an
+     * explicit Width or Height still wins, as `MeasureCore` orders it.
+     */
+    let (min_width, min_height) = element.min_size();
+    let (max_width, max_height) = element.max_size();
     let content_width = match element.width() {
         Length::Pixels(width) => width.max(0.0),
-        Length::Auto => content.width,
+        Length::Auto => content.width.max(min_width).min(max_width),
     };
     let content_height = match element.height() {
         Length::Pixels(height) => height.max(0.0),
-        Length::Auto => content.height,
+        Length::Auto => content.height.max(min_height).min(max_height),
     };
     let desired = Size::new(
         layout_round(content_width) + layout_round(margin.horizontal()),

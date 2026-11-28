@@ -2,6 +2,7 @@
 //! slot, each clamped at zero, and `CornerRadius` never enters layout.
 //! Ported from `dxaml/xcp/core/core/elements/Border.cpp`.
 
+use super::stack::{horizontal_box, vertical_box};
 use super::*;
 
 pub(super) fn measure_border(element: &Element, available: Size) -> Result<Size, LayoutError> {
@@ -31,5 +32,13 @@ pub(super) fn arrange_border(element: &Element, content: Rect) -> Result<Vec<Lay
         return Ok(vec![collapsed(inner)]);
     }
     let desired = measure(child, Size::new(inner.width, inner.height))?;
-    Ok(vec![arrange_with_desired(child, inner, desired)?])
+    /*
+     * `HorizontalContentAlignment` and its vertical pair place the one child: Stretch, the
+     * default, fills the slot; anything else arranges the child at its own size.
+     */
+    let (horizontal, vertical) = element.content_alignment();
+    let (x, width) = horizontal_box(Length::Auto, horizontal, desired.width, inner);
+    let (y, height) = vertical_box(Length::Auto, vertical, desired.height, inner);
+    let slot = Rect::new(x, y, width, height);
+    Ok(vec![arrange_with_desired(child, slot, desired)?])
 }

@@ -103,6 +103,45 @@ impl Element {
         self.layout_dirty = true;
     }
 
+    /// Where a content control puts its child inside the slot.
+    pub fn content_alignment(
+        &self,
+    ) -> (
+        crate::element::HorizontalAlignment,
+        crate::element::VerticalAlignment,
+    ) {
+        let horizontal = match self.get(&property::HORIZONTAL_CONTENT_ALIGNMENT) {
+            Value::HorizontalAlignment(alignment) => *alignment,
+            _ => crate::element::HorizontalAlignment::Stretch,
+        };
+        let vertical = match self.get(&property::VERTICAL_CONTENT_ALIGNMENT) {
+            Value::VerticalAlignment(alignment) => *alignment,
+            _ => crate::element::VerticalAlignment::Stretch,
+        };
+        (horizontal, vertical)
+    }
+
+    /// The min and max size a measure clamps to; an unset max is infinite.
+    pub fn min_size(&self) -> (f32, f32) {
+        (
+            self.number(&property::MIN_WIDTH),
+            self.number(&property::MIN_HEIGHT),
+        )
+    }
+
+    pub fn max_size(&self) -> (f32, f32) {
+        let unset = f32::INFINITY;
+        let width = match self.local("MaxWidth") {
+            Some(Value::Number(value)) if *value > 0.0 => *value,
+            _ => unset,
+        };
+        let height = match self.local("MaxHeight") {
+            Some(Value::Number(value)) if *value > 0.0 => *value,
+            _ => unset,
+        };
+        (width, height)
+    }
+
     /// A panel's item cell, when it names one; `None` lets the content decide.
     pub fn item_size(&self) -> (Option<f32>, Option<f32>) {
         (

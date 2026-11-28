@@ -243,6 +243,17 @@ pub(super) fn load_property_with(
                          */
                         | "Text"
                         | "FontSize"
+                        /*
+                         * A content control places its child and clamps its own size; both are
+                         * members of the base control, so any control may name them.
+                         */
+                        | "HorizontalContentAlignment"
+                        | "VerticalContentAlignment"
+                        | "Orientation"
+                        | "MinWidth"
+                        | "MinHeight"
+                        | "MaxWidth"
+                        | "MaxHeight"
                         // A Canvas child names its offset through the panel's attached property.
                         | "Canvas.Left"
                         | "Canvas.Top"

@@ -171,6 +171,28 @@ pub static VERTICAL_ALIGNMENT: Property = Property::new(
     &Value::VerticalAlignment(VerticalAlignment::Stretch),
     false,
 );
+/// How a content control places the one child it shows.
+pub static HORIZONTAL_CONTENT_ALIGNMENT: Property = Property::new(
+    "HorizontalContentAlignment",
+    ValueType::Enum("HorizontalAlignment"),
+    &Value::HorizontalAlignment(HorizontalAlignment::Stretch),
+    false,
+);
+pub static VERTICAL_CONTENT_ALIGNMENT: Property = Property::new(
+    "VerticalContentAlignment",
+    ValueType::Enum("VerticalAlignment"),
+    &Value::VerticalAlignment(VerticalAlignment::Stretch),
+    false,
+);
+/// The size constraints a measure obeys after its content has been measured.
+pub static MIN_WIDTH: Property =
+    Property::new("MinWidth", ValueType::Double, &Value::Number(0.0), false);
+pub static MIN_HEIGHT: Property =
+    Property::new("MinHeight", ValueType::Double, &Value::Number(0.0), false);
+pub static MAX_WIDTH: Property =
+    Property::new("MaxWidth", ValueType::Double, &Value::Number(0.0), false);
+pub static MAX_HEIGHT: Property =
+    Property::new("MaxHeight", ValueType::Double, &Value::Number(0.0), false);
 pub static BACKGROUND: Property = Property::new(
     "Background",
     ValueType::SolidColorBrush,
@@ -325,6 +347,12 @@ pub static MAXIMUM_ROWS_OR_COLUMNS: Property = Property::new(
 );
 
 pub static PROPERTIES: &[&Property] = &[
+    &HORIZONTAL_CONTENT_ALIGNMENT,
+    &VERTICAL_CONTENT_ALIGNMENT,
+    &MIN_WIDTH,
+    &MIN_HEIGHT,
+    &MAX_WIDTH,
+    &MAX_HEIGHT,
     &ITEM_WIDTH,
     &ITEM_HEIGHT,
     &ROWS,
