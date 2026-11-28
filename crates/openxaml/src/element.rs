@@ -133,6 +133,14 @@ pub enum Kind {
     RelativePanel,
     Canvas,
     UniformGridLayout,
+    PersonPicture,
+    ItemsControl,
+    WrapPanel,
+    WebView2,
+    UniformGrid,
+    ItemsPanelTemplate,
+    ControlTemplate,
+    DataTemplateSelector,
 }
 
 impl Kind {
@@ -206,6 +214,14 @@ impl Kind {
             Self::Canvas => "Microsoft.UI.Xaml.Controls.Canvas",
             Self::UniformGridLayout => "Microsoft.UI.Xaml.Controls.UniformGridLayout",
             Self::ColorPicker => "Microsoft.UI.Xaml.Controls.ColorPicker",
+            Self::PersonPicture => "Microsoft.UI.Xaml.Controls.PersonPicture",
+            Self::ItemsControl => "Microsoft.UI.Xaml.Controls.ItemsControl",
+            Self::WrapPanel => "Microsoft.UI.Xaml.Controls.WrapPanel",
+            Self::WebView2 => "Microsoft.UI.Xaml.Controls.WebView2",
+            Self::UniformGrid => "Microsoft.UI.Xaml.Controls.UniformGrid",
+            Self::ItemsPanelTemplate => "Microsoft.UI.Xaml.Controls.ItemsPanelTemplate",
+            Self::ControlTemplate => "Microsoft.UI.Xaml.Controls.ControlTemplate",
+            Self::DataTemplateSelector => "Microsoft.UI.Xaml.Controls.DataTemplateSelector",
             Self::NavigationView => "Microsoft.UI.Xaml.Controls.NavigationView",
             Self::NavigationViewItem => "Microsoft.UI.Xaml.Controls.NavigationViewItem",
             Self::DropDownButton => "Microsoft.UI.Xaml.Controls.DropDownButton",
@@ -328,7 +344,15 @@ impl Kind {
             "SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => {
                 Some(Self::SelectorBarItem)
             }
-            "ColorPicker" | "Microsoft.UI.Xaml.Controls.ColorPicker" => Some(Self::ColorPicker),
+"ColorPicker" | "Microsoft.UI.Xaml.Controls.ColorPicker" => Some(Self::ColorPicker),
+            "PersonPicture" | "Microsoft.UI.Xaml.Controls.PersonPicture" => Some(Self::PersonPicture),
+            "ItemsControl" | "Microsoft.UI.Xaml.Controls.ItemsControl" => Some(Self::ItemsControl),
+            "WrapPanel" | "Microsoft.UI.Xaml.Controls.WrapPanel" => Some(Self::WrapPanel),
+            "WebView2" | "Microsoft.UI.Xaml.Controls.WebView2" => Some(Self::WebView2),
+            "UniformGrid" | "Microsoft.UI.Xaml.Controls.UniformGrid" => Some(Self::UniformGrid),
+            "ItemsPanelTemplate" | "Microsoft.UI.Xaml.Controls.ItemsPanelTemplate" => Some(Self::ItemsPanelTemplate),
+            "ControlTemplate" | "Microsoft.UI.Xaml.Controls.ControlTemplate" => Some(Self::ControlTemplate),
+            "DataTemplateSelector" | "Microsoft.UI.Xaml.Controls.DataTemplateSelector" => Some(Self::DataTemplateSelector),
             "NavigationView" | "Microsoft.UI.Xaml.Controls.NavigationView" => {
                 Some(Self::NavigationView)
             }

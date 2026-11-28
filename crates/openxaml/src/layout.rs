@@ -280,6 +280,11 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::SelectorBar
         | Kind::Unrealized
         | Kind::ColorPicker
+        | Kind::PersonPicture
+        | Kind::ItemsControl
+        | Kind::WrapPanel
+        | Kind::WebView2
+        | Kind::UniformGrid
         | Kind::NavigationView
         | Kind::NavigationViewItem
         | Kind::DropDownButton
@@ -342,7 +347,10 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::ImplicitAnimationSet
         | Kind::MenuFlyoutSeparator
         | Kind::ImageIconSource
-        | Kind::UniformGridLayout => Ok(Size::new(0.0, 0.0)),
+        | Kind::UniformGridLayout
+        | Kind::ItemsPanelTemplate
+        | Kind::ControlTemplate
+        | Kind::DataTemplateSelector => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
         Kind::Canvas => canvas::measure_canvas(element, available),
@@ -426,6 +434,11 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::SelectorBar
         | Kind::Unrealized
         | Kind::ColorPicker
+        | Kind::PersonPicture
+        | Kind::ItemsControl
+        | Kind::WrapPanel
+        | Kind::WebView2
+        | Kind::UniformGrid
         | Kind::NavigationView
         | Kind::NavigationViewItem
         | Kind::DropDownButton
@@ -488,7 +501,10 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::ImplicitAnimationSet
         | Kind::MenuFlyoutSeparator
         | Kind::ImageIconSource
-        | Kind::UniformGridLayout => Ok(Vec::new()),
+        | Kind::UniformGridLayout
+        | Kind::ItemsPanelTemplate
+        | Kind::ControlTemplate
+        | Kind::DataTemplateSelector => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
         Kind::Canvas => canvas::arrange_canvas(element, content),

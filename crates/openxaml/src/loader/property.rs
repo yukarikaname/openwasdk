@@ -45,7 +45,7 @@ pub(super) fn load_property_with(
              * An accessibility name is not the element's name: it belongs to the UI
              * automation tree, which no visual consumer reads.
              */
-            if name.contains("AutomationProperties.") {
+            if name.contains("AutomationProperties") {
                 return Ok(());
             }
             let member = name.rsplit_once(['_', '.']).map_or(name, |(_, tail)| tail);
@@ -58,10 +58,18 @@ pub(super) fn load_property_with(
                 element.set_name(string_value(type_name, property)?);
                 return Ok(());
             }
-            if matches!(member, "Content" | "Child" | "Children" | "Items") {
+            /*
+             * A content property holds its child, and XAML names it "...Content"
+             * (ExampleContent on the Gallery's own control). Only an element value is a
+             * child; a string such as ToggleSwitch.OnContent is state and is dropped.
+             */
+            let content_style = matches!(member, "Child" | "Children" | "Items")
+                || member.ends_with("Content");
+            if content_style {
                 for child in property_elements(property)? {
                     element.push(load_element(&child, controls, depth)?);
                 }
+                // A scalar here is the control's own text or state, which a preview drops.
                 return Ok(());
             }
             /*
@@ -311,8 +319,18 @@ pub(super) fn load_property_with(
             }
             let value = match convert(type_name, property, accepted.value_type) {
                 Ok(value) => value,
-                /* What cannot be painted as a solid fill leaves the default. */
-                Err(_) if accepted.value_type == ValueType::SolidColorBrush => return Ok(()),
+                /*
+                 * A value this renderer cannot build -- a fill that is not a solid colour, a
+                 * track collection that is not a list, text that is not a string -- leaves
+                 * the property at its default instead of failing the page.
+                 */
+                Err(_) if matches!(
+                    accepted.value_type,
+                    ValueType::SolidColorBrush | ValueType::GridDefinitions | ValueType::Text
+                ) =>
+                {
+                    return Ok(());
+                }
                 Err(error) => return Err(error),
             };
             element
