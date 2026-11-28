@@ -1,489 +1,192 @@
-//! The element kinds the loader can construct, and the WinRT names they answer to.
+//! The element kinds, declared once.
 //!
-//! Split from `element.rs` so that the list of kinds and the tree that holds them are
-//! two files: one grows with the Gallery's controls, the other does not.
+//! A control used to be written in four places -- the enum, its WinRT name, the name lookup
+//! and the layout pass -- and one of them was missed often enough to be a bug class. The
+//! table below is the only list: the macro expands the enum, the names, the role and the
+//! lookup, so adding a control is one line.
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Kind {
-    StackPanel,
-    Border,
-    Grid,
-    TextBlock,
-    Page,
-    UserControl,
-    Window,
-    ContentDialog,
-    /* Hosts that hold resources and templates but paint nothing. */
-    ResourceDictionary,
-    Application,
-    Style,
-    DataTemplate,
-    /* Text inlines: they carry a run's text, not a box to lay out. */
-    Paragraph,
-    Run,
-    Span,
-    /* Content controls the Gallery's pages put on screen. */
-    Button,
-    ScrollViewer,
-    TextBox,
-    RichTextBlock,
-    InfoBar,
-    TitleBar,
-    SplitButton,
-    ContentPresenter,
-    PasswordBox,
-    SymbolIcon,
-    MicaBackdrop,
-    SystemBackdropElement,
-    /* An icon paints a glyph this renderer has no font for. */
-    FontIcon,
-    /* Primitive values that appear as dictionary entries or setter values. */
-    Double,
-    String,
-    Boolean,
-    Thickness,
-    ListView,
-    GridView,
-    TabView,
-    ItemsRepeater,
-    ScrollView,
-    DatePicker,
-    RichEditBox,
-    CheckBox,
-    Image,
-    ComboBox,
-    ComboBoxItem,
-    ListViewItem,
-    GridViewItem,
-    ToggleSwitch,
-    RadioButton,
-    HyperlinkButton,
-    RepeatButton,
-    ToggleButton,
-    /* Shapes: geometry this renderer has no draw path for yet. */
-    Ellipse,
-    Rectangle,
-    Line,
-    /* Shown on hover, not laid out with the page. */
-    ToolTip,
-    /* A markup extension instance, not a box. */
-    Binding,
-    Expander,
-    ProgressRing,
-    SelectorBar,
-    SelectorBarItem,
-    AutoSuggestBox,
-    Flyout,
-    /* An application control whose XAML carries no visual tree: its content is built
-     * in code, which a preview does not run. */
-    Unrealized,
-    ColorPicker,
-    ImplicitAnimationSet,
-    MenuFlyoutSeparator,
-    ImageIconSource,
-    NavigationView,
-    NavigationViewItem,
-    DropDownButton,
-    AppBarButton,
-    AppBarToggleButton,
-    Frame,
-    FlipView,
-    ProgressBar,
-    TeachingTip,
-    CommandBar,
-    MenuFlyout,
-    MenuFlyoutItem,
-    TabViewItem,
-    NumberBox,
-    RadioButtons,
-    Slider,
-    BreadcrumbBar,
-    RelativePanel,
-    Canvas,
-    UniformGridLayout,
-    PersonPicture,
-    ItemsControl,
-    WrapPanel,
-    WebView2,
-    UniformGrid,
-    ItemsPanelTemplate,
-    ControlTemplate,
-    DataTemplateSelector,
-    Viewbox,
-    MenuBar,
-    MenuBarItem,
-    VariableSizedWrapGrid,
-    MediaPlayerElement,
-    TreeView,
-    TreeViewItem,
-    ToggleSplitButton,
-    ItemsRepeaterScrollHost,
-    SymbolIconSource,
-    CommandBarFlyout,
+use super::role::{Panel, Role};
+
+macro_rules! kinds {
+    ($(($name:ident, $short:literal, $full:literal, $role:ident $(($panel:ident))?)),* $(,)?) => {
+        /// Every element kind this crate answers to.
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        pub enum Kind {
+            $($name,)*
+        }
+
+        impl Kind {
+            /// Every kind, in declaration order, so a lookup can be a scan.
+            pub const ALL: &'static [Kind] = &[$(Kind::$name,)*];
+
+            /// The WinRT name this kind answers to.
+            pub const fn type_name(self) -> &'static str {
+                match self { $(Kind::$name => $full,)* }
+            }
+
+            /// The name without its namespace, which is what a page writes.
+            pub const fn short_name(self) -> &'static str {
+                match self { $(Kind::$name => $short,)* }
+            }
+
+            /// What the layout pass does with it.
+            pub const fn role(self) -> Role {
+                match self { $(Kind::$name => kinds!(@role $role $(($panel))?),)* }
+            }
+
+            /// Hosts that hold resources, styles or template bodies: nothing below them is
+            /// arranged, painted or composed.
+            pub const fn is_non_visual(self) -> bool {
+                matches!(self.role(), Role::NonVisual)
+            }
+        }
+    };
+    (@role Panel($panel:ident)) => { Role::Panel(Panel::$panel) };
+    (@role $role:ident) => { Role::$role };
 }
 
-/// What a kind means to layout: a panel, a content host, text, or nothing visual.
-///
-/// The layout pass matches this, not the two hundred kinds, so adding a control is a name
-/// in one table rather than an arm in every pass.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Role {
-    /// A panel with its own measure/arrange.
-    Panel(Panel),
-    /// One child inside border thickness and padding.
-    ContentHost,
-    /// Paints a string; children are not laid out.
-    Text,
-    /// Nothing below it is arranged, painted or composed.
-    NonVisual,
-}
-
-/// The panels this crate actually lays out; every other panel is a content host.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Panel {
-    Stack,
-    Grid,
-    Canvas,
+kinds! {
+    (StackPanel, "StackPanel", "Microsoft.UI.Xaml.Controls.StackPanel", Panel(Stack)),
+    (Border, "Border", "Microsoft.UI.Xaml.Controls.Border", ContentHost),
+    (Grid, "Grid", "Microsoft.UI.Xaml.Controls.Grid", Panel(Grid)),
+    (TextBlock, "TextBlock", "Microsoft.UI.Xaml.Controls.TextBlock", Text),
+    (Page, "Page", "Microsoft.UI.Xaml.Controls.Page", ContentHost),
+    (UserControl, "UserControl", "Microsoft.UI.Xaml.Controls.UserControl", ContentHost),
+    (Window, "Window", "Microsoft.UI.Xaml.Window", ContentHost),
+    (ContentDialog, "ContentDialog", "Microsoft.UI.Xaml.Controls.ContentDialog", ContentHost),
+    (ResourceDictionary, "ResourceDictionary", "Microsoft.UI.Xaml.ResourceDictionary", NonVisual),
+    (Application, "Application", "Microsoft.UI.Xaml.Application", NonVisual),
+    (Style, "Style", "Microsoft.UI.Xaml.Style", NonVisual),
+    (DataTemplate, "DataTemplate", "Microsoft.UI.Xaml.DataTemplate", NonVisual),
+    (Paragraph, "Paragraph", "Microsoft.UI.Xaml.Documents.Paragraph", NonVisual),
+    (Run, "Run", "Microsoft.UI.Xaml.Documents.Run", NonVisual),
+    (Span, "Span", "Microsoft.UI.Xaml.Documents.Span", NonVisual),
+    (Button, "Button", "Microsoft.UI.Xaml.Controls.Button", ContentHost),
+    (ScrollViewer, "ScrollViewer", "Microsoft.UI.Xaml.Controls.ScrollViewer", ContentHost),
+    (TextBox, "TextBox", "Microsoft.UI.Xaml.Controls.TextBox", ContentHost),
+    (RichTextBlock, "RichTextBlock", "Microsoft.UI.Xaml.Controls.RichTextBlock", ContentHost),
+    (InfoBar, "InfoBar", "Microsoft.UI.Xaml.Controls.InfoBar", ContentHost),
+    (TitleBar, "TitleBar", "Microsoft.UI.Xaml.Controls.TitleBar", ContentHost),
+    (SplitButton, "SplitButton", "Microsoft.UI.Xaml.Controls.SplitButton", ContentHost),
+    (ContentPresenter, "ContentPresenter", "Microsoft.UI.Xaml.Controls.ContentPresenter", ContentHost),
+    (PasswordBox, "PasswordBox", "Microsoft.UI.Xaml.Controls.PasswordBox", ContentHost),
+    (SymbolIcon, "SymbolIcon", "Microsoft.UI.Xaml.Controls.SymbolIcon", ContentHost),
+    (MicaBackdrop, "MicaBackdrop", "Microsoft.UI.Xaml.Media.MicaBackdrop", NonVisual),
+    (SystemBackdropElement, "SystemBackdropElement", "Microsoft.UI.Xaml.Media.SystemBackdropElement", NonVisual),
+    (FontIcon, "FontIcon", "Microsoft.UI.Xaml.Controls.FontIcon", NonVisual),
+    (Double, "Double", "Double", NonVisual),
+    (String, "String", "String", NonVisual),
+    (Boolean, "Boolean", "Boolean", NonVisual),
+    (Thickness, "Thickness", "Thickness", NonVisual),
+    (ListView, "ListView", "Microsoft.UI.Xaml.Controls.ListView", ContentHost),
+    (GridView, "GridView", "Microsoft.UI.Xaml.Controls.GridView", ContentHost),
+    (TabView, "TabView", "Microsoft.UI.Xaml.Controls.TabView", ContentHost),
+    (ItemsRepeater, "ItemsRepeater", "Microsoft.UI.Xaml.Controls.ItemsRepeater", ContentHost),
+    (ScrollView, "ScrollView", "Microsoft.UI.Xaml.Controls.ScrollView", ContentHost),
+    (DatePicker, "DatePicker", "Microsoft.UI.Xaml.Controls.DatePicker", ContentHost),
+    (RichEditBox, "RichEditBox", "Microsoft.UI.Xaml.Controls.RichEditBox", ContentHost),
+    (CheckBox, "CheckBox", "Microsoft.UI.Xaml.Controls.CheckBox", ContentHost),
+    (Image, "Image", "Microsoft.UI.Xaml.Controls.Image", ContentHost),
+    (ComboBox, "ComboBox", "Microsoft.UI.Xaml.Controls.ComboBox", ContentHost),
+    (ComboBoxItem, "ComboBoxItem", "Microsoft.UI.Xaml.Controls.ComboBoxItem", ContentHost),
+    (ListViewItem, "ListViewItem", "Microsoft.UI.Xaml.Controls.ListViewItem", ContentHost),
+    (GridViewItem, "GridViewItem", "Microsoft.UI.Xaml.Controls.GridViewItem", ContentHost),
+    (ToggleSwitch, "ToggleSwitch", "Microsoft.UI.Xaml.Controls.ToggleSwitch", ContentHost),
+    (RadioButton, "RadioButton", "Microsoft.UI.Xaml.Controls.RadioButton", ContentHost),
+    (HyperlinkButton, "HyperlinkButton", "Microsoft.UI.Xaml.Controls.HyperlinkButton", ContentHost),
+    (RepeatButton, "RepeatButton", "Microsoft.UI.Xaml.Controls.RepeatButton", ContentHost),
+    (ToggleButton, "ToggleButton", "Microsoft.UI.Xaml.Controls.ToggleButton", ContentHost),
+    (Ellipse, "Ellipse", "Microsoft.UI.Xaml.Shapes.Ellipse", NonVisual),
+    (Rectangle, "Rectangle", "Microsoft.UI.Xaml.Shapes.Rectangle", NonVisual),
+    (Line, "Line", "Microsoft.UI.Xaml.Shapes.Line", NonVisual),
+    (ToolTip, "ToolTip", "Microsoft.UI.Xaml.Controls.ToolTip", NonVisual),
+    (Binding, "Binding", "Microsoft.UI.Xaml.Data.Binding", NonVisual),
+    (Expander, "Expander", "Microsoft.UI.Xaml.Controls.Expander", ContentHost),
+    (ProgressRing, "ProgressRing", "Microsoft.UI.Xaml.Controls.ProgressRing", ContentHost),
+    (SelectorBar, "SelectorBar", "Microsoft.UI.Xaml.Controls.SelectorBar", ContentHost),
+    (SelectorBarItem, "SelectorBarItem", "Microsoft.UI.Xaml.Controls.SelectorBarItem", ContentHost),
+    (AutoSuggestBox, "AutoSuggestBox", "Microsoft.UI.Xaml.Controls.AutoSuggestBox", ContentHost),
+    (Flyout, "Flyout", "Microsoft.UI.Xaml.Controls.Flyout", NonVisual),
+    (Unrealized, "Unrealized", "Microsoft.UI.Xaml.Unrealized", ContentHost),
+    (ColorPicker, "ColorPicker", "Microsoft.UI.Xaml.Controls.ColorPicker", ContentHost),
+    (ImplicitAnimationSet, "ImplicitAnimationSet", "Microsoft.UI.Xaml.Media.ImplicitAnimationSet", NonVisual),
+    (MenuFlyoutSeparator, "MenuFlyoutSeparator", "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator", NonVisual),
+    (ImageIconSource, "ImageIconSource", "Microsoft.UI.Xaml.Media.ImageIconSource", NonVisual),
+    (NavigationView, "NavigationView", "Microsoft.UI.Xaml.Controls.NavigationView", ContentHost),
+    (NavigationViewItem, "NavigationViewItem", "Microsoft.UI.Xaml.Controls.NavigationViewItem", ContentHost),
+    (DropDownButton, "DropDownButton", "Microsoft.UI.Xaml.Controls.DropDownButton", ContentHost),
+    (AppBarButton, "AppBarButton", "Microsoft.UI.Xaml.Controls.AppBarButton", ContentHost),
+    (AppBarToggleButton, "AppBarToggleButton", "Microsoft.UI.Xaml.Controls.AppBarToggleButton", ContentHost),
+    (Frame, "Frame", "Microsoft.UI.Xaml.Controls.Frame", ContentHost),
+    (FlipView, "FlipView", "Microsoft.UI.Xaml.Controls.FlipView", ContentHost),
+    (ProgressBar, "ProgressBar", "Microsoft.UI.Xaml.Controls.ProgressBar", ContentHost),
+    (TeachingTip, "TeachingTip", "Microsoft.UI.Xaml.Controls.TeachingTip", ContentHost),
+    (CommandBar, "CommandBar", "Microsoft.UI.Xaml.Controls.CommandBar", ContentHost),
+    (MenuFlyout, "MenuFlyout", "Microsoft.UI.Xaml.Controls.MenuFlyout", ContentHost),
+    (MenuFlyoutItem, "MenuFlyoutItem", "Microsoft.UI.Xaml.Controls.MenuFlyoutItem", ContentHost),
+    (TabViewItem, "TabViewItem", "Microsoft.UI.Xaml.Controls.TabViewItem", ContentHost),
+    (NumberBox, "NumberBox", "Microsoft.UI.Xaml.Controls.NumberBox", ContentHost),
+    (RadioButtons, "RadioButtons", "Microsoft.UI.Xaml.Controls.RadioButtons", ContentHost),
+    (Slider, "Slider", "Microsoft.UI.Xaml.Controls.Slider", ContentHost),
+    (BreadcrumbBar, "BreadcrumbBar", "Microsoft.UI.Xaml.Controls.BreadcrumbBar", ContentHost),
+    (RelativePanel, "RelativePanel", "Microsoft.UI.Xaml.Controls.RelativePanel", ContentHost),
+    (Canvas, "Canvas", "Microsoft.UI.Xaml.Controls.Canvas", Panel(Canvas)),
+    (UniformGridLayout, "UniformGridLayout", "Microsoft.UI.Xaml.Controls.UniformGridLayout", NonVisual),
+    (PersonPicture, "PersonPicture", "Microsoft.UI.Xaml.Controls.PersonPicture", ContentHost),
+    (ItemsControl, "ItemsControl", "Microsoft.UI.Xaml.Controls.ItemsControl", ContentHost),
+    (WrapPanel, "WrapPanel", "Microsoft.UI.Xaml.Controls.WrapPanel", ContentHost),
+    (WebView2, "WebView2", "Microsoft.UI.Xaml.Controls.WebView2", ContentHost),
+    (UniformGrid, "UniformGrid", "Microsoft.UI.Xaml.Controls.UniformGrid", ContentHost),
+    (ItemsPanelTemplate, "ItemsPanelTemplate", "Microsoft.UI.Xaml.Controls.ItemsPanelTemplate", ContentHost),
+    (ControlTemplate, "ControlTemplate", "Microsoft.UI.Xaml.Controls.ControlTemplate", ContentHost),
+    (DataTemplateSelector, "DataTemplateSelector", "Microsoft.UI.Xaml.Controls.DataTemplateSelector", ContentHost),
+    (Viewbox, "Viewbox", "Microsoft.UI.Xaml.Controls.Viewbox", ContentHost),
+    (MenuBar, "MenuBar", "Microsoft.UI.Xaml.Controls.MenuBar", ContentHost),
+    (MenuBarItem, "MenuBarItem", "Microsoft.UI.Xaml.Controls.MenuBarItem", ContentHost),
+    (VariableSizedWrapGrid, "VariableSizedWrapGrid", "Microsoft.UI.Xaml.Controls.VariableSizedWrapGrid", ContentHost),
+    (MediaPlayerElement, "MediaPlayerElement", "Microsoft.UI.Xaml.Controls.MediaPlayerElement", ContentHost),
+    (TreeView, "TreeView", "Microsoft.UI.Xaml.Controls.TreeView", ContentHost),
+    (TreeViewItem, "TreeViewItem", "Microsoft.UI.Xaml.Controls.TreeViewItem", ContentHost),
+    (ToggleSplitButton, "ToggleSplitButton", "Microsoft.UI.Xaml.Controls.ToggleSplitButton", ContentHost),
+    (ItemsRepeaterScrollHost, "ItemsRepeaterScrollHost", "Microsoft.UI.Xaml.Controls.ItemsRepeaterScrollHost", ContentHost),
+    (SymbolIconSource, "SymbolIconSource", "Microsoft.UI.Xaml.Controls.SymbolIconSource", NonVisual),
+    (CommandBarFlyout, "CommandBarFlyout", "Microsoft.UI.Xaml.Controls.CommandBarFlyout", NonVisual),
 }
 
 impl Kind {
-    /// The WinRT name used by XBF and `IXamlMetadataProvider`.
-    pub const fn type_name(self) -> &'static str {
-        match self {
-            Self::StackPanel => "Microsoft.UI.Xaml.Controls.StackPanel",
-            Self::Border => "Microsoft.UI.Xaml.Controls.Border",
-            Self::Grid => "Microsoft.UI.Xaml.Controls.Grid",
-            Self::TextBlock => "Microsoft.UI.Xaml.Controls.TextBlock",
-            Self::Page => "Microsoft.UI.Xaml.Controls.Page",
-            Self::UserControl => "Microsoft.UI.Xaml.Controls.UserControl",
-            Self::Window => "Microsoft.UI.Xaml.Window",
-            Self::ContentDialog => "Microsoft.UI.Xaml.Controls.ContentDialog",
-            Self::ResourceDictionary => "Microsoft.UI.Xaml.ResourceDictionary",
-            Self::Application => "Microsoft.UI.Xaml.Application",
-            Self::Style => "Microsoft.UI.Xaml.Style",
-            Self::DataTemplate => "Microsoft.UI.Xaml.DataTemplate",
-            Self::Paragraph => "Microsoft.UI.Xaml.Documents.Paragraph",
-            Self::Run => "Microsoft.UI.Xaml.Documents.Run",
-            Self::Span => "Microsoft.UI.Xaml.Documents.Span",
-            Self::Button => "Microsoft.UI.Xaml.Controls.Button",
-            Self::ScrollViewer => "Microsoft.UI.Xaml.Controls.ScrollViewer",
-            Self::TextBox => "Microsoft.UI.Xaml.Controls.TextBox",
-            Self::RichTextBlock => "Microsoft.UI.Xaml.Controls.RichTextBlock",
-            Self::InfoBar => "Microsoft.UI.Xaml.Controls.InfoBar",
-            Self::TitleBar => "Microsoft.UI.Xaml.Controls.TitleBar",
-            Self::SplitButton => "Microsoft.UI.Xaml.Controls.SplitButton",
-            Self::ContentPresenter => "Microsoft.UI.Xaml.Controls.ContentPresenter",
-            Self::PasswordBox => "Microsoft.UI.Xaml.Controls.PasswordBox",
-            Self::SymbolIcon => "Microsoft.UI.Xaml.Controls.SymbolIcon",
-            Self::MicaBackdrop => "Microsoft.UI.Xaml.Media.MicaBackdrop",
-            Self::SystemBackdropElement => "Microsoft.UI.Xaml.Media.SystemBackdropElement",
-            Self::FontIcon => "Microsoft.UI.Xaml.Controls.FontIcon",
-            Self::Double => "Double",
-            Self::String => "String",
-            Self::Boolean => "Boolean",
-            Self::Thickness => "Thickness",
-            Self::ListView => "Microsoft.UI.Xaml.Controls.ListView",
-            Self::GridView => "Microsoft.UI.Xaml.Controls.GridView",
-            Self::TabView => "Microsoft.UI.Xaml.Controls.TabView",
-            Self::ItemsRepeater => "Microsoft.UI.Xaml.Controls.ItemsRepeater",
-            Self::ScrollView => "Microsoft.UI.Xaml.Controls.ScrollView",
-            Self::DatePicker => "Microsoft.UI.Xaml.Controls.DatePicker",
-            Self::RichEditBox => "Microsoft.UI.Xaml.Controls.RichEditBox",
-            Self::CheckBox => "Microsoft.UI.Xaml.Controls.CheckBox",
-            Self::Image => "Microsoft.UI.Xaml.Controls.Image",
-            Self::ComboBox => "Microsoft.UI.Xaml.Controls.ComboBox",
-            Self::ComboBoxItem => "Microsoft.UI.Xaml.Controls.ComboBoxItem",
-            Self::ListViewItem => "Microsoft.UI.Xaml.Controls.ListViewItem",
-            Self::GridViewItem => "Microsoft.UI.Xaml.Controls.GridViewItem",
-            Self::ToggleSwitch => "Microsoft.UI.Xaml.Controls.ToggleSwitch",
-            Self::RadioButton => "Microsoft.UI.Xaml.Controls.RadioButton",
-            Self::HyperlinkButton => "Microsoft.UI.Xaml.Controls.HyperlinkButton",
-            Self::RepeatButton => "Microsoft.UI.Xaml.Controls.RepeatButton",
-            Self::ToggleButton => "Microsoft.UI.Xaml.Controls.ToggleButton",
-            Self::Ellipse => "Microsoft.UI.Xaml.Shapes.Ellipse",
-            Self::Rectangle => "Microsoft.UI.Xaml.Shapes.Rectangle",
-            Self::Line => "Microsoft.UI.Xaml.Shapes.Line",
-            Self::ToolTip => "Microsoft.UI.Xaml.Controls.ToolTip",
-            Self::Binding => "Microsoft.UI.Xaml.Data.Binding",
-            Self::Expander => "Microsoft.UI.Xaml.Controls.Expander",
-            Self::ProgressRing => "Microsoft.UI.Xaml.Controls.ProgressRing",
-            Self::SelectorBar => "Microsoft.UI.Xaml.Controls.SelectorBar",
-            Self::Unrealized => "Microsoft.UI.Xaml.Unrealized",
-            Self::Viewbox => "Microsoft.UI.Xaml.Controls.Viewbox",
-            Self::MenuBar => "Microsoft.UI.Xaml.Controls.MenuBar",
-            Self::MenuBarItem => "Microsoft.UI.Xaml.Controls.MenuBarItem",
-            Self::VariableSizedWrapGrid => "Microsoft.UI.Xaml.Controls.VariableSizedWrapGrid",
-            Self::MediaPlayerElement => "Microsoft.UI.Xaml.Controls.MediaPlayerElement",
-            Self::TreeView => "Microsoft.UI.Xaml.Controls.TreeView",
-            Self::TreeViewItem => "Microsoft.UI.Xaml.Controls.TreeViewItem",
-            Self::ToggleSplitButton => "Microsoft.UI.Xaml.Controls.ToggleSplitButton",
-            Self::ItemsRepeaterScrollHost => "Microsoft.UI.Xaml.Controls.ItemsRepeaterScrollHost",
-            Self::SymbolIconSource => "Microsoft.UI.Xaml.Controls.SymbolIconSource",
-            Self::CommandBarFlyout => "Microsoft.UI.Xaml.Controls.CommandBarFlyout",
-            Self::NumberBox => "Microsoft.UI.Xaml.Controls.NumberBox",
-            Self::RadioButtons => "Microsoft.UI.Xaml.Controls.RadioButtons",
-            Self::Slider => "Microsoft.UI.Xaml.Controls.Slider",
-            Self::BreadcrumbBar => "Microsoft.UI.Xaml.Controls.BreadcrumbBar",
-            Self::RelativePanel => "Microsoft.UI.Xaml.Controls.RelativePanel",
-            Self::Canvas => "Microsoft.UI.Xaml.Controls.Canvas",
-            Self::UniformGridLayout => "Microsoft.UI.Xaml.Controls.UniformGridLayout",
-            Self::ColorPicker => "Microsoft.UI.Xaml.Controls.ColorPicker",
-            Self::PersonPicture => "Microsoft.UI.Xaml.Controls.PersonPicture",
-            Self::ItemsControl => "Microsoft.UI.Xaml.Controls.ItemsControl",
-            Self::WrapPanel => "Microsoft.UI.Xaml.Controls.WrapPanel",
-            Self::WebView2 => "Microsoft.UI.Xaml.Controls.WebView2",
-            Self::UniformGrid => "Microsoft.UI.Xaml.Controls.UniformGrid",
-            Self::ItemsPanelTemplate => "Microsoft.UI.Xaml.Controls.ItemsPanelTemplate",
-            Self::ControlTemplate => "Microsoft.UI.Xaml.Controls.ControlTemplate",
-            Self::DataTemplateSelector => "Microsoft.UI.Xaml.Controls.DataTemplateSelector",
-            Self::NavigationView => "Microsoft.UI.Xaml.Controls.NavigationView",
-            Self::NavigationViewItem => "Microsoft.UI.Xaml.Controls.NavigationViewItem",
-            Self::DropDownButton => "Microsoft.UI.Xaml.Controls.DropDownButton",
-            Self::AppBarButton => "Microsoft.UI.Xaml.Controls.AppBarButton",
-            Self::AppBarToggleButton => "Microsoft.UI.Xaml.Controls.AppBarToggleButton",
-            Self::Frame => "Microsoft.UI.Xaml.Controls.Frame",
-            Self::FlipView => "Microsoft.UI.Xaml.Controls.FlipView",
-            Self::ProgressBar => "Microsoft.UI.Xaml.Controls.ProgressBar",
-            Self::TeachingTip => "Microsoft.UI.Xaml.Controls.TeachingTip",
-            Self::CommandBar => "Microsoft.UI.Xaml.Controls.CommandBar",
-            Self::MenuFlyout => "Microsoft.UI.Xaml.Controls.MenuFlyout",
-            Self::MenuFlyoutItem => "Microsoft.UI.Xaml.Controls.MenuFlyoutItem",
-            Self::TabViewItem => "Microsoft.UI.Xaml.Controls.TabViewItem",
-            Self::ImplicitAnimationSet => "Microsoft.UI.Xaml.Media.ImplicitAnimationSet",
-            Self::MenuFlyoutSeparator => "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator",
-            Self::ImageIconSource => "Microsoft.UI.Xaml.Media.ImageIconSource",
-            Self::SelectorBarItem => "Microsoft.UI.Xaml.Controls.SelectorBarItem",
-            Self::AutoSuggestBox => "Microsoft.UI.Xaml.Controls.AutoSuggestBox",
-            Self::Flyout => "Microsoft.UI.Xaml.Controls.Flyout",
-        }
-    }
-
-    /// Accepts the full name or the short XAML name.
+    /// A type name from a compiled page, or nothing when it is not a kind this crate has.
+    ///
+    /// A full WinRT name is accepted as it is; a short name is accepted only under one of the
+    /// WinUI namespaces, because a type from the application's own namespace must not be
+    /// guessed to be a control.
     pub fn from_type_name(name: &str) -> Option<Self> {
-        if let Some(known) = Self::from_exact_name(name) {
-            return Some(known);
+        if let Some(kind) = Self::ALL
+            .iter()
+            .copied()
+            .find(|kind| kind.type_name() == name)
+        {
+            return Some(kind);
         }
-        /*
-         * XBF writes the type under the namespace it was declared in, and the
-         * presentation namespace is spelled as a URI in application files. Strip only
-         * the WinUI namespaces: a type from the application's own namespace is not a
-         * standard control and must not be guessed to be one.
-         */
-        let prefixes = [
+        if let Some(kind) = Self::from_short(name) {
+            return Some(kind);
+        }
+        const PREFIXES: &[&str] = &[
             "Microsoft.UI.Xaml.Controls.",
             "Microsoft.UI.Xaml.Documents.",
+            "Microsoft.UI.Xaml.Media.",
             "Microsoft.UI.Xaml.",
             "http://schemas.microsoft.com/client/2007.",
         ];
-        prefixes
+        PREFIXES.iter().find_map(|prefix| {
+            let rest = name.strip_prefix(prefix)?;
+            Self::from_short(rest).or_else(|| rest.rsplit('.').next().and_then(Self::from_short))
+        })
+    }
+
+    fn from_short(name: &str) -> Option<Self> {
+        Self::ALL
             .iter()
-            .find_map(|prefix| name.strip_prefix(prefix))
-            .and_then(Self::from_exact_name)
-    }
-
-    fn from_exact_name(name: &str) -> Option<Self> {
-        match name {
-            "StackPanel" | "Microsoft.UI.Xaml.Controls.StackPanel" => Some(Self::StackPanel),
-            "Border" | "Microsoft.UI.Xaml.Controls.Border" => Some(Self::Border),
-            "Grid" | "Microsoft.UI.Xaml.Controls.Grid" => Some(Self::Grid),
-            "TextBlock" | "Microsoft.UI.Xaml.Controls.TextBlock" => Some(Self::TextBlock),
-            "Page" | "Microsoft.UI.Xaml.Controls.Page" => Some(Self::Page),
-            "UserControl" | "Microsoft.UI.Xaml.Controls.UserControl" => Some(Self::UserControl),
-            "Window" | "Microsoft.UI.Xaml.Window" => Some(Self::Window),
-            "ContentDialog" | "Microsoft.UI.Xaml.Controls.ContentDialog" => {
-                Some(Self::ContentDialog)
-            }
-            "ResourceDictionary" | "Microsoft.UI.Xaml.ResourceDictionary" => {
-                Some(Self::ResourceDictionary)
-            }
-            "Application" | "Microsoft.UI.Xaml.Application" => Some(Self::Application),
-            "Style" | "Microsoft.UI.Xaml.Style" => Some(Self::Style),
-            "DataTemplate" | "Microsoft.UI.Xaml.DataTemplate" => Some(Self::DataTemplate),
-            "Paragraph" | "Microsoft.UI.Xaml.Documents.Paragraph" => Some(Self::Paragraph),
-            "Run" | "Microsoft.UI.Xaml.Documents.Run" => Some(Self::Run),
-            "Span" | "Microsoft.UI.Xaml.Documents.Span" => Some(Self::Span),
-            "Button" | "Microsoft.UI.Xaml.Controls.Button" => Some(Self::Button),
-            "ScrollViewer" | "Microsoft.UI.Xaml.Controls.ScrollViewer" => Some(Self::ScrollViewer),
-            "TextBox" | "Microsoft.UI.Xaml.Controls.TextBox" => Some(Self::TextBox),
-            "RichTextBlock" | "Microsoft.UI.Xaml.Controls.RichTextBlock" => {
-                Some(Self::RichTextBlock)
-            }
-            "InfoBar" | "Microsoft.UI.Xaml.Controls.InfoBar" => Some(Self::InfoBar),
-            "TitleBar" | "Microsoft.UI.Xaml.Controls.TitleBar" => Some(Self::TitleBar),
-            "SplitButton" | "Microsoft.UI.Xaml.Controls.SplitButton" => Some(Self::SplitButton),
-            "ContentPresenter" | "Microsoft.UI.Xaml.Controls.ContentPresenter" => {
-                Some(Self::ContentPresenter)
-            }
-            "PasswordBox" | "Microsoft.UI.Xaml.Controls.PasswordBox" => Some(Self::PasswordBox),
-            "SymbolIcon" | "Microsoft.UI.Xaml.Controls.SymbolIcon" => Some(Self::SymbolIcon),
-            "MicaBackdrop" | "Microsoft.UI.Xaml.Media.MicaBackdrop" => Some(Self::MicaBackdrop),
-            "SystemBackdropElement" | "Microsoft.UI.Xaml.Media.SystemBackdropElement" => {
-                Some(Self::SystemBackdropElement)
-            }
-            "FontIcon" | "Microsoft.UI.Xaml.Controls.FontIcon" => Some(Self::FontIcon),
-            "Double" => Some(Self::Double),
-            "String" => Some(Self::String),
-            "Boolean" => Some(Self::Boolean),
-            "Thickness" => Some(Self::Thickness),
-            "ListView" | "Microsoft.UI.Xaml.Controls.ListView" => Some(Self::ListView),
-            "GridView" | "Microsoft.UI.Xaml.Controls.GridView" => Some(Self::GridView),
-            "TabView" | "Microsoft.UI.Xaml.Controls.TabView" => Some(Self::TabView),
-            "ItemsRepeater" | "Microsoft.UI.Xaml.Controls.ItemsRepeater" => {
-                Some(Self::ItemsRepeater)
-            }
-            "ScrollView" | "Microsoft.UI.Xaml.Controls.ScrollView" => Some(Self::ScrollView),
-            "DatePicker" | "Microsoft.UI.Xaml.Controls.DatePicker" => Some(Self::DatePicker),
-            "RichEditBox" | "Microsoft.UI.Xaml.Controls.RichEditBox" => Some(Self::RichEditBox),
-            "CheckBox" | "Microsoft.UI.Xaml.Controls.CheckBox" => Some(Self::CheckBox),
-            "Image" | "Microsoft.UI.Xaml.Controls.Image" => Some(Self::Image),
-            "ComboBox" | "Microsoft.UI.Xaml.Controls.ComboBox" => Some(Self::ComboBox),
-            "ComboBoxItem" | "Microsoft.UI.Xaml.Controls.ComboBoxItem" => Some(Self::ComboBoxItem),
-            "ListViewItem" | "Microsoft.UI.Xaml.Controls.ListViewItem" => Some(Self::ListViewItem),
-            "GridViewItem" | "Microsoft.UI.Xaml.Controls.GridViewItem" => Some(Self::GridViewItem),
-            "ToggleSwitch" | "Microsoft.UI.Xaml.Controls.ToggleSwitch" => Some(Self::ToggleSwitch),
-            "RadioButton" | "Microsoft.UI.Xaml.Controls.RadioButton" => Some(Self::RadioButton),
-            "HyperlinkButton" | "Microsoft.UI.Xaml.Controls.HyperlinkButton" => {
-                Some(Self::HyperlinkButton)
-            }
-            "RepeatButton" | "Microsoft.UI.Xaml.Controls.RepeatButton" => Some(Self::RepeatButton),
-            "ToggleButton" | "Microsoft.UI.Xaml.Controls.ToggleButton" => Some(Self::ToggleButton),
-            "Ellipse" | "Microsoft.UI.Xaml.Shapes.Ellipse" => Some(Self::Ellipse),
-            "Rectangle" | "Microsoft.UI.Xaml.Shapes.Rectangle" => Some(Self::Rectangle),
-            "Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
-            "ToolTip" | "Microsoft.UI.Xaml.Controls.ToolTip" => Some(Self::ToolTip),
-            "Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
-            "Expander" | "Microsoft.UI.Xaml.Controls.Expander" => Some(Self::Expander),
-            "ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
-            "SelectorBar" | "Microsoft.UI.Xaml.Controls.SelectorBar" => Some(Self::SelectorBar),
-            "SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => {
-                Some(Self::SelectorBarItem)
-            }
-            "ColorPicker" | "Microsoft.UI.Xaml.Controls.ColorPicker" => Some(Self::ColorPicker),
-            "PersonPicture" | "Microsoft.UI.Xaml.Controls.PersonPicture" => {
-                Some(Self::PersonPicture)
-            }
-            "ItemsControl" | "Microsoft.UI.Xaml.Controls.ItemsControl" => Some(Self::ItemsControl),
-            "WrapPanel" | "Microsoft.UI.Xaml.Controls.WrapPanel" => Some(Self::WrapPanel),
-            "WebView2" | "Microsoft.UI.Xaml.Controls.WebView2" => Some(Self::WebView2),
-            "UniformGrid" | "Microsoft.UI.Xaml.Controls.UniformGrid" => Some(Self::UniformGrid),
-            "ItemsPanelTemplate" | "Microsoft.UI.Xaml.Controls.ItemsPanelTemplate" => {
-                Some(Self::ItemsPanelTemplate)
-            }
-            "ControlTemplate" | "Microsoft.UI.Xaml.Controls.ControlTemplate" => {
-                Some(Self::ControlTemplate)
-            }
-            "DataTemplateSelector" | "Microsoft.UI.Xaml.Controls.DataTemplateSelector" => {
-                Some(Self::DataTemplateSelector)
-            }
-            "NavigationView" | "Microsoft.UI.Xaml.Controls.NavigationView" => {
-                Some(Self::NavigationView)
-            }
-            "NavigationViewItem" | "Microsoft.UI.Xaml.Controls.NavigationViewItem" => {
-                Some(Self::NavigationViewItem)
-            }
-            "DropDownButton" | "Microsoft.UI.Xaml.Controls.DropDownButton" => {
-                Some(Self::DropDownButton)
-            }
-            "AppBarButton" | "Microsoft.UI.Xaml.Controls.AppBarButton" => Some(Self::AppBarButton),
-            "AppBarToggleButton" | "Microsoft.UI.Xaml.Controls.AppBarToggleButton" => {
-                Some(Self::AppBarToggleButton)
-            }
-            "Frame" | "Microsoft.UI.Xaml.Controls.Frame" => Some(Self::Frame),
-            "FlipView" | "Microsoft.UI.Xaml.Controls.FlipView" => Some(Self::FlipView),
-            "ProgressBar" | "Microsoft.UI.Xaml.Controls.ProgressBar" => Some(Self::ProgressBar),
-            "TeachingTip" | "Microsoft.UI.Xaml.Controls.TeachingTip" => Some(Self::TeachingTip),
-            "CommandBar" | "Microsoft.UI.Xaml.Controls.CommandBar" => Some(Self::CommandBar),
-            "MenuFlyout" | "Microsoft.UI.Xaml.Controls.MenuFlyout" => Some(Self::MenuFlyout),
-            "MenuFlyoutItem" | "Microsoft.UI.Xaml.Controls.MenuFlyoutItem" => {
-                Some(Self::MenuFlyoutItem)
-            }
-            "TabViewItem" | "Microsoft.UI.Xaml.Controls.TabViewItem" => Some(Self::TabViewItem),
-            "AutoSuggestBox" | "Microsoft.UI.Xaml.Controls.AutoSuggestBox" => {
-                Some(Self::AutoSuggestBox)
-            }
-            "Flyout" | "Microsoft.UI.Xaml.Controls.Flyout" => Some(Self::Flyout),
-            "MenuFlyoutSeparator" | "Microsoft.UI.Xaml.Controls.MenuFlyoutSeparator" => {
-                Some(Self::MenuFlyoutSeparator)
-            }
-            "ImageIconSource" | "Microsoft.UI.Xaml.Media.ImageIconSource" => {
-                Some(Self::ImageIconSource)
-            }
-            "Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
-            "Viewbox" | "Microsoft.UI.Xaml.Controls.Viewbox" => Some(Self::Viewbox),
-            "MenuBar" | "Microsoft.UI.Xaml.Controls.MenuBar" => Some(Self::MenuBar),
-            "MenuBarItem" | "Microsoft.UI.Xaml.Controls.MenuBarItem" => Some(Self::MenuBarItem),
-            "VariableSizedWrapGrid" | "Microsoft.UI.Xaml.Controls.VariableSizedWrapGrid" => {
-                Some(Self::VariableSizedWrapGrid)
-            }
-            "MediaPlayerElement" | "Microsoft.UI.Xaml.Controls.MediaPlayerElement" => {
-                Some(Self::MediaPlayerElement)
-            }
-            "TreeView" | "Microsoft.UI.Xaml.Controls.TreeView" => Some(Self::TreeView),
-            "TreeViewItem" | "Microsoft.UI.Xaml.Controls.TreeViewItem" => Some(Self::TreeViewItem),
-            "ToggleSplitButton" | "Microsoft.UI.Xaml.Controls.ToggleSplitButton" => {
-                Some(Self::ToggleSplitButton)
-            }
-            "ItemsRepeaterScrollHost" | "Microsoft.UI.Xaml.Controls.ItemsRepeaterScrollHost" => {
-                Some(Self::ItemsRepeaterScrollHost)
-            }
-            "SymbolIconSource" | "Microsoft.UI.Xaml.Controls.SymbolIconSource" => {
-                Some(Self::SymbolIconSource)
-            }
-            "CommandBarFlyout" | "Microsoft.UI.Xaml.Controls.CommandBarFlyout" => {
-                Some(Self::CommandBarFlyout)
-            }
-            "NumberBox" | "Microsoft.UI.Xaml.Controls.NumberBox" => Some(Self::NumberBox),
-            "RadioButtons" | "Microsoft.UI.Xaml.Controls.RadioButtons" => Some(Self::RadioButtons),
-            "Slider" | "Microsoft.UI.Xaml.Controls.Slider" => Some(Self::Slider),
-            "BreadcrumbBar" | "Microsoft.UI.Xaml.Controls.BreadcrumbBar" => {
-                Some(Self::BreadcrumbBar)
-            }
-            "RelativePanel" | "Microsoft.UI.Xaml.Controls.RelativePanel" => {
-                Some(Self::RelativePanel)
-            }
-            "Canvas" | "Microsoft.UI.Xaml.Controls.Canvas" => Some(Self::Canvas),
-            "UniformGridLayout" | "Microsoft.UI.Xaml.Controls.UniformGridLayout" => {
-                Some(Self::UniformGridLayout)
-            }
-            "ImplicitAnimationSet" | "Microsoft.UI.Xaml.Media.ImplicitAnimationSet" => {
-                Some(Self::ImplicitAnimationSet)
-            }
-            _ => None,
-        }
-    }
-}
-
-impl Kind {
-    /// Hosts that hold resources, styles or template bodies: nothing below them is
-    /// arranged, painted or composed, so the loader does not build their children.
-    pub const fn is_non_visual(self) -> bool {
-        matches!(
-            self,
-            Kind::ResourceDictionary
-                | Kind::Style
-                | Kind::DataTemplate
-                | Kind::Paragraph
-                | Kind::Run
-                | Kind::Span
-                | Kind::MicaBackdrop
-                | Kind::SystemBackdropElement
-                | Kind::FontIcon
-                | Kind::Double
-                | Kind::String
-                | Kind::Boolean
-                | Kind::Thickness
-                | Kind::Ellipse
-                | Kind::Rectangle
-                | Kind::Line
-                | Kind::ToolTip
-                | Kind::Flyout
-                | Kind::SymbolIconSource
-                | Kind::CommandBarFlyout
-                | Kind::ImplicitAnimationSet
-                | Kind::UniformGridLayout
-                | Kind::MenuFlyoutSeparator
-                | Kind::ImageIconSource
-                | Kind::Binding
-        )
+            .copied()
+            .find(|kind| kind.short_name() == name)
     }
 }
