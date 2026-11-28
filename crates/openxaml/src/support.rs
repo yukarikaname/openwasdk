@@ -1293,16 +1293,16 @@ mod tests {
 
     #[test]
     fn a_type_outside_the_table_is_rejected() {
-        /* NavigationView is on the Gallery's pages and still outside the table. */
-        let error = load_root(&source("NavigationView", Vec::new()))
-            .expect_err("NavigationView is not in the table");
+        /* A name no table will ever carry, so the test keeps testing the rejection. */
+        let error = load_root(&source("NoSuchControl", Vec::new()))
+            .expect_err("NoSuchControl is not in the table");
         assert_eq!(
             error,
             LoadError::UnsupportedType {
-                name: "NavigationView".to_string()
+                name: "NoSuchControl".to_string()
             }
         );
-        assert!(!supports("NavigationView"));
-        assert!(properties("NavigationView").is_empty());
+        assert!(!supports("NoSuchControl"));
+        assert!(properties("NoSuchControl").is_empty());
     }
 }
