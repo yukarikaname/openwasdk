@@ -59,21 +59,26 @@ impl ICompositorPrivate_Impl for crate::compositor::Compositor_Impl {
 /// replacement bridge answers the query and refuses the slots by name.
 #[interface("fc084699-67d8-40e1-ade7-08901d84ffda")]
 pub unsafe trait ICompositionBridgePrivate: IUnknown {
-    unsafe fn Slot6(&self) -> HRESULT;
-    unsafe fn Slot7(&self) -> HRESULT;
-    unsafe fn Slot8(&self) -> HRESULT;
-    unsafe fn Slot9(&self) -> HRESULT;
-    unsafe fn Slot10(&self) -> HRESULT;
-    unsafe fn Slot11(&self) -> HRESULT;
-    unsafe fn Slot12(&self) -> HRESULT;
-    unsafe fn Slot13(&self) -> HRESULT;
+    unsafe fn Slot6(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot7(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot8(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot9(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot10(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot11(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot12(&self, out: *mut *mut c_void) -> HRESULT;
+    unsafe fn Slot13(&self, out: *mut *mut c_void) -> HRESULT;
 }
 
 macro_rules! bridge_slot {
     ($name:ident, $index:expr) => {
-        unsafe fn $name(&self) -> HRESULT {
+        unsafe fn $name(&self, out: *mut *mut c_void) -> HRESULT {
             if std::env::var_os("OPENCOMP_TRACE").is_some() {
                 eprintln!("opencomp: composition bridge slot {} called", $index);
+            }
+            // The caller reads the out value even when the slot refuses, so it is cleared
+            // instead of left with whatever the stack held.
+            if !out.is_null() {
+                unsafe { *out = std::ptr::null_mut() };
             }
             E_NOTIMPL
         }
