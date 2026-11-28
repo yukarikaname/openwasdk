@@ -36,6 +36,8 @@ fn source(type_name: &str, properties: Vec<Property>, children: Vec<Source>) -> 
         properties,
         children,
         custom: None,
+        custom_substream: None,
+        setters: Vec::new(),
     }
 }
 

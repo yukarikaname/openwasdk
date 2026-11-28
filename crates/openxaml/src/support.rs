@@ -82,6 +82,8 @@ mod tests {
             properties,
             children: Vec::new(),
             custom: None,
+            custom_substream: None,
+            setters: Vec::new(),
         }
     }
 
