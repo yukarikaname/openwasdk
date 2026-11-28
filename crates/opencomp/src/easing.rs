@@ -7,18 +7,20 @@
 use std::sync::Mutex;
 
 use crate::bindings::Microsoft::UI::Composition::{
-    BackEasingFunction, BounceEasingFunction, CircleEasingFunction, CompositionEasingFunctionMode,
-    Compositor, CubicBezierEasingFunction, ElasticEasingFunction, ExponentialEasingFunction,
-    ICompositionEasingFunction, ICompositionEasingFunction_Impl, ICompositionEasingFunctionStatics,
+    AnimationPropertyInfo, BackEasingFunction, BounceEasingFunction, CircleEasingFunction,
+    CompositionEasingFunctionMode, Compositor, CubicBezierEasingFunction, ElasticEasingFunction,
+    ExponentialEasingFunction, IAnimationObject, IAnimationObject_Impl, ICompositionEasingFunction,
+    ICompositionEasingFunction_Impl, ICompositionEasingFunctionStatics,
     ICompositionEasingFunctionStatics_Impl, ICompositionObject, ICompositionObject2,
     ICompositionObject4, ICompositionObject5, ICubicBezierEasingFunction,
     ICubicBezierEasingFunction_Impl, ILinearEasingFunction, ILinearEasingFunction_Impl,
     LinearEasingFunction, PowerEasingFunction, SineEasingFunction, StepEasingFunction,
 };
+use crate::bindings::Windows::Foundation::{IClosable, IClosable_Impl};
 use crate::clock::Clock;
 use crate::node::Node;
 use crate::object::composition_object;
-use windows_core::{Interface, Ref, Result};
+use windows_core::{HSTRING, Interface, Ref, Result};
 use windows_numerics::Vector2;
 
 #[windows_core::implement(
@@ -27,7 +29,11 @@ use windows_numerics::Vector2;
     ICompositionObject4,
     ICompositionObject5,
     ICompositionEasingFunction,
-    ILinearEasingFunction
+    ILinearEasingFunction,
+    // The class's required hierarchy: an easing function is an animation object and
+    // closable, and the engine's animation code asks for both.
+    IAnimationObject,
+    IClosable
 )]
 pub struct LinearEasingObject {
     node: std::sync::Arc<Mutex<Node>>,
@@ -39,13 +45,32 @@ impl ICompositionEasingFunction_Impl for LinearEasingObject_Impl {}
 
 impl ILinearEasingFunction_Impl for LinearEasingObject_Impl {}
 
+impl IAnimationObject_Impl for LinearEasingObject_Impl {
+    fn PopulatePropertyInfo(
+        &self,
+        _property_name: &HSTRING,
+        _property_info: Ref<AnimationPropertyInfo>,
+    ) -> Result<()> {
+        // An easing function animates no property of its own.
+        Ok(())
+    }
+}
+
+impl IClosable_Impl for LinearEasingObject_Impl {
+    fn Close(&self) -> Result<()> {
+        Ok(())
+    }
+}
+
 #[windows_core::implement(
     ICompositionObject,
     ICompositionObject2,
     ICompositionObject4,
     ICompositionObject5,
     ICompositionEasingFunction,
-    ICubicBezierEasingFunction
+    ICubicBezierEasingFunction,
+    IAnimationObject,
+    IClosable
 )]
 pub struct CubicBezierObject {
     node: std::sync::Arc<Mutex<Node>>,
@@ -55,6 +80,22 @@ pub struct CubicBezierObject {
 composition_object!(CubicBezierObject_Impl, node);
 
 impl ICompositionEasingFunction_Impl for CubicBezierObject_Impl {}
+
+impl IAnimationObject_Impl for CubicBezierObject_Impl {
+    fn PopulatePropertyInfo(
+        &self,
+        _property_name: &HSTRING,
+        _property_info: Ref<AnimationPropertyInfo>,
+    ) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl IClosable_Impl for CubicBezierObject_Impl {
+    fn Close(&self) -> Result<()> {
+        Ok(())
+    }
+}
 
 impl ICubicBezierEasingFunction_Impl for CubicBezierObject_Impl {
     fn ControlPoint1(&self) -> Result<Vector2> {

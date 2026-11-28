@@ -86,10 +86,17 @@ answered, and the crash comes after it with no further call into our object (the
 the engine rejects the object's *identity* rather than missing an interface on it, and
 the class stays with the engine.
 
-Next measurement, in order of cost: watch the QIs on every object we hand out (the
-watcher is one call per object), then read the stowed exception's HRESULT with the
-engine's own easing object as the baseline, and only then decide whether the identity
-can be provided at all from our side.
+The class's own hierarchy names two interfaces the object did not carry -- `IAnimationObject`
+and `IClosable` -- and both are implemented now (`PopulatePropertyInfo` accepts, `Close`
+does nothing). The gate still fails with the same HRESULT and still logs a single QI, so
+the engine is not asking for them either: it dies after the QI it does make, which is one
+we answer.
+
+Measured, in order: activation reaches us, the statics build the object, exactly one QI is
+asked (`ICompositionEasingFunction`, answered), and the stowed `E_NOINTERFACE` follows with
+no further call into our code. The next instrument is a vectored exception handler inside
+`opencomp` that logs the stack of `0xC000027B` -- the same `trace_stack` machinery the
+private statics already use -- because everything this side can see has been measured.
 
 ## The rule this gives
 
