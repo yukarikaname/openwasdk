@@ -74,6 +74,28 @@ pub enum Kind {
     String,
     Boolean,
     Thickness,
+    ListView,
+    GridView,
+    TabView,
+    ItemsRepeater,
+    ScrollView,
+    DatePicker,
+    RichEditBox,
+    CheckBox,
+    Image,
+    ComboBox,
+    ComboBoxItem,
+    ListViewItem,
+    GridViewItem,
+    ToggleSwitch,
+    RadioButton,
+    HyperlinkButton,
+    RepeatButton,
+    ToggleButton,
+    /* Shapes: geometry this renderer has no draw path for yet. */
+    Ellipse,
+    Rectangle,
+    Line,
 }
 
 impl Kind {
@@ -112,6 +134,27 @@ impl Kind {
             Self::String => "String",
             Self::Boolean => "Boolean",
             Self::Thickness => "Thickness",
+            Self::ListView => "Microsoft.UI.Xaml.Controls.ListView",
+            Self::GridView => "Microsoft.UI.Xaml.Controls.GridView",
+            Self::TabView => "Microsoft.UI.Xaml.Controls.TabView",
+            Self::ItemsRepeater => "Microsoft.UI.Xaml.Controls.ItemsRepeater",
+            Self::ScrollView => "Microsoft.UI.Xaml.Controls.ScrollView",
+            Self::DatePicker => "Microsoft.UI.Xaml.Controls.DatePicker",
+            Self::RichEditBox => "Microsoft.UI.Xaml.Controls.RichEditBox",
+            Self::CheckBox => "Microsoft.UI.Xaml.Controls.CheckBox",
+            Self::Image => "Microsoft.UI.Xaml.Controls.Image",
+            Self::ComboBox => "Microsoft.UI.Xaml.Controls.ComboBox",
+            Self::ComboBoxItem => "Microsoft.UI.Xaml.Controls.ComboBoxItem",
+            Self::ListViewItem => "Microsoft.UI.Xaml.Controls.ListViewItem",
+            Self::GridViewItem => "Microsoft.UI.Xaml.Controls.GridViewItem",
+            Self::ToggleSwitch => "Microsoft.UI.Xaml.Controls.ToggleSwitch",
+            Self::RadioButton => "Microsoft.UI.Xaml.Controls.RadioButton",
+            Self::HyperlinkButton => "Microsoft.UI.Xaml.Controls.HyperlinkButton",
+            Self::RepeatButton => "Microsoft.UI.Xaml.Controls.RepeatButton",
+            Self::ToggleButton => "Microsoft.UI.Xaml.Controls.ToggleButton",
+            Self::Ellipse => "Microsoft.UI.Xaml.Shapes.Ellipse",
+            Self::Rectangle => "Microsoft.UI.Xaml.Shapes.Rectangle",
+            Self::Line => "Microsoft.UI.Xaml.Shapes.Line",
         }
     }
 
@@ -173,7 +216,28 @@ impl Kind {
             "Double" => Some(Self::Double),
             "String" => Some(Self::String),
             "Boolean" => Some(Self::Boolean),
-            "Thickness" => Some(Self::Thickness),
+"Thickness" => Some(Self::Thickness),
+            "ListView" | "Microsoft.UI.Xaml.Controls.ListView" => Some(Self::ListView),
+            "GridView" | "Microsoft.UI.Xaml.Controls.GridView" => Some(Self::GridView),
+            "TabView" | "Microsoft.UI.Xaml.Controls.TabView" => Some(Self::TabView),
+            "ItemsRepeater" | "Microsoft.UI.Xaml.Controls.ItemsRepeater" => Some(Self::ItemsRepeater),
+            "ScrollView" | "Microsoft.UI.Xaml.Controls.ScrollView" => Some(Self::ScrollView),
+            "DatePicker" | "Microsoft.UI.Xaml.Controls.DatePicker" => Some(Self::DatePicker),
+            "RichEditBox" | "Microsoft.UI.Xaml.Controls.RichEditBox" => Some(Self::RichEditBox),
+            "CheckBox" | "Microsoft.UI.Xaml.Controls.CheckBox" => Some(Self::CheckBox),
+            "Image" | "Microsoft.UI.Xaml.Controls.Image" => Some(Self::Image),
+            "ComboBox" | "Microsoft.UI.Xaml.Controls.ComboBox" => Some(Self::ComboBox),
+            "ComboBoxItem" | "Microsoft.UI.Xaml.Controls.ComboBoxItem" => Some(Self::ComboBoxItem),
+            "ListViewItem" | "Microsoft.UI.Xaml.Controls.ListViewItem" => Some(Self::ListViewItem),
+            "GridViewItem" | "Microsoft.UI.Xaml.Controls.GridViewItem" => Some(Self::GridViewItem),
+            "ToggleSwitch" | "Microsoft.UI.Xaml.Controls.ToggleSwitch" => Some(Self::ToggleSwitch),
+            "RadioButton" | "Microsoft.UI.Xaml.Controls.RadioButton" => Some(Self::RadioButton),
+            "HyperlinkButton" | "Microsoft.UI.Xaml.Controls.HyperlinkButton" => Some(Self::HyperlinkButton),
+            "RepeatButton" | "Microsoft.UI.Xaml.Controls.RepeatButton" => Some(Self::RepeatButton),
+"ToggleButton" | "Microsoft.UI.Xaml.Controls.ToggleButton" => Some(Self::ToggleButton),
+            "Ellipse" | "Microsoft.UI.Xaml.Shapes.Ellipse" => Some(Self::Ellipse),
+            "Rectangle" | "Microsoft.UI.Xaml.Shapes.Rectangle" => Some(Self::Rectangle),
+            "Line" | "Microsoft.UI.Xaml.Shapes.Line" => Some(Self::Line),
             _ => None,
         }
     }
@@ -264,6 +328,9 @@ impl Element {
                 | Kind::String
                 | Kind::Boolean
                 | Kind::Thickness
+                | Kind::Ellipse
+                | Kind::Rectangle
+                | Kind::Line
         )
     }
 

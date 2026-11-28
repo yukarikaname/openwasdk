@@ -272,7 +272,25 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::SplitButton
         | Kind::ContentPresenter
         | Kind::PasswordBox
-        | Kind::SymbolIcon => measure_border(element, available),
+        | Kind::SymbolIcon
+        | Kind::ListView
+        | Kind::GridView
+        | Kind::TabView
+        | Kind::ItemsRepeater
+        | Kind::ScrollView
+        | Kind::DatePicker
+        | Kind::RichEditBox
+        | Kind::CheckBox
+        | Kind::Image
+        | Kind::ComboBox
+        | Kind::ComboBoxItem
+        | Kind::ListViewItem
+        | Kind::GridViewItem
+        | Kind::ToggleSwitch
+        | Kind::RadioButton
+        | Kind::HyperlinkButton
+        | Kind::RepeatButton
+        | Kind::ToggleButton => measure_border(element, available),
         // A resource dictionary and an Application are not part of the visual tree.
         Kind::ResourceDictionary
         | Kind::Application
@@ -287,7 +305,10 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::Double
         | Kind::String
         | Kind::Boolean
-        | Kind::Thickness => Ok(Size::new(0.0, 0.0)),
+        | Kind::Thickness
+        | Kind::Ellipse
+        | Kind::Rectangle
+        | Kind::Line => Ok(Size::new(0.0, 0.0)),
         Kind::StackPanel => measure_stack(element, available),
         Kind::Grid => grid::measure(element, available),
     }
@@ -364,7 +385,25 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::SplitButton
         | Kind::ContentPresenter
         | Kind::PasswordBox
-        | Kind::SymbolIcon => arrange_border(element, content),
+        | Kind::SymbolIcon
+        | Kind::ListView
+        | Kind::GridView
+        | Kind::TabView
+        | Kind::ItemsRepeater
+        | Kind::ScrollView
+        | Kind::DatePicker
+        | Kind::RichEditBox
+        | Kind::CheckBox
+        | Kind::Image
+        | Kind::ComboBox
+        | Kind::ComboBoxItem
+        | Kind::ListViewItem
+        | Kind::GridViewItem
+        | Kind::ToggleSwitch
+        | Kind::RadioButton
+        | Kind::HyperlinkButton
+        | Kind::RepeatButton
+        | Kind::ToggleButton => arrange_border(element, content),
         // Nothing below a non-visual host is arranged, so nothing of it is composed.
         Kind::ResourceDictionary
         | Kind::Application
@@ -379,7 +418,10 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::Double
         | Kind::String
         | Kind::Boolean
-        | Kind::Thickness => Ok(Vec::new()),
+        | Kind::Thickness
+        | Kind::Ellipse
+        | Kind::Rectangle
+        | Kind::Line => Ok(Vec::new()),
         Kind::StackPanel => arrange_stack(element, content),
         Kind::Grid => grid::arrange(element, content),
     }

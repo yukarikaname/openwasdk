@@ -194,7 +194,7 @@ fn load_property_with(
                 element.set_name(string_value(type_name, property)?);
                 return Ok(());
             }
-            if matches!(member, "Content" | "Child" | "Children") {
+            if matches!(member, "Content" | "Child" | "Children" | "Items") {
                 for child in property_elements(property)? {
                     element.push(load_element(&child, controls, depth)?);
                 }
@@ -247,6 +247,20 @@ fn load_property_with(
                     | "TextTrimming"
                     | "Symbol"
                     | "DefaultButton"
+                    | "FontSize"
+                    | "FontFamily"
+                    | "FontStyle"
+                    | "Foreground"
+                    | "Stretch"
+                    | "Source"
+                    | "Value"
+                    | "Glyph"
+                    | "AcceptsReturn"
+                    | "AccessibilityView"
+                    | "HorizontalContentAlignment"
+                    | "IsItemClickEnabled"
+                    | "PrimaryButtonText"
+                    | "SecondaryButtonText"
             ) {
                 return Ok(());
             }
@@ -281,13 +295,33 @@ fn load_property_with(
             ) {
                 return Ok(());
             }
-            let accepted =
-                support
-                    .property(member)
-                    .ok_or_else(|| LoadError::UnsupportedProperty {
+            let accepted = match support.property(member) {
+                Some(accepted) => accepted,
+                /*
+                 * A cell is an attached property: the panel owns it, any element may carry
+                 * it, so it is not in every element's list.
+                 */
+                None if matches!(
+                    member,
+                    "Grid.Row" | "Grid.Column" | "Grid.RowSpan" | "Grid.ColumnSpan"
+                ) =>
+                {
+                    crate::property::PROPERTIES
+                        .iter()
+                        .copied()
+                        .find(|candidate| candidate.name == member)
+                        .ok_or_else(|| LoadError::UnsupportedProperty {
+                            element: type_name.to_string(),
+                            name: member.to_string(),
+                        })?
+                }
+                None => {
+                    return Err(LoadError::UnsupportedProperty {
                         element: type_name.to_string(),
                         name: member.to_string(),
-                    })?;
+                    });
+                }
+            };
             /*
              * A brush that is not a solid colour (gradient, acrylic, image) has no paint
              * in this renderer; leaving the property unset draws the background as nothing.
@@ -299,7 +333,12 @@ fn load_property_with(
             {
                 return Ok(());
             }
-            let value = convert(type_name, property, accepted.value_type)?;
+            let value = match convert(type_name, property, accepted.value_type) {
+                Ok(value) => value,
+                /* What cannot be painted as a solid fill leaves the default. */
+                Err(_) if accepted.value_type == ValueType::SolidColorBrush => return Ok(()),
+                Err(error) => return Err(error),
+            };
             element
                 .set(accepted, value)
                 .map_err(|_| LoadError::UnsupportedValue {
