@@ -346,3 +346,35 @@ The two traces agree up to the last activation before the branch
 (`Windows.UI.ViewManagement.UISettings`, reached through `RoActivateInstance`, which Wine
 carries as a semi-stub) and diverge there. The next step is to name the class that call
 activates, on both sides, and to walk the UDK function that decides.
+
+## The Windows baseline, and what it settles (2026-11-28)
+
+There is now a Windows 11 ARM64 VM under QEMU/HVF with the same probe installed, reached
+over SSH (`scripts/vm/`). Its purpose is the half of every question that only exists on
+Windows. What it said, in order:
+
+- The measurement is the same: `{"case":"stackpanel-spacing4","width":0,"height":38,
+  "child0_height":10}`. The 38 is the rule this crate implements, not a Wine artefact.
+- The window path on the platform it was built for prints `window bounds 584x354 at 0,0`
+  and reaches the engine's own compositor.
+- With this project's dispatcher in the manifest and the SDK's composition left alone, the
+  same probe **dies on Windows too**, and the event log names the module:
+  `Microsoft.UI.Input.dll`, exception `0xc0000409` (`__fastfail`), offset `0x2c66c`. That
+  is a bug in `opendispatch`, or in what it does not answer, not a Wine difference: the
+  input layer would rather end the process than continue with the queue it was given.
+- The engine on Windows **never asks the system for a CoreUI session**. Patched to log
+  every `RoGetActivationFactory` and `RoActivateInstance`, the sequence is identical to
+  Wine's up to `Windows.UI.ViewManagement.UISettings`; Windows then runs the callback,
+  while Wine loads `CoreMessaging.dll` from the UDK layer and calls `CoreUICreate`.
+
+That last difference is the one that decides Gate B. The runtime ships its own
+CoreMessaging in `CoreMessagingXP.dll`, and on Windows that is what the dispatcher and the
+input stack use. Wine cannot load that file as shipped, so the UDK falls back to the
+operating system's CoreMessaging, we answer `CoreUICreate` with a stand-in, and the engine
+ends up with a session that has no core behind it -- which is why the content path then
+faults on a null core. Making the fallback path work would mean implementing the session
+that `CoreMessagingXP` implements, and that conversation is ALPC on the registrar port
+(`NtAlpcConnectPort`, a stub), which is the piece WineExplorer had to add to Wine itself.
+
+So Gate B's *measurement* is closed on both platforms, and its *window* is blocked by the
+absence of ALPC in Wine, not by anything in this repository.
