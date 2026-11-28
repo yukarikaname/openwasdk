@@ -441,3 +441,45 @@ With the device answered, that whole path completes and the failure moves into X
 fixed: `bcp47langs!GetApplicationLanguages` returned `(void *)1` as an opaque list token, but
 the UDK owns that value as an HSTRING and deletes it with `WindowsDeleteString`, which read at
 address one. It returns a real string (the user's locale) now.
+
+## What dcomp ordinal 1040 returns
+
+`Microsoft.Internal.FrameworkUdk.dll` imports `dcomp.dll` by ordinal 1040 and calls it as
+`*out = 0; return f(out)` from Microsoft.UI.Input's composition-target setup. Wine answered
+with an unimplemented stub, whose exception aborted the window inside `WM_NCCREATE`; the
+window was destroyed and every later use of its handle failed.
+
+The Windows baseline VM answers what the export produces. From an interactive session (the
+SSH session is not one: DirectComposition refuses with `E_ACCESSDENIED` there), after
+`DCompositionCreateDevice3(NULL, IDCompositionDesktopDevice)` succeeds, three calls give:
+
+    CreateDevice3 hr=00000000 device=0000020A4E18B3A0
+    1040 #1 hr=00000000 out=00000000000001F8
+    1040 #2 hr=00000000 out=00000000000001FC
+    1040 #3 hr=00000000 out=0000000000000200
+
+So the export allocates a 32-bit identifier in steps of four and stores it through the out
+pointer; it is not an object pointer. The first value depends on the process, the stride does
+not. That is what the caller in the input host stores and passes on.
+
+## Prefix updates and the wineboot event
+
+Every Wine process calls `run_wineboot()` from `dlls/ntdll/unix/env.c` before it starts.
+The first process creates the named event `\KernelObjects\__wineboot_event` and launches
+`C:\windows\system32\wineboot.exe --init`; every other process opens the event and waits
+up to five minutes for it to be signalled. When wineboot itself gets stuck - for example
+because `services.exe` faults during the prefix update - the event is never signalled and
+every process sits in that wait with nothing to print.
+
+That is what the bare `RtlpWaitForCriticalSection ... loader_section` lines after a crash
+mean: services.exe took the loader lock with it on the way down. Two consequences for this
+laboratory:
+
+- `\\.update-timestamp` containing a word starting with `disable` makes `update_timestamp()`
+  in `programs/wineboot/wineboot.c` skip the update, but the event path above still runs.
+- A run started right after a broken prefix needs more than two minutes before it prints
+  anything useful; five minutes is the wait in `run_wineboot()`.
+
+After a full `make install` this tree hit exactly that state: `wineboot --init` stayed
+alive, `services.exe` died with `rip=0` (a call through a null function pointer), and every
+client waited on the event.

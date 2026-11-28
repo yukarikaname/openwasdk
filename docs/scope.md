@@ -115,3 +115,16 @@ SDK's DLLs does not remove any of that. The runtime's contract is the App SDK AB
 not the host: the same DLLs must answer correctly on Windows, under Wine, or under
 any future Windows-compatible loader. `xwinui` is the build half — cross-compile,
 package, deploy — and runs nothing by itself.
+
+## Engine language
+
+The XAML engine is Rust. The reasons are the ABI (COM vtables and
+`DllGetActivationFactory`), the per-frame path (no GC pauses), deployment (one dynamic
+library, no CoreCLR inside every application), and consistency with `opencomp` and
+`openudk`. C# is used only as a contrast: Uno Platform's parser output and Avalonia's
+layout code are read to check behaviour, and a test client may be written in C#, but no
+.NET runtime is embedded in the engine.
+
+The first slice is vertical: one Gallery page through `xbf` -> object tree -> dependency
+properties -> layout -> render commands, implementing only the controls and properties that
+page uses.
