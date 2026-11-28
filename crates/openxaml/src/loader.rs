@@ -122,10 +122,30 @@ fn load_element(
     controls: &Controls,
     depth: usize,
 ) -> Result<Element, LoadError> {
+    load_with_tolerance(source, controls, depth, false)
+}
+
+fn load_with_tolerance(
+    source: &xbf::Element,
+    controls: &Controls,
+    depth: usize,
+    tolerant: bool,
+) -> Result<Element, LoadError> {
+    /*
+     * XBF's deferred-object marker: the writer leaves a placeholder whose object is realized
+     * later by the deferred-element table. This loader has no such table, so the placeholder
+     * becomes an empty host -- the template around it still renders, which is better than
+     * losing the whole control.
+     */
+    if source.type_name.ends_with("DeferredElement")
+        && let Some(support) = support::by_kind(Kind::Unrealized)
+    {
+        return build(source, support, controls, depth);
+    }
     let Some(support) = support::lookup(&source.type_name) else {
         return load_body(source, controls, depth);
     };
-    build(source, support, controls, depth)
+    build_with(source, support, controls, depth, tolerant)
 }
 
 /// A type outside the standard table, realized from the body its application shipped.
@@ -192,16 +212,38 @@ fn build(
     controls: &Controls,
     depth: usize,
 ) -> Result<Element, LoadError> {
+    build_with(source, support, controls, depth, false)
+}
+
+fn build_with(
+    source: &xbf::Element,
+    support: &'static support::TypeSupport,
+    controls: &Controls,
+    depth: usize,
+    tolerant: bool,
+) -> Result<Element, LoadError> {
     let mut element = Element::new(support.kind);
     for property in &source.properties {
-        load_property_with(
+        /*
+         * A framework template sets properties this renderer does not convert -- focus
+         * visuals, scroll state, a template part's flags. A page is held to the table; a
+         * template gets the rest of its tree built with those properties dropped, so one
+         * unknown member cannot cost the whole control.
+         */
+        let result = load_property_with(
             &mut element,
             support,
             &source.type_name,
             property,
             controls,
             depth,
-        )?;
+        );
+        if let Err(error) = result {
+            if tolerant && matches!(error, LoadError::UnsupportedProperty { .. }) {
+                continue;
+            }
+            return Err(error);
+        }
     }
     // A dictionary's entries are resources (Double, String, brushes); nothing in this
     // renderer resolves them, so they are not built as elements.
@@ -209,7 +251,14 @@ fn build(
         return Ok(element);
     }
     for child in &source.children {
-        element.push(load_element(child, controls, depth)?);
+        // The tolerance travels with the tree: a template's children are as forgiving as the
+        // template itself.
+        let child = if tolerant {
+            load_with_tolerance(child, controls, depth, true)?
+        } else {
+            load_element(child, controls, depth)?
+        };
+        element.push(child);
     }
     /*
      * A control that the page does not give a tree gets the framework's: the theme
@@ -225,7 +274,7 @@ fn build(
          * page keeps its empty box: one control without chrome is a worse picture, a page
          * that fails to load is no picture.
          */
-        match load_element(body, controls, depth + 1) {
+        match load_with_tolerance(body, controls, depth + 1, true) {
             Ok(template) => {
                 if std::env::var_os("OPENCOMP_TRACE").is_some() {
                     eprintln!("openxaml: template for {} instantiated", source.type_name);

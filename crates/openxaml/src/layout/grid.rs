@@ -111,13 +111,13 @@ fn natural(element: &Element, columns: &mut Tracks, rows: &mut Tracks) -> Result
             if in_star != star_pass {
                 continue;
             }
-            // A span over a star track is the engine's cyclic-measure case.
-            if column_span > 1 && columns.range_has_star(column, column_span) {
-                return Err(LayoutError::SpanAcrossStarTrack);
-            }
-            if row_span > 1 && rows.range_has_star(row, row_span) {
-                return Err(LayoutError::SpanAcrossStarTrack);
-            }
+            /*
+             * A span over a star track is the engine's cyclic-measure case: CGrid keeps
+             * per-group order and re-measures. This pass measures the child once in the star
+             * pass against the sum of the tracks it covers (`cell_constraint`), which keeps
+             * the layout total and is close wherever a span crosses one star track and one
+             * fixed track -- the shape templates use.
+             */
 
             let constraint = Size::new(
                 columns.cell_constraint(column, column_span),

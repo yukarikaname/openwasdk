@@ -6,6 +6,8 @@
 //! stream's root is the template body. This module walks that chain once and keeps the bodies
 //! by type, so the loader can give a control the shape the framework ships.
 
+pub mod palette;
+
 use std::collections::HashMap;
 
 use xbf::model::{Element as XbfElement, Value};

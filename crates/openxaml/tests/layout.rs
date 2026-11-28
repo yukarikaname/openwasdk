@@ -229,7 +229,7 @@ fn grid_spacing_is_between_tracks_only() {
 }
 
 #[test]
-fn a_span_across_a_star_track_is_refused() {
+fn a_span_across_a_star_track_measures_against_its_range() {
     let mut grid = Element::grid();
     grid.set_columns([GridTrack::star(1.0), GridTrack::pixels(20.0)]);
     grid.push(
@@ -238,12 +238,16 @@ fn a_span_across_a_star_track_is_refused() {
             .with_grid_column_span(2),
     );
 
-    // `CGrid` resolves a span through its cyclic measure groups; this layer does not
-    // model them, so it refuses rather than inventing a constraint.
-    let error = grid
+    // The engine re-measures a star span in its cyclic groups; this pass measures it once
+    // against the sum of the covered tracks, which is what `cell_constraint` returns.
+    let size = grid
         .measure(Size::new(100.0, 100.0))
-        .expect_err("a star span is refused");
-    assert_eq!(error, LayoutError::SpanAcrossStarTrack);
+        .expect("a star span measures");
+    assert!(size.width <= 100.0, "width {size:?}");
+    let layout = grid
+        .arrange(Rect::new(0.0, 0.0, 100.0, 100.0))
+        .expect("a star span arranges");
+    assert_eq!(layout.children.len(), 1);
 }
 
 #[test]

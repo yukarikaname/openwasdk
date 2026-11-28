@@ -29,9 +29,10 @@ pub fn compose(element: &Element, layout: &Layout) -> Visual {
         visual.text = Some(Text {
             text: element.text().to_string(),
             size: element.font_size(),
-            // WinUI's default foreground is the theme's text colour; the preview has no
-            // theme, so it uses black on the light background.
-            color: [0.0, 0.0, 0.0, 1.0],
+            // The theme's text colour, from the same palette the templates use.
+            color: crate::theme::palette::color("TextFillColorPrimary")
+                .or_else(|| crate::theme::palette::color("SystemControlForegroundBaseHighBrush"))
+                .unwrap_or([1.0, 1.0, 1.0, 1.0]),
         });
     }
 

@@ -139,6 +139,17 @@ pub(super) fn load_property_with(
                     | "ItemContainerStyle"
                     | "ItemTemplate"
                     | "Flyout"
+                    | "ContentMargin"
+                    | "FocusVisualSecondaryThickness"
+                    | "FocusVisualSecondaryBrush"
+                    | "FocusVisualPrimaryThickness"
+                    | "FocusVisualPrimaryBrush"
+                    | "BackgroundSizing"
+                    | "RadiusY"
+                    | "RadiusX"
+                    | "IsTemplateKeyTipTarget"
+                    | "IsTemplateFocusTarget"
+                    | "ZoomMode"
                     | "IsOpen"
                     | "IsClosable"
                     | "IsCopyButtonVisible"
@@ -326,6 +337,23 @@ pub(super) fn load_property_with(
                 && name_suffix(&brush.type_name).ends_with("Brush")
                 && name_suffix(&brush.type_name) != "SolidColorBrush"
             {
+                return Ok(());
+            }
+            /*
+             * A brush named by a theme resource resolves against the palette taken from
+             * Microsoft's generic.xaml. Anything else a resource names -- a length, a
+             * duration, a template -- has no consumer here and is dropped below.
+             */
+            if let xbf::model::Value::Resource { key, .. } = &property.value {
+                if accepted.value_type == ValueType::SolidColorBrush
+                    && let Some(color) = crate::theme::palette::color(key)
+                    && element.set(accepted, Value::Color(color)).is_ok()
+                {
+                    return Ok(());
+                }
+                if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                    eprintln!("openxaml: theme key {key:?} on {type_name}");
+                }
                 return Ok(());
             }
             let value = match convert(type_name, property, accepted.value_type) {
