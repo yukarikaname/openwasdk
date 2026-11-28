@@ -123,29 +123,24 @@ fn directives_are_carried_as_names_not_properties() {
 
 #[test]
 fn an_unsupported_property_names_itself() {
+    /* A property the table has never heard of, unlike TextWrapping which is dropped. */
     let text = source(
         "TextBlock",
-        vec![property(
-            "TextWrapping",
-            SourceValue::Enum {
-                type_name: "TextWrapping".to_string(),
-                value: 0,
-            },
-        )],
+        vec![property("Rotation", SourceValue::Float(45.0))],
         Vec::new(),
     );
-    let error = openxaml::load_root(&text).expect_err("TextWrapping is not in the table");
+    let error = openxaml::load_root(&text).expect_err("Rotation is not in the table");
     assert_eq!(
         error,
         LoadError::UnsupportedProperty {
             element: "TextBlock".to_string(),
-            name: "TextWrapping".to_string()
+            name: "Rotation".to_string()
         }
     );
 }
 
 #[test]
-fn a_resource_reference_is_not_defaulted() {
+fn a_resource_reference_leaves_the_property_at_its_default() {
     let text = source(
         "TextBlock",
         vec![property(
@@ -157,14 +152,9 @@ fn a_resource_reference_is_not_defaulted() {
         )],
         Vec::new(),
     );
-    let error = openxaml::load_root(&text).expect_err("there is no resource map");
-    assert_eq!(
-        error,
-        LoadError::UnsupportedValue {
-            element: "TextBlock".to_string(),
-            property: "Text".to_string()
-        }
-    );
+    // No resource map: Text stays unset rather than taking the key or failing the page.
+    let loaded = openxaml::load_root(&text).expect("a reference loads");
+    assert_eq!(loaded.text(), "");
 }
 
 #[test]
