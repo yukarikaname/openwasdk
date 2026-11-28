@@ -27,6 +27,7 @@ pub mod model;
 mod node;
 mod node_value;
 mod node_wire;
+pub mod pri;
 pub mod stable;
 
 pub use error::XbfError;
