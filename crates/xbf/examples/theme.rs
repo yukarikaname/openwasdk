@@ -77,7 +77,15 @@ fn visit(file: &Xbf, element: &Element, wanted: &str) {
             println!("    {} = {kind}", property.name);
         }
         println!("    children: {}", element.children.len());
-        if let Some(stream) = deferred_stream(element) {
+        println!(
+            "    custom: {:?} substream: {:?}",
+            element.custom, element.custom_substream
+        );
+        let stream = element
+            .custom_substream
+            .map(|s| s as usize)
+            .or_else(|| deferred_stream(element));
+        if let Some(stream) = stream {
             match file.substream(stream) {
                 Ok(setters) => {
                     println!(

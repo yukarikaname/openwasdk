@@ -35,6 +35,9 @@ pub struct Element {
     pub properties: Vec<Property>,
     pub children: Vec<Element>,
     pub custom: Option<String>,
+    /// The stream a style's setters (or a template's body) live in, when the writer put
+    /// them out of line.
+    pub custom_substream: Option<u32>,
 }
 
 #[derive(Clone, Debug)]
