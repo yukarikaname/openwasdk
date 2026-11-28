@@ -109,6 +109,17 @@ pub enum Kind {
     ItemsPanelTemplate,
     ControlTemplate,
     DataTemplateSelector,
+    Viewbox,
+    MenuBar,
+    MenuBarItem,
+    VariableSizedWrapGrid,
+    MediaPlayerElement,
+    TreeView,
+    TreeViewItem,
+    ToggleSplitButton,
+    ItemsRepeaterScrollHost,
+    SymbolIconSource,
+    CommandBarFlyout,
 }
 
 impl Kind {
@@ -174,6 +185,17 @@ impl Kind {
             Self::ProgressRing => "Microsoft.UI.Xaml.Controls.ProgressRing",
             Self::SelectorBar => "Microsoft.UI.Xaml.Controls.SelectorBar",
             Self::Unrealized => "Microsoft.UI.Xaml.Unrealized",
+            Self::Viewbox => "Microsoft.UI.Xaml.Controls.Viewbox",
+            Self::MenuBar => "Microsoft.UI.Xaml.Controls.MenuBar",
+            Self::MenuBarItem => "Microsoft.UI.Xaml.Controls.MenuBarItem",
+            Self::VariableSizedWrapGrid => "Microsoft.UI.Xaml.Controls.VariableSizedWrapGrid",
+            Self::MediaPlayerElement => "Microsoft.UI.Xaml.Controls.MediaPlayerElement",
+            Self::TreeView => "Microsoft.UI.Xaml.Controls.TreeView",
+            Self::TreeViewItem => "Microsoft.UI.Xaml.Controls.TreeViewItem",
+            Self::ToggleSplitButton => "Microsoft.UI.Xaml.Controls.ToggleSplitButton",
+            Self::ItemsRepeaterScrollHost => "Microsoft.UI.Xaml.Controls.ItemsRepeaterScrollHost",
+            Self::SymbolIconSource => "Microsoft.UI.Xaml.Controls.SymbolIconSource",
+            Self::CommandBarFlyout => "Microsoft.UI.Xaml.Controls.CommandBarFlyout",
             Self::NumberBox => "Microsoft.UI.Xaml.Controls.NumberBox",
             Self::RadioButtons => "Microsoft.UI.Xaml.Controls.RadioButtons",
             Self::Slider => "Microsoft.UI.Xaml.Controls.Slider",
@@ -363,6 +385,29 @@ impl Kind {
                 Some(Self::ImageIconSource)
             }
             "Unrealized" | "Microsoft.UI.Xaml.Unrealized" => Some(Self::Unrealized),
+            "Viewbox" | "Microsoft.UI.Xaml.Controls.Viewbox" => Some(Self::Viewbox),
+            "MenuBar" | "Microsoft.UI.Xaml.Controls.MenuBar" => Some(Self::MenuBar),
+            "MenuBarItem" | "Microsoft.UI.Xaml.Controls.MenuBarItem" => Some(Self::MenuBarItem),
+            "VariableSizedWrapGrid" | "Microsoft.UI.Xaml.Controls.VariableSizedWrapGrid" => {
+                Some(Self::VariableSizedWrapGrid)
+            }
+            "MediaPlayerElement" | "Microsoft.UI.Xaml.Controls.MediaPlayerElement" => {
+                Some(Self::MediaPlayerElement)
+            }
+            "TreeView" | "Microsoft.UI.Xaml.Controls.TreeView" => Some(Self::TreeView),
+            "TreeViewItem" | "Microsoft.UI.Xaml.Controls.TreeViewItem" => Some(Self::TreeViewItem),
+            "ToggleSplitButton" | "Microsoft.UI.Xaml.Controls.ToggleSplitButton" => {
+                Some(Self::ToggleSplitButton)
+            }
+            "ItemsRepeaterScrollHost" | "Microsoft.UI.Xaml.Controls.ItemsRepeaterScrollHost" => {
+                Some(Self::ItemsRepeaterScrollHost)
+            }
+            "SymbolIconSource" | "Microsoft.UI.Xaml.Controls.SymbolIconSource" => {
+                Some(Self::SymbolIconSource)
+            }
+            "CommandBarFlyout" | "Microsoft.UI.Xaml.Controls.CommandBarFlyout" => {
+                Some(Self::CommandBarFlyout)
+            }
             "NumberBox" | "Microsoft.UI.Xaml.Controls.NumberBox" => Some(Self::NumberBox),
             "RadioButtons" | "Microsoft.UI.Xaml.Controls.RadioButtons" => Some(Self::RadioButtons),
             "Slider" | "Microsoft.UI.Xaml.Controls.Slider" => Some(Self::Slider),
@@ -408,6 +453,8 @@ impl Kind {
                 | Kind::Line
                 | Kind::ToolTip
                 | Kind::Flyout
+                | Kind::SymbolIconSource
+                | Kind::CommandBarFlyout
                 | Kind::ImplicitAnimationSet
                 | Kind::UniformGridLayout
                 | Kind::MenuFlyoutSeparator

@@ -80,6 +80,15 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::ContentPresenter
         | Kind::PasswordBox
         | Kind::SymbolIcon
+        | Kind::Viewbox
+        | Kind::MenuBar
+        | Kind::MenuBarItem
+        | Kind::VariableSizedWrapGrid
+        | Kind::MediaPlayerElement
+        | Kind::TreeView
+        | Kind::TreeViewItem
+        | Kind::ToggleSplitButton
+        | Kind::ItemsRepeaterScrollHost
         | Kind::Expander
         | Kind::ProgressRing
         | Kind::SelectorBar
@@ -153,6 +162,8 @@ fn measure_override(element: &Element, available: Size) -> Result<Size, LayoutEr
         | Kind::MenuFlyoutSeparator
         | Kind::ImageIconSource
         | Kind::UniformGridLayout
+        | Kind::SymbolIconSource
+        | Kind::CommandBarFlyout
         | Kind::ItemsPanelTemplate
         | Kind::ControlTemplate
         | Kind::DataTemplateSelector => Ok(Size::new(0.0, 0.0)),
@@ -234,6 +245,15 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::ContentPresenter
         | Kind::PasswordBox
         | Kind::SymbolIcon
+        | Kind::Viewbox
+        | Kind::MenuBar
+        | Kind::MenuBarItem
+        | Kind::VariableSizedWrapGrid
+        | Kind::MediaPlayerElement
+        | Kind::TreeView
+        | Kind::TreeViewItem
+        | Kind::ToggleSplitButton
+        | Kind::ItemsRepeaterScrollHost
         | Kind::Expander
         | Kind::ProgressRing
         | Kind::SelectorBar
@@ -307,6 +327,8 @@ fn arrange_children(element: &Element, content: Rect) -> Result<Vec<Layout>, Lay
         | Kind::MenuFlyoutSeparator
         | Kind::ImageIconSource
         | Kind::UniformGridLayout
+        | Kind::SymbolIconSource
+        | Kind::CommandBarFlyout
         | Kind::ItemsPanelTemplate
         | Kind::ControlTemplate
         | Kind::DataTemplateSelector => Ok(Vec::new()),

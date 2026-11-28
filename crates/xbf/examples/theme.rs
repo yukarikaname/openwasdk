@@ -100,7 +100,45 @@ fn visit(file: &Xbf, element: &Element, wanted: &str) {
                     println!("  setter values: {}", values.len());
                     for value in &values {
                         if let Value::Element(one) = &value.value {
-                            println!("    {} -> {}", value.name, one.type_name);
+                            println!(
+                                "    {} -> {} children={} custom={:?} substream={:?}",
+                                value.name,
+                                one.type_name,
+                                one.children.len(),
+                                one.custom,
+                                one.custom_substream
+                            );
+                            for child in one.children.iter().take(4) {
+                                println!("      child {}", child.type_name);
+                            }
+                            for property in &one.properties {
+                                let kind = match &property.value {
+                                    Value::Deferred { substream } => {
+                                        format!("deferred({substream})")
+                                    }
+                                    Value::Element(inner) => {
+                                        format!("element({})", inner.type_name)
+                                    }
+                                    other => format!("{other:?}"),
+                                };
+                                println!("      {} = {kind}", property.name);
+                                if let Value::Deferred { substream } = &property.value {
+                                    match file.substream(*substream as usize) {
+                                        Ok(body) => {
+                                            println!(
+                                                "        body substream {substream}: {} roots",
+                                                body.roots.len()
+                                            );
+                                            for root in body.roots.iter().take(2) {
+                                                println!("          root {}", root.type_name);
+                                            }
+                                        }
+                                        Err(error) => {
+                                            println!("        body {substream} failed: {error:?}")
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
