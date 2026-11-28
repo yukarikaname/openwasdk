@@ -321,15 +321,16 @@ mod tests {
 
     #[test]
     fn a_type_outside_the_table_is_rejected() {
-        let error = load_root(&source("ResourceDictionary", Vec::new()))
-            .expect_err("ResourceDictionary is not in the table");
+        /* Button is the Gallery's most used control and still outside the table. */
+        let error =
+            load_root(&source("Button", Vec::new())).expect_err("Button is not in the table");
         assert_eq!(
             error,
             LoadError::UnsupportedType {
-                name: "ResourceDictionary".to_string()
+                name: "Button".to_string()
             }
         );
-        assert!(!supports("ResourceDictionary"));
-        assert!(properties("ResourceDictionary").is_empty());
+        assert!(!supports("Button"));
+        assert!(properties("Button").is_empty());
     }
 }
