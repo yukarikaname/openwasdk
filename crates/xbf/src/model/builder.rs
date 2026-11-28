@@ -107,7 +107,11 @@ impl<'a> Builder<'a> {
                     "substream ends inside a property scope",
                 ));
             }
-            if frame.element.is_none() {
+            /*
+             * A dictionary substream opens with a collection scope and may hold no entry
+             * at all; the parent stream still owns the element it collects into.
+             */
+            if frame.element.is_none() && self.stream == 0 {
                 return Err(self.error(
                     count.saturating_sub(1),
                     "end of substream",
@@ -347,12 +351,22 @@ impl<'a> Builder<'a> {
              * is realized lazily by a deferred element.  A consumer would need
              * a deferred-element table and realization on first use.
              */
-            NodeKind::SetDeferredProperty { .. } => {
-                return Err(self.error(
-                    index,
-                    kind,
-                    "needs deferred realization of the referenced substream",
-                ));
+            NodeKind::SetDeferredProperty {
+                property,
+                substream,
+                ..
+            } => {
+                /*
+                 * The property's value is an element tree in another substream, realized on
+                 * first use. Keep the reference: attaching it here would lay a template out
+                 * as a child, which it is not.
+                 */
+                let default = self.default_namespace();
+                let (name, namespace) = self.resolve_property(*property, &default);
+                let value = Value::Deferred {
+                    substream: *substream,
+                };
+                self.set_property(index, kind, name, namespace, value)?;
             }
 
             /*
@@ -360,12 +374,22 @@ impl<'a> Builder<'a> {
              * invokes ProvideValue on it.  A consumer would need the live
              * extension instance and the result it produces.
              */
-            NodeKind::SetValueFromMarkupExtension { .. } => {
-                return Err(self.error(
-                    index,
-                    kind,
-                    "needs the markup extension instance's ProvideValue result",
-                ));
+            NodeKind::SetValueFromMarkupExtension { property } => {
+                /*
+                 * Earlier nodes built the extension object; this node assigns what its
+                 * ProvideValue would return. Without invoking it, the honest value is a
+                 * marker naming the extension, so a consumer leaves the property unset
+                 * instead of pretending it holds the extension itself.
+                 */
+                let default = self.default_namespace();
+                let (name, namespace) = self.resolve_property(*property, &default);
+                let extension = match self.values.pop() {
+                    Some(Value::Element(extension)) => extension.type_name.clone(),
+                    _ => "markup extension".to_string(),
+                };
+                self.set_property(index, kind, name, namespace, Value::Extension {
+                    name: extension,
+                })?;
             }
 
             /*
@@ -373,19 +397,21 @@ impl<'a> Builder<'a> {
              * map to resolve it and a property scope that accepts a scalar,
              * not only the child elements the scope collects today.
              */
-            NodeKind::ProvideStaticResourceValue { .. } => {
-                return Err(self.error(
-                    index,
-                    kind,
-                    "needs static resource lookup and a scalar property scope value",
-                ));
+            /*
+             * A resource reference is a value, not a lookup: it stays unresolved until the
+             * consumer has a resource map, which is exactly what SetValue assigns.
+             */
+            NodeKind::ProvideStaticResourceValue { value } => {
+                self.values.push(Value::Resource {
+                    theme: false,
+                    key: key_of(value),
+                });
             }
-            NodeKind::ProvideThemeResourceValue { .. } => {
-                return Err(self.error(
-                    index,
-                    kind,
-                    "needs theme resource lookup and a scalar property scope value",
-                ));
+            NodeKind::ProvideThemeResourceValue { value } => {
+                self.values.push(Value::Resource {
+                    theme: true,
+                    key: key_of(value),
+                });
             }
 
             /*

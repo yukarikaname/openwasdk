@@ -341,7 +341,7 @@ cross the boundary.
 | 0 | `comptrace` and symbols | Interface list and fault offsets resolved from the metadata and the symbol server, never from a guessed vtable slot (done) |
 | 1 | `dcompi` shim | Our `dcompi.dll` in front of the engine and the Gallery window renders -- `WinUIDesktopWin32WindowClass`, title `WinUI Gallery` -- with no class taken over (done, 3b2e015) |
 | 2 | class takeover | Each class moved into `OPENCOMP_MINE` keeps that window; a class that breaks it goes back, it is not patched blind |
-| 3 | XBF to pixels off Windows | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: the Gallery's `MainWindow.xbf` (449 nodes) parses structurally, but `model()` answers `SetValue has no pushed operand` on it, and 0 of the Gallery's 195 `.xbf` files materialise -- `SetValue` after `EndInitPopScope` and the `ResourceDictionary` type are the two gates |
+| 3 | XBF to pixels off Windows | A page's `.xbf` loads, arranges and renders to a PNG on macOS through wgpu/Metal. Measured: 10 of the Gallery's 195 `.xbf` files materialise and render, up from 0. The rest stop on a control type the element table does not carry (138), a property (30) or a value (5) -- the wire shapes themselves are read |
 | 4 | text and images in the preview | A `TextBlock`/`Image` page shows glyphs and bitmaps, compared against a screenshot of the same page on Windows |
 | 5 | window and input off Windows | The same tree in a winit window, with hit-testing and scrolling |
 | 6 | `openxaml` | A WinUI 3 application runs on our `Microsoft.ui.xaml.dll`, with no Microsoft XAML loaded |

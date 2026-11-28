@@ -65,6 +65,10 @@ pub enum Value {
     Property { name: String, namespace: String },
     TemplateBinding { name: String, namespace: String },
     Resource { theme: bool, key: String },
+    /* A property whose value lives in a substream that is realized on first use. */
+    Deferred { substream: u32 },
+    /* A property assigned the result of a markup extension that was not invoked. */
+    Extension { name: String },
     Element(Box<Element>),
     Elements(Vec<Element>),
 }

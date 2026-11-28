@@ -39,6 +39,37 @@ macro_rules! type_support {
 }
 
 static TABLE: &[TypeSupport] = &[
+    type_support!(
+        Kind::Style,
+        &property::WIDTH,
+        &property::HEIGHT,
+    ),
+    type_support!(
+        Kind::DataTemplate,
+        &property::WIDTH,
+        &property::HEIGHT,
+    ),
+    type_support!(
+        Kind::ContentDialog,
+        &property::WIDTH,
+        &property::HEIGHT,
+        &property::MARGIN,
+        &property::PADDING,
+        &property::HORIZONTAL_ALIGNMENT,
+        &property::VERTICAL_ALIGNMENT,
+        &property::BACKGROUND,
+        &property::VISIBILITY,
+    ),
+    type_support!(
+        Kind::ResourceDictionary,
+        &property::WIDTH,
+        &property::HEIGHT,
+    ),
+    type_support!(
+        Kind::Application,
+        &property::WIDTH,
+        &property::HEIGHT,
+    ),
     /*
      * Content hosts: Page, UserControl and Window are one child plus control chrome.
      * Their property list is the Border set, because that is what the layout path

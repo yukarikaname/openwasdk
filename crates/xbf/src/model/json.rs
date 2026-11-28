@@ -136,6 +136,16 @@ fn write_value(out: &mut String, value: &Value) {
             write_string(out, key);
             out.push('}');
         }
+        Value::Deferred { substream } => {
+            out.push_str("{\"kind\":\"deferred\",\"substream\":");
+            out.push_str(&substream.to_string());
+            out.push('}');
+        }
+        Value::Extension { name } => {
+            out.push_str("{\"kind\":\"extension\",\"name\":");
+            write_string(out, name);
+            out.push('}');
+        }
         Value::Element(child) => {
             out.push_str("{\"kind\":\"element\",\"value\":");
             write_element(out, child);

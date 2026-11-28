@@ -106,6 +106,8 @@ fn display(value: &Value) -> String {
                 format!("static-resource({key:?})")
             }
         }
+        Value::Deferred { substream } => format!("deferred(stream {substream})"),
+        Value::Extension { name } => format!("extension({name})"),
         Value::Element(element) => format!("element({})", element.type_name),
         Value::Elements(elements) => format!("elements({})", elements.len()),
     }

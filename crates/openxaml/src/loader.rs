@@ -80,17 +80,62 @@ fn load_property(
             element.set_name(string_value(type_name, property)?);
             Ok(())
         }
+        /* A compiler-assigned connection id: it names a node in traces, not a value. */
+        "x:ConnectionId" => Ok(()),
         "x:Key" => {
             element.set_key(string_value(type_name, property)?);
             Ok(())
         }
         name => {
+            /*
+             * XBF names a property by its declaring type: `FrameworkElement_Width`,
+             * `UserControl_Content`, `Control_Background`. What a consumer matches is the
+             * member the declaring type introduces, so the prefix goes.
+             */
+            let member = name.rsplit_once('_').map_or(name, |(_, tail)| tail);
+            /*
+             * A content property holds the child that a content control shows. It is a
+             * child for layout and painting, so it joins the element's children.
+             */
+            if matches!(member, "Content" | "Child" | "Children") {
+                for child in property_elements(property)? {
+                    element.push(load_root(&child)?);
+                }
+                return Ok(());
+            }
+            /*
+             * Properties this renderer has no consumer for: a resource map, a window
+             * title, a style's target. Accepting them keeps the page loadable and drops
+             * nothing that would have been drawn.
+             */
+            if matches!(
+                member,
+                "Resources"
+                    | "ThemeDictionaries"
+                    | "SystemBackdrop"
+                    | "Title"
+                    | "TargetType"
+                    | "BasedOn"
+                    | "Template"
+                    | "SuppressHostScrolling"
+            ) {
+                return Ok(());
+            }
+            /*
+             * A track collection is a property of the panel that consumes it, and its
+             * descriptor says so: `Grid.RowDefinitions`.
+             */
+            let member = match member {
+                "RowDefinitions" => "Grid.RowDefinitions",
+                "ColumnDefinitions" => "Grid.ColumnDefinitions",
+                other => other,
+            };
             let accepted =
                 support
-                    .property(name)
+                    .property(member)
                     .ok_or_else(|| LoadError::UnsupportedProperty {
                         element: type_name.to_string(),
-                        name: name.to_string(),
+                        name: member.to_string(),
                     })?;
             let value = convert(type_name, property, accepted.value_type)?;
             element
@@ -317,4 +362,13 @@ fn enum_value(expected: &str, value: &xbf::model::Value) -> Option<Value> {
 /* A metadata type is fully qualified; the stable table is not. */
 fn name_suffix(name: &str) -> &str {
     name.rsplit('.').next().unwrap_or(name)
+}
+
+/// The element values a content property holds, in markup order.
+fn property_elements(property: &xbf::Property) -> Result<Vec<xbf::model::Element>, LoadError> {
+    Ok(match &property.value {
+        xbf::model::Value::Element(one) => vec![(**one).clone()],
+        xbf::model::Value::Elements(many) => many.clone(),
+        _ => Vec::new(),
+    })
 }

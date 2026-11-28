@@ -44,6 +44,12 @@ pub enum Kind {
     Page,
     UserControl,
     Window,
+    ContentDialog,
+    /* Hosts that hold resources and templates but paint nothing. */
+    ResourceDictionary,
+    Application,
+    Style,
+    DataTemplate,
 }
 
 impl Kind {
@@ -57,6 +63,11 @@ impl Kind {
             Self::Page => "Microsoft.UI.Xaml.Controls.Page",
             Self::UserControl => "Microsoft.UI.Xaml.Controls.UserControl",
             Self::Window => "Microsoft.UI.Xaml.Window",
+            Self::ContentDialog => "Microsoft.UI.Xaml.Controls.ContentDialog",
+            Self::ResourceDictionary => "Microsoft.UI.Xaml.ResourceDictionary",
+            Self::Application => "Microsoft.UI.Xaml.Application",
+            Self::Style => "Microsoft.UI.Xaml.Style",
+            Self::DataTemplate => "Microsoft.UI.Xaml.DataTemplate",
         }
     }
 
@@ -70,6 +81,15 @@ impl Kind {
             "Page" | "Microsoft.UI.Xaml.Controls.Page" => Some(Self::Page),
             "UserControl" | "Microsoft.UI.Xaml.Controls.UserControl" => Some(Self::UserControl),
             "Window" | "Microsoft.UI.Xaml.Window" => Some(Self::Window),
+            "ContentDialog" | "Microsoft.UI.Xaml.Controls.ContentDialog" => {
+                Some(Self::ContentDialog)
+            }
+            "ResourceDictionary" | "Microsoft.UI.Xaml.ResourceDictionary" => {
+                Some(Self::ResourceDictionary)
+            }
+            "Application" | "Microsoft.UI.Xaml.Application" => Some(Self::Application),
+            "Style" | "Microsoft.UI.Xaml.Style" => Some(Self::Style),
+            "DataTemplate" | "Microsoft.UI.Xaml.DataTemplate" => Some(Self::DataTemplate),
             _ => None,
         }
     }
