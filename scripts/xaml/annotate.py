@@ -70,6 +70,29 @@ def import_names(data, base, table, directories):
     return names
 
 
+def codeview(data, table):
+    """Return (pdb name, key) from the debug directory, where key is GUID+age."""
+    pe = struct.unpack_from('<I', data, 0x3C)[0]
+    magic = struct.unpack_from('<H', data, pe + 24)[0]
+    directories = pe + 24 + (112 if magic == 0x20B else 96)
+    rva, size = struct.unpack_from('<II', data, directories + 48)
+    offset = locate(table, rva)
+    if offset is None:
+        return None
+    for index in range(size // 28):
+        entry = offset + index * 28
+        kind = struct.unpack_from('<I', data, entry + 12)[0]
+        length = struct.unpack_from('<I', data, entry + 16)[0]
+        raw = struct.unpack_from('<I', data, entry + 24)[0]
+        if kind != 2 or data[raw:raw + 4] != b'RSDS':
+            continue
+        guid = data[raw + 4:raw + 20]
+        age = struct.unpack_from('<I', data, raw + 20)[0]
+        name = data[raw + 24:raw + 24 + length].split(b'\0')[0].decode('latin-1')
+        return name, guid.hex().upper() + '%X' % age
+    return None
+
+
 def annotate(path, rva, count):
     data, base, table, directories = load(path)
     imports = import_names(data, base, table, directories)
@@ -99,9 +122,21 @@ def annotate(path, rva, count):
 
 
 def main():
-    if len(sys.argv) < 3:
+    if len(sys.argv) < 2:
         print(__doc__)
         return 2
+    data, base, table, directories = load(sys.argv[1])
+    if sys.argv[2] == '--pdb':
+        found = codeview(data, table)
+        if not found:
+            print('no CodeView record')
+            return 1
+        name, key = found
+        base_name = name.replace('\\', '/').rsplit('/', 1)[-1]
+        print(name)
+        print(key)
+        print('https://msdl.microsoft.com/download/symbols/%s/%s/%s' % (base_name, key, base_name))
+        return 0
     annotate(sys.argv[1], int(sys.argv[2], 0), int(sys.argv[3]) if len(sys.argv) > 3 else 24)
     return 0
 

@@ -206,10 +206,19 @@ loads at its preferred base `0x180000000`, so `0x151cad` is the instruction afte
 `call 0x18016cc58`, and the frame above it is a branch the same function takes on a
 failed `HRESULT`. That is how the `E_NOTIMPL` was placed without any symbols.
 
-Symbols would still be better. The PDB key is in the image's CodeView record --
-`Microsoft.ui.xaml.dll` asks for `Microsoft.ui.xaml.pdb` with key
-`6411D3D9B984BE17D2E95023B4EBD0022` -- but the public symbol server answers 404 for that
-name, so offsets it is.
+Symbols would still be better. The identity is in the image's CodeView record, and
+`scripts/xaml/annotate.py <dll> --pdb` prints it with the URL it would be fetched from:
+
+    Microsoft.ui.xaml.pdb
+    6411D3D9B984BE17D2E95023B4EBD0022
+    https://msdl.microsoft.com/download/symbols/Microsoft.ui.xaml.pdb/<key>/...
+
+The servers do not have this build. The public symbol server answers 404 for the key, the
+NuGet symbol host answers 403, and the image embeds no portable PDB -- its debug directory
+carries CodeView, ILTCG and REPRO only. What remains is offset arithmetic:
+`Microsoft.ui.xaml.dll` loads at its preferred base `0x180000000`, so an offset printed in
+a stack frame is an address in the file, and the same tool names the imports and interface
+identifiers around it.
 
 ## Two ways to answer the private interface
 
