@@ -95,6 +95,12 @@ impl Xbf {
         }
     }
 
+    /// One substream as its own model. A style's setters and a template's body live in a
+    /// referenced stream; asking for it by index is how a consumer reads them.
+    pub fn substream(&self, index: usize) -> Result<Model, XbfError> {
+        model::build_stream(self, index)
+    }
+
     /* Build the typed element tree described by the node streams. */
     pub fn model(&self) -> Result<Model, XbfError> {
         model::build(self)

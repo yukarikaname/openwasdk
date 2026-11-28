@@ -90,6 +90,21 @@ impl Model {
     }
 }
 
+/* Build one substream as its own model: a style's setters and a template's body live in
+ * a referenced stream, and a consumer that wants them asks for that stream by index. */
+pub(crate) fn build_stream(file: &Xbf, index: usize) -> Result<Model, XbfError> {
+    let mut built = builder::Builder::new(file, index).run()?;
+    let mut visited = vec![index];
+    resolve::resolve_references(file, &mut built, &mut visited)?;
+    resolve::assign_resource_keys(file, &mut built.raw);
+    let roots = built
+        .roots
+        .iter()
+        .map(|&root| resolve::materialize(&built.raw, root))
+        .collect();
+    Ok(Model { roots })
+}
+
 /* Build the model for a parsed file.  Stream 0 is the root object. */
 pub(crate) fn build(file: &Xbf) -> Result<Model, XbfError> {
     let mut built = builder::Builder::new(file, 0).run()?;
