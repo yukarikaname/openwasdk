@@ -17,6 +17,8 @@ use crate::{Xbf, XbfError};
 
 mod builder;
 mod convert;
+
+pub(crate) use resolve::convert;
 mod frames;
 mod json;
 mod resolve;

@@ -410,6 +410,18 @@ impl Element {
         &mut self.children
     }
 
+    /// Append children: a control's content goes inside its template's presenter.
+    pub(crate) fn push_all(&mut self, mut children: Vec<Element>) {
+        self.layout_dirty = true;
+        self.children.append(&mut children);
+    }
+
+    /// Take the children out: a template's `ContentPresenter` is where they belong.
+    pub(crate) fn take_children(&mut self) -> Vec<Element> {
+        self.layout_dirty = true;
+        std::mem::take(&mut self.children)
+    }
+
     /// Replace the children wholesale: an instantiated template becomes the control's only
     /// child.
     pub(crate) fn set_children(&mut self, children: Vec<Element>) {

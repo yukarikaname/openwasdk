@@ -40,7 +40,8 @@ pub use metadata::{
 };
 pub use model::{Element, Model, Property};
 pub use node::{
-    CustomData, Node, NodeKind, NodeStream, PersistedNode, Predicate, ResourceKey, Value,
+    CustomData, Node, NodeKind, NodeStream, PersistedNode, Predicate, ResourceKey, StyleSetter,
+    StyleSetterValue, Value,
 };
 
 use std::path::Path;

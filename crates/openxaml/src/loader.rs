@@ -7,8 +7,8 @@
 
 use std::fmt;
 
-use crate::element::{Element, Kind};
-use crate::support::{self};
+use crate::element::{Element, Kind, Value};
+use crate::support;
 
 mod property;
 mod value;
@@ -263,35 +263,121 @@ fn build_with(
     /*
      * A control that the page does not give a tree gets the framework's: the theme
      * dictionary's `ControlTemplate` for its type, with the instance's own content placed
-     * where the template asks for it.
+     * where the template asks for it. The style's other setters come first -- a control's
+     * background, foreground and corner radius live there, not in the page's markup, and the
+     * template binds to them.
      */
-    if element.children().is_empty()
-        && let Some(body) = controls.theme.body_for(&source.type_name)
-    {
-        /*
-         * A template body exercises more of the surface than the page does -- visual
-         * states, template bindings, a control we have not met. When it cannot be built the
-         * page keeps its empty box: one control without chrome is a worse picture, a page
-         * that fails to load is no picture.
-         */
-        match load_with_tolerance(body, controls, depth + 1, true) {
-            Ok(mut template) => {
-                // The body's {TemplateBinding X} markers name the control's own properties.
-                template.bind_from(&element);
-                if std::env::var_os("OPENCOMP_TRACE").is_some() {
-                    eprintln!("openxaml: template for {} instantiated", source.type_name);
+    if let Some(style) = controls.theme.style_for(&source.type_name) {
+        apply_setters(&mut element, style, &controls.theme);
+        if let Some(body) = style.body.as_ref() {
+            // The control's own content belongs inside the template, not beside it.
+            let content = element.take_children();
+            /*
+             * A template body exercises more of the surface than the page does -- visual
+             * states, template bindings, a control we have not met. When it cannot be built
+             * the page keeps its empty box: one control without chrome is a worse picture, a
+             * page that fails to load is no picture.
+             */
+            match load_with_tolerance(body, controls, depth + 1, true) {
+                Ok(mut template) => {
+                    // The body's {TemplateBinding X} markers name the control's properties.
+                    template.bind_from(&element);
+                    place_content(&mut template, content);
+                    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                        eprintln!("openxaml: template for {} instantiated", source.type_name);
+                    }
+                    element.set_children(vec![template]);
                 }
-                element.set_children(vec![template]);
-            }
-            Err(error) => {
-                if std::env::var_os("OPENCOMP_TRACE").is_some() {
-                    eprintln!(
-                        "openxaml: template for {} left empty: {error}",
-                        source.type_name
-                    );
+                Err(error) => {
+                    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                        eprintln!(
+                            "openxaml: template for {} left empty: {error}",
+                            source.type_name
+                        );
+                    }
                 }
             }
         }
     }
     Ok(element)
+}
+
+/// The style's own values: theme colours through the palette, typed constants as they are.
+fn apply_setters(element: &mut Element, style: &crate::theme::Style, theme: &crate::theme::Theme) {
+    for (name, value) in &style.setters {
+        let member = name
+            .rsplit_once(['_', '.'])
+            .map_or(name.as_str(), |(_, tail)| tail);
+        if member == "Template" {
+            continue;
+        }
+        let Some(descriptor) = crate::property::lookup(member) else {
+            continue;
+        };
+        let converted = match value {
+            crate::theme::SetterValue::Key(key)
+                if descriptor.value_type == crate::property::ValueType::SolidColorBrush =>
+            {
+                crate::theme::palette::color(key).map(Value::Color)
+            }
+            crate::theme::SetterValue::Key(key) => theme
+                .resource(key)
+                .and_then(|value| constant_value(value, descriptor.value_type)),
+            crate::theme::SetterValue::Constant(constant) => {
+                constant_value(constant, descriptor.value_type)
+            }
+            _ => None,
+        };
+        if let Some(converted) = converted {
+            let _ = element.set(descriptor, converted);
+        }
+    }
+}
+
+/// Put a control's content where its template asks for it: the `ContentPresenter`.
+fn place_content(template: &mut Element, content: Vec<Element>) {
+    if content.is_empty() {
+        return;
+    }
+    match find_kind(template, Kind::ContentPresenter) {
+        Some(presenter) => presenter.push_all(content),
+        None => template.push_all(content),
+    }
+}
+
+fn find_kind(element: &mut Element, kind: Kind) -> Option<&mut Element> {
+    if element.kind() == kind {
+        return Some(element);
+    }
+    for child in element.children_mut() {
+        if let Some(found) = find_kind(child, kind) {
+            return Some(found);
+        }
+    }
+    None
+}
+
+/// A style's typed constant, in the shape the property's descriptor declares.
+fn constant_value(
+    constant: &xbf::model::Value,
+    expected: crate::property::ValueType,
+) -> Option<Value> {
+    use crate::element::{CornerRadius, Thickness};
+    use crate::property::ValueType;
+    use xbf::model::Value as Wire;
+    match (expected, constant) {
+        (ValueType::Thickness, Wire::Thickness([l, t, r, b])) => {
+            Some(Value::Thickness(Thickness::new(*l, *t, *r, *b)))
+        }
+        (ValueType::Thickness, Wire::Float(all)) => Some(Value::Thickness(Thickness::all(*all))),
+        (ValueType::CornerRadius, Wire::Thickness([l, t, r, b])) => {
+            Some(Value::CornerRadius(CornerRadius::new(*l, *t, *r, *b)))
+        }
+        (ValueType::CornerRadius, Wire::Float(all)) => {
+            Some(Value::CornerRadius(CornerRadius::all(*all)))
+        }
+        (ValueType::Double, Wire::Float(value)) => Some(Value::Number(*value)),
+        (ValueType::Double, Wire::Signed(value)) => Some(Value::Number(*value as f32)),
+        _ => None,
+    }
 }

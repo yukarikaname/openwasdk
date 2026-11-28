@@ -298,7 +298,7 @@ fn read_setter(cursor: &mut Cursor, metadata: &Metadata) -> Result<StyleSetter, 
     let value = if flags & 0x04 != 0 {
         StyleSetterValue::String(read_shared_string(cursor, metadata)?)
     } else if flags & 0x20 != 0 {
-        StyleSetterValue::Constant(format!("{:?}", read_value(cursor, metadata, 0)?))
+        StyleSetterValue::Constant(crate::model::convert(&read_value(cursor, metadata, 0)?))
     } else if flags & (0x02 | 0x01 | 0x08 | 0x40) != 0 {
         /* Static/theme/object/self tokens are all one 7-bit offset. */
         StyleSetterValue::Token(cursor.leb_u32()?)

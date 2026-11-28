@@ -38,6 +38,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let measured = root.measure(Size::new(width as f32, height as f32))?;
     eprintln!("measured {measured:?}");
     let layout = root.arrange(Rect::new(0.0, 0.0, width as f32, height as f32))?;
+    if std::env::var_os("OPENCOMP_TRACE").is_some() {
+        dump_layout(&root, &layout, 0);
+    }
     let tree = root.compose(&layout);
 
     let background = [srgb(0.09), srgb(0.10), srgb(0.12), 1.0];
@@ -171,5 +174,29 @@ fn collect(dir: &Path, out: &mut HashMap<String, PathBuf>) {
         {
             out.entry(stem.to_string()).or_insert(path);
         }
+    }
+}
+
+/// Print what the layout produced for the controls that matter, when tracing.
+fn dump_layout(element: &openxaml::Element, layout: &openxaml::Layout, depth: usize) {
+    use openxaml::Kind;
+    if matches!(
+        element.kind(),
+        Kind::Button | Kind::TextBlock | Kind::ContentPresenter
+    ) {
+        eprintln!(
+            "{:indent$}{:?} {}x{} at {:.1},{:.1} children {}",
+            "",
+            element.kind(),
+            layout.rect.width,
+            layout.rect.height,
+            layout.rect.x,
+            layout.rect.y,
+            layout.children.len(),
+            indent = depth * 2
+        );
+    }
+    for (child, child_layout) in element.children().iter().zip(&layout.children) {
+        dump_layout(child, child_layout, depth + 1);
     }
 }

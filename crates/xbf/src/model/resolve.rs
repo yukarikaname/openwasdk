@@ -195,7 +195,7 @@ pub(super) fn materialize(raw: &[RawElement], index: usize) -> Element {
     }
 }
 
-pub(super) fn convert(value: &WireValue) -> Value {
+pub(crate) fn convert(value: &WireValue) -> Value {
     match value {
         WireValue::None => Value::None,
         WireValue::Bool(value) => Value::Bool(*value),

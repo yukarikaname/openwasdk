@@ -52,7 +52,8 @@ pub struct StyleSetter {
 pub enum StyleSetterValue {
     None,
     String(String),
-    Constant(String),
+    /// A typed constant, converted the same way a property value is.
+    Constant(crate::model::Value),
     /// Theme, static, object or self: a 7-bit stream offset.
     Token(u32),
 }

@@ -71,6 +71,16 @@ pub(super) fn load_property_with(
                 for child in elements {
                     element.push(load_element(&child, controls, depth)?);
                 }
+                /*
+                 * A string content is what a content control shows as its text; the runtime
+                 * wraps it in a TextBlock, and so does this loader, so `<Button Content="Go"/>`
+                 * has something to lay out.
+                 */
+                if let xbf::model::Value::String(text) = &property.value
+                    && member.ends_with("Content")
+                {
+                    element.push(Element::text_block(text.clone()));
+                }
                 return Ok(());
             }
             /*
