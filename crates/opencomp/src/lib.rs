@@ -43,6 +43,7 @@ mod collection;
 #[cfg(windows)]
 mod color_animation;
 #[cfg(windows)]
+mod composite;
 mod compositor;
 #[cfg(windows)]
 mod compositor_ext;

@@ -10,7 +10,7 @@ use std::ffi::c_void;
 use std::ptr;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use windows_core::GUID;
+use windows_core::{GUID, Interface as _};
 
 /// The one interface here: a statics entry point on `Compositor`.
 pub(crate) const IID: GUID = GUID::from_u128(0xffcd_c0ea_b528_4bfa_a315_2f11_f1c5_e8f9);
@@ -24,7 +24,13 @@ const E_POINTER: i32 = 0x8000_4003u32 as i32;
 const E_NOINTERFACE: i32 = 0x8000_4002u32 as i32;
 const E_FAIL: i32 = 0x8000_4005u32 as i32;
 
-type Member = unsafe extern "system" fn(*mut c_void, *mut c_void, *mut c_void) -> i32;
+type Member = unsafe extern "system" fn(
+    *mut c_void,
+    *mut c_void,
+    *mut c_void,
+    *const GUID,
+    *mut *mut c_void,
+) -> i32;
 
 #[repr(C)]
 struct Statics {
@@ -124,53 +130,60 @@ fn trace_stack() {
 
 unsafe extern "system" fn method<const SLOT: usize>(
     _this: *mut c_void,
-    first: *mut c_void,
-    second: *mut c_void,
+    flags: *mut c_void,
+    context: *mut c_void,
+    iid: *const GUID,
+    out: *mut *mut c_void,
 ) -> i32 {
     if std::env::var_os("OPENCOMP_TRACE").is_some() {
         eprintln!(
-            "opencomp: private Compositor statics slot {SLOT} with {first:?} {second:?}"
+            "opencomp: private Compositor statics slot {SLOT} flags {flags:?} context {context:?}"
         );
         trace_stack();
     }
     if SLOT != 0 {
         return E_NOTIMPL;
     }
-    // `DCompTreeHost::EnsureDCompDevice` asks the helper for a main device and then asks
-    // that device for `ICompositor`, `ICompositor2`, `ICompositor5`, `ICompositor6` and
-    // `ICompositorInterop`, so what belongs here is a DComp device or a compositor.
-    //
-    // Which one was measured, and the answer was neither: handing back an
-    // `IDCompositionDevice2`, an `IDCompositionDevice3` or our own compositor all crash in
-    // the same place. The caller does not use this value on the path that reaches the fault
-    // -- it faults in `CompositionHelper` because the lifted DWM core never initialised.
-    // `OPENCOMP_STATICS` keeps the choice available for the next attempt.
-    let want = std::env::var("OPENCOMP_STATICS").unwrap_or_else(|_| "device2".to_string());
+    if out.is_null() {
+        return E_POINTER;
+    }
+    // The caller releases whatever the slot held, asks for an object with the
+    // `IDCompositionDevice2` IID and then uses the result as a WinRT compositor, so the
+    // answer has to be one object carrying both sets of interfaces. See crate::composite.
+    let want = std::env::var("OPENCOMP_STATICS").unwrap_or_else(|_| "composite".to_string());
     if want == "compositor" {
         return match crate::compositor::instance() {
             Ok(compositor) => {
                 let raw = windows_core::Interface::into_raw(compositor);
-                if !second.is_null() {
-                    unsafe { *(second as *mut *mut c_void) = raw };
-                }
+                unsafe { *out = raw };
                 S_OK
             }
             Err(_) => E_FAIL,
         };
     }
-    let iid = match want.as_str() {
-        "device3" => GUID::from_u128(0x0987cb06_f916_48bf_8d35_ce7641781bd9),
-        _ => GUID::from_u128(0x75f6_468d_1b8e_447c_9bc6_75fea80b5b25),
+    let device_iid = if iid.is_null() {
+        GUID::from_u128(0x75f6_468d_1b8e_447c_9bc6_75fea80b5b25)
+    } else {
+        unsafe { *iid }
     };
-    match dcomp_device(&iid) {
-        Some(device) => {
-            if !second.is_null() {
-                unsafe { *(second as *mut *mut c_void) = device };
-            }
-            S_OK
-        }
-        None => E_FAIL,
+    let Some(device) = dcomp_device(&device_iid) else {
+        return E_FAIL;
+    };
+    if want != "composite" {
+        unsafe { *out = device };
+        return S_OK;
     }
+    let compositor = match crate::compositor::instance() {
+        Ok(compositor) => compositor,
+        Err(_) => return E_FAIL,
+    };
+    let compositor: windows_core::IUnknown = match compositor.cast() {
+        Ok(compositor) => compositor,
+        Err(_) => return E_FAIL,
+    };
+    let composite = crate::composite::create(compositor, device);
+    unsafe { *out = composite };
+    S_OK
 }
 
 /// `DCompositionCreateDevice3(NULL, iid, &device)`, in the Wine that is running us.
