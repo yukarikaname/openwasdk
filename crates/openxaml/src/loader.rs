@@ -343,6 +343,9 @@ fn apply_setters(
             _ => None,
         };
         if let Some(converted) = converted {
+            if std::env::var_os("OPENCOMP_TRACE").is_some() {
+                eprintln!("openxaml: setter {member} -> {converted:?}");
+            }
             let _ = element.set(descriptor, converted);
         }
     }
@@ -379,6 +382,25 @@ fn constant_value(
     use crate::element::{CornerRadius, Thickness};
     use crate::property::ValueType;
     use xbf::model::Value as Wire;
+    // A struct written as text: "2" for a radius, "1,2,3,4" for its corners.
+    if let Wire::String(text) = constant {
+        let parts: Vec<f32> = text
+            .split(',')
+            .filter_map(|part| part.trim().parse().ok())
+            .collect();
+        return match (expected, parts.as_slice()) {
+            (ValueType::CornerRadius, [one]) => Some(Value::CornerRadius(CornerRadius::all(*one))),
+            (ValueType::CornerRadius, [a, b, c, d]) => {
+                Some(Value::CornerRadius(CornerRadius::new(*a, *b, *c, *d)))
+            }
+            (ValueType::Thickness, [one]) => Some(Value::Thickness(Thickness::all(*one))),
+            (ValueType::Thickness, [a, b, c, d]) => {
+                Some(Value::Thickness(Thickness::new(*a, *b, *c, *d)))
+            }
+            (ValueType::Double, [one]) => Some(Value::Number(*one)),
+            _ => None,
+        };
+    }
     match (expected, constant) {
         (ValueType::Thickness, Wire::Thickness([l, t, r, b])) => {
             Some(Value::Thickness(Thickness::new(*l, *t, *r, *b)))
