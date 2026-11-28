@@ -89,6 +89,19 @@ fn bodies(root: &Path) -> Controls {
         let Ok(model) = file.model() else {
             continue;
         };
+        /*
+         * A file next to a page is not always a control body: Styles/SelectorBar.xbf
+         * is a Style whose name is also a control's name. A body has to be a visual
+         * element to stand in for the type the page names.
+         */
+        let visual = model
+            .roots
+            .first()
+            .and_then(|root| openxaml::Kind::from_type_name(&root.type_name))
+            .is_some_and(|kind| !openxaml::Element::is_non_visual(kind));
+        if !visual {
+            continue;
+        }
         controls.insert(&name, model);
     }
     controls

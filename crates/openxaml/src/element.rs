@@ -102,6 +102,10 @@ pub enum Kind {
     Binding,
     Expander,
     ProgressRing,
+    SelectorBar,
+    SelectorBarItem,
+    AutoSuggestBox,
+    Flyout,
 }
 
 impl Kind {
@@ -165,6 +169,10 @@ impl Kind {
             Self::Binding => "Microsoft.UI.Xaml.Data.Binding",
             Self::Expander => "Microsoft.UI.Xaml.Controls.Expander",
             Self::ProgressRing => "Microsoft.UI.Xaml.Controls.ProgressRing",
+            Self::SelectorBar => "Microsoft.UI.Xaml.Controls.SelectorBar",
+            Self::SelectorBarItem => "Microsoft.UI.Xaml.Controls.SelectorBarItem",
+            Self::AutoSuggestBox => "Microsoft.UI.Xaml.Controls.AutoSuggestBox",
+            Self::Flyout => "Microsoft.UI.Xaml.Controls.Flyout",
         }
     }
 
@@ -251,7 +259,11 @@ impl Kind {
             "ToolTip" | "Microsoft.UI.Xaml.Controls.ToolTip" => Some(Self::ToolTip),
 "Binding" | "Microsoft.UI.Xaml.Data.Binding" => Some(Self::Binding),
             "Expander" | "Microsoft.UI.Xaml.Controls.Expander" => Some(Self::Expander),
-            "ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
+"ProgressRing" | "Microsoft.UI.Xaml.Controls.ProgressRing" => Some(Self::ProgressRing),
+"SelectorBar" | "Microsoft.UI.Xaml.Controls.SelectorBar" => Some(Self::SelectorBar),
+            "SelectorBarItem" | "Microsoft.UI.Xaml.Controls.SelectorBarItem" => Some(Self::SelectorBarItem),
+            "AutoSuggestBox" | "Microsoft.UI.Xaml.Controls.AutoSuggestBox" => Some(Self::AutoSuggestBox),
+            "Flyout" | "Microsoft.UI.Xaml.Controls.Flyout" => Some(Self::Flyout),
             _ => None,
         }
     }
@@ -346,6 +358,7 @@ impl Element {
                 | Kind::Rectangle
                 | Kind::Line
                 | Kind::ToolTip
+                | Kind::Flyout
                 | Kind::Binding
         )
     }

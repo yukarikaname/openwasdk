@@ -184,7 +184,14 @@ fn load_property_with(
              * `UserControl_Content`, `Control_Background`. What a consumer matches is the
              * member the declaring type introduces, so the prefix goes.
              */
-            let member = name.rsplit_once('_').map_or(name, |(_, tail)| tail);
+            /*
+             * The name may be qualified twice: the writer can spell the declaring type as
+             * a namespace ("http://schemas.microsoft.com/client/2007.Expander.Header") or
+             * join it to the member with an underscore ("FrameworkElement_Width").
+             */
+            let member = name
+                .rsplit_once(['_', '.'])
+                .map_or(name, |(_, tail)| tail);
             /*
              * A content property holds the child that a content control shows. It is a
              * child for layout and painting, so it joins the element's children.
@@ -265,6 +272,25 @@ fn load_property_with(
                     | "SelectionMode"
                     | "ItemContainerStyle"
                     | "ItemTemplate"
+                    | "Flyout"
+                    | "IsOpen"
+                    | "IsClosable"
+                    | "IsCopyButtonVisible"
+                    | "CanTearOutTabs"
+                    | "IsEnabled"
+                    | "Message"
+                    | "Severity"
+                    | "ElementName"
+                    | "SampleType"
+                    | "IsPaneToggleButtonVisible"
+                    | "Path"
+                    | "Subtitle"
+                    | "IconSource"
+                    | "TabStripHeader"
+                    | "XYFocusKeyboardNavigation"
+                    | "IsIconVisible"
+                    | "MaxLines"
+                    | "ChildrenTransitions"
                     | "IsSpellCheckEnabled"
                     | "Fill"
             ) {
