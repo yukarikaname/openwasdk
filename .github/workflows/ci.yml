@@ -159,3 +159,19 @@ jobs:
           name: opencomp-windows-gnu
           path: target/x86_64-pc-windows-gnu/debug/opencomp.dll
           if-no-files-found: error
+
+      # The page tool runs where the developer is: the XBF reader, its dump and the PRI
+      # scanner are useful without a Rust toolchain, so each host publishes its binaries.
+      - name: Build the page tools
+        run: |
+          cargo build --release -p xbf --bin dump --bin pri
+          cargo build --release -p openxaml --example render
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: openwasdk-tools-${{ matrix.os }}
+          path: |
+            target/release/dump
+            target/release/pri
+            target/release/examples/render
+          if-no-files-found: error
