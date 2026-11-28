@@ -47,6 +47,7 @@ mod composite;
 mod compositor;
 #[cfg(windows)]
 mod compositor_ext;
+mod compositor_private;
 #[cfg(windows)]
 pub mod content;
 #[cfg(windows)]

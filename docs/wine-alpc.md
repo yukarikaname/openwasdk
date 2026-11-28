@@ -322,6 +322,18 @@ So the next piece is a composite object in `opencomp`: a compositor whose
 `QueryInterface` forwards the dcomp device IIDs to a device created through
 `DCompositionCreateDevice3` and keeps the WinRT interfaces for itself.
 
+Where it stands now: the application reaches `App.OnLaunched` and
+`MainWindow.InitializeComponent`, and fails inside `Application.LoadComponent`. The
+frames name `Microsoft.ui.xaml+0x866a6`, a helper that compares
+`GetCurrentThreadId()` with a dword at +0x50 of the object it was handed; the object is
+not one of ours, which means some earlier composition object was never built and the
+caller is reading a null. The private statics answer carries two identities (a dcomp
+device and a WinRT compositor), and the interfaces XAML asks for next are
+`{5dda0f45-…}`, `{dabd9f1a-…}`, `{d4e43e6a-…}` on that object and `{d3616837-…}` on a
+composition object the application later holds. A stub that answers a private interface
+is not enough: the caller reads fields past the interface pointer, so the object has to
+be the one the application expects, not a look-alike.
+
 The order matters for what to do next: the diagnostics port is a debugging feature
 whose failure only matters because of `IFCFAILFAST`, while D2D text is on the path
 every WinUI 3 application takes.

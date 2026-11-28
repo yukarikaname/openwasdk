@@ -72,6 +72,19 @@ unsafe extern "system" fn on_exception(info: *mut ExceptionPointers) -> i32 {
         unsafe { (*record).address },
         std::process::id()
     );
+    if code == EXCEPTION_ACCESS_VIOLATION {
+        // Rax..Rdi live at 0x88.. in the x86-64 CONTEXT; the faulting object is usually in
+        // one of the first few.
+        let context = unsafe { (*info).context as *const u8 };
+        if !context.is_null() {
+            let register = |offset: usize| unsafe { *(context.add(offset) as *const u64) };
+            eprintln!(
+                "opencore:   rax {:x} rcx {:x} rdx {:x} rbx {:x} rsi {:x} rdi {:x}",
+                register(0x88), register(0x90), register(0x98), register(0xa0),
+                register(0xb8), register(0xc0)
+            );
+        }
+    }
     let mut frames = [ptr::null_mut(); 24];
     let count = unsafe { RtlCaptureStackBackTrace(0, 24, frames.as_mut_ptr(), ptr::null_mut()) };
     for frame in &frames[..count as usize] {
