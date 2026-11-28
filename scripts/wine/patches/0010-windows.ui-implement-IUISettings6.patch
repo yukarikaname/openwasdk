@@ -1,11 +1,8 @@
-From 411ec320ec286598f7ea1a488f943f62242bf4ba Mon Sep 17 00:00:00 2001
+From 56f51bc41acc18726356e477165131b1c8a63fb4 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:29:30 +0800
+Date: Sat, 28 Nov 2026 19:34:15 +0800
 Subject: [PATCH 10/10] windows.ui: implement IUISettings6
 
-XAML asks UISettings for this while it prepares a window and escalates the refusal,
-which stops the application before the window's markup is loaded. The two notifications
-exist and hand out the dummy cookie the other versions use.
 ---
  dlls/windows.ui/uisettings.c | 59 ++++++++++++++++++++++++++++++++++++
  1 file changed, 59 insertions(+)

@@ -1,6 +1,6 @@
-From 9db64d797dbccc917efdbeab1c37f7cd07276383 Mon Sep 17 00:00:00 2001
+From f5b5b3c9537eaf17aaf224190b6d0cd5e0743367 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:29:29 +0800
+Date: Sat, 28 Nov 2026 19:34:14 +0800
 Subject: [PATCH 03/10] win32u: answer the core messaging entry points
 
 ---

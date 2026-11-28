@@ -1,24 +1,49 @@
-From 277459dafe1dfc6e6452ff354b36919d9dfb6b11 Mon Sep 17 00:00:00 2001
+From cd452b437d5807fc22be7f41338baca8434ad536 Mon Sep 17 00:00:00 2001
 From: Yukari Kaname <yukari@aliciaworks.com>
-Date: Sat, 28 Nov 2026 19:29:29 +0800
+Date: Sat, 28 Nov 2026 19:34:14 +0800
 Subject: [PATCH 06/10] combase: name the failing stack when a fail fast is
  reported
 
 ---
- dlls/combase/roapi.c | 67 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
+ dlls/combase/roapi.c | 93 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
 
 diff --git a/dlls/combase/roapi.c b/dlls/combase/roapi.c
-index e5c18c0..0a81cf1 100644
+index e5c18c0..ec2d07f 100644
 --- a/dlls/combase/roapi.c
 +++ b/dlls/combase/roapi.c
-@@ -470,12 +470,79 @@ HRESULT WINAPI RoGetAgileReference(enum AgileReferenceOptions option, REFIID rii
+@@ -470,12 +470,105 @@ HRESULT WINAPI RoGetAgileReference(enum AgileReferenceOptions option, REFIID rii
      return S_OK;
  }
  
 +/***********************************************************************
 + *      RoFailFastWithErrorContextInternal2 (combase.@)
 + */
++/* Each stowed exception starts with a size/signature header and carries its result code
++ * at +8; the array the caller passes holds pointers to them. */
++static void dump_stowed( const void *information, ULONG count )
++{
++    const void *const *entries = information;
++    unsigned int i;
++
++    for (i = 0; i < count && i < 4; i++)
++    {
++        const DWORD *words = entries[i];
++        FIXME( "stowed[%u] %p code %#x size %#x sig %#x\n", i, words, words ? words[2] : 0,
++               words ? words[0] : 0, words ? words[1] : 0 );
++        if (words)
++        {
++            unsigned int j;
++            char line[3 * 8 + 1];
++            for (j = 0; j < 12; j++)
++            {
++                sprintf( line, "%08x %08x", words[j * 2], words[j * 2 + 1] );
++                FIXME( "  +%02x %s\n", j * 8, line );
++            }
++        }
++    }
++}
++
 +/* The stowed exception layout is not public; hexdump it and let the caller read it. */
 +static void dump_error_context( const void *information )
 +{
@@ -84,6 +109,7 @@ index e5c18c0..0a81cf1 100644
 +    if (getenv( "OPENWASDK_FAILFAST" ))
 +    {
 +        dump_fail_fast_stack();
++        dump_stowed( information, exception_count );
 +        dump_error_context( information );
 +    }
 +    /* Returning instead of raising shows what the caller would have done next; the
