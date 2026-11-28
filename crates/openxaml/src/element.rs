@@ -470,6 +470,13 @@ impl Element {
         &mut self.children
     }
 
+    /// Replace the children wholesale: an instantiated template becomes the control's only
+    /// child.
+    pub(crate) fn set_children(&mut self, children: Vec<Element>) {
+        self.layout_dirty = true;
+        self.children = children;
+    }
+
     pub fn push(&mut self, mut child: Element) -> &mut Self {
         for &property in property::INHERITED {
             if let Some(value) = self.source(property) {

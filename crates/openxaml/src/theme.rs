@@ -34,6 +34,15 @@ impl Theme {
         theme
     }
 
+    /// Take another dictionary's bodies, keeping the ones already known: the first
+    /// dictionary that names a type is the one that wins, as it does in a merged
+    /// `ResourceDictionary`.
+    pub fn merge(&mut self, other: Theme) {
+        for (type_name, body) in other.bodies {
+            self.bodies.entry(type_name).or_insert(body);
+        }
+    }
+
     /// The body for a type, by its full or simple name.
     pub fn body_for(&self, type_name: &str) -> Option<&XbfElement> {
         self.bodies.get(&simple(type_name))

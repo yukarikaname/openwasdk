@@ -166,6 +166,21 @@ currently discards (it keeps only the kind name and the substream index). Retain
 parsing `Style_v3` is the prerequisite for template instantiation; `Builder::new_with_owner` is
 not.
 
+## 4c. Control templates are instantiated
+
+The chain is now read end to end: `Style` -> setter list -> `Control_Template` ->
+`ControlTemplate` -> its deferred body -> an element tree. `openxaml::theme` keeps those
+bodies by type, the loader gives a control the body when the page leaves it empty, and the
+render example feeds the theme from `Microsoft.UI.Xaml.Controls.pri` (108 templates from the
+Gallery's own copy).
+
+Two rules keep it honest:
+
+- a template body that cannot be built leaves the control its empty box instead of failing
+  the page -- one control without chrome is a worse picture, a page that fails is no picture;
+- the template is Microsoft's: nothing here draws a Button by hand, it instantiates what the
+  framework ships.
+
 ## 5. Milestones
 
 | # | step | exit criterion |

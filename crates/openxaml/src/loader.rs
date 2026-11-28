@@ -62,12 +62,20 @@ pub struct Controls {
      * code, so a preview draws the box the page asked for and nothing inside it.
      */
     unrealized: std::collections::HashSet<String>,
+    /// Control templates from the framework's theme dictionary: what a control is, when the
+    /// page only says which control it wants.
+    pub theme: crate::theme::Theme,
 }
 
 impl Controls {
     /// Register one control body. The key is the simple name a page refers to.
     pub fn insert(&mut self, name: &str, body: xbf::Model) {
         self.bodies.insert(name.to_ascii_lowercase(), body);
+    }
+
+    /// Use the framework's theme dictionary for the controls that have a template.
+    pub fn set_theme(&mut self, theme: crate::theme::Theme) {
+        self.theme = theme;
     }
 
     /// Register a control that has no visual tree to load.
@@ -202,6 +210,24 @@ fn build(
     }
     for child in &source.children {
         element.push(load_element(child, controls, depth)?);
+    }
+    /*
+     * A control that the page does not give a tree gets the framework's: the theme
+     * dictionary's `ControlTemplate` for its type, with the instance's own content placed
+     * where the template asks for it.
+     */
+    if element.children().is_empty()
+        && let Some(body) = controls.theme.body_for(&source.type_name)
+    {
+        /*
+         * A template body exercises more of the surface than the page does -- visual
+         * states, template bindings, a control we have not met. When it cannot be built the
+         * page keeps its empty box: one control without chrome is a worse picture, a page
+         * that fails to load is no picture.
+         */
+        if let Ok(template) = load_element(body, controls, depth + 1) {
+            element.set_children(vec![template]);
+        }
     }
     Ok(element)
 }

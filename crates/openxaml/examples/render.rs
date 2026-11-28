@@ -102,6 +102,8 @@ fn bodies(root: &Path) -> Controls {
         controls.insert_unrealized(name);
     }
 
+    controls.set_theme(theme(root));
+
     for (name, path) in files {
         let Ok(file) = xbf::parse_file(&path) else {
             continue;
@@ -135,6 +137,25 @@ fn application_types(elements: &[xbf::model::Element], out: &mut Vec<String>) {
         }
         application_types(&element.children, out);
     }
+}
+
+/// The framework's own templates, from the `Controls.pri` beside the application.
+///
+/// A page says `Button`; what a Button looks like is a `Style` with a `ControlTemplate` in
+/// this dictionary, so the loader needs it for anything beyond an empty box.
+fn theme(root: &Path) -> openxaml::theme::Theme {
+    let pri = root.join("Microsoft.UI.Xaml.Controls.pri");
+    let Ok(data) = std::fs::read(&pri) else {
+        return openxaml::theme::Theme::empty();
+    };
+    let mut theme = openxaml::theme::Theme::empty();
+    for fragment in xbf::pri::scan(&data) {
+        if let Some(file) = xbf::pri::fragment_document(&data, &fragment) {
+            theme.merge(openxaml::theme::Theme::from_dictionary(&file));
+        }
+    }
+    eprintln!("theme: {} templates from {}", theme.len(), pri.display());
+    theme
 }
 
 fn collect(dir: &Path, out: &mut HashMap<String, PathBuf>) {
