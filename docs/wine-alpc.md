@@ -60,6 +60,14 @@ Only the subsystems this project touches are enabled; everything else (`x11`, `a
 The source is the release tarball rather than a git checkout, because a checkout has no
 `configure` and `autoconf` is not installed here.
 
+The changes themselves are a patch series against the 11.22 tag, in
+`scripts/wine/patches/`, applied with `scripts/wine/apply-patches.sh`; five patches
+cover ALPC, dcomp, win32u, the `CoreUICreate` signature and the fail-fast dump, and a
+tree built from a clean tarball plus that series is byte-identical to the one used here.
+After `make install`, `scripts/wine/refresh-dxmt.sh` puts DXMT back: the install step
+copies Wine's own `d3d11`/`dxgi` over it and drops the engine to a feature level XAML
+rejects.
+
 ## Where this sits in the rules
 
 This is a **laboratory**, not the delivery path. The acceptance rule is that a change is
@@ -202,6 +210,27 @@ Symbols would still be better. The PDB key is in the image's CodeView record --
 `Microsoft.ui.xaml.dll` asks for `Microsoft.ui.xaml.pdb` with key
 `6411D3D9B984BE17D2E95023B4EBD0022` -- but the public symbol server answers 404 for that
 name, so offsets it is.
+
+## Two ways to answer the private interface
+
+`CoreApplication` lives in Wine's `twinapi.appcore.dll`, and the engine asks its factory
+for `{17b0e613-942a-422d-904c-f90dc71a7dae}` before anything appears. Two ways of
+answering that query were tried.
+
+The first was an application manifest naming our DLL as the class's server. The manifest
+has to be embedded in the executable, which means `mt.exe`, which is an x86 program, so it
+has to run under the prepackaged 32-bit Wine while the application runs under the 64-bit
+one. Re-embedding the Gallery's manifest produced `0x800736b5`, an SxS assembly that could
+not be found, and the application died earlier than before; the failure came from the merge
+rather than from the entries, and chasing it further was not worth the detour.
+
+The second puts the replacement where `RoGetActivationFactory` looks for the class:
+`system32\twinapi.appcore.dll`. Wine's own file moves aside to `twinapi.builtin.dll`, and
+the replacement forwards every interface it does not answer to it. The override
+`twinapi.appcore=native` keeps the loader from resolving the name back to the builtin.
+That is the arrangement that works -- the engine now registers
+`FinalUnhandledErrorDetected` on the private interface and gets a session from the
+composition side -- and `scripts/wine/install-prefix.sh` is all of it.
 
 ## Why the real CoreUI is not a small patch either
 
